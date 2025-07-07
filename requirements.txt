@@ -1,3 +1,4 @@
+daphne
 Django
 djangorestframework
 django-cors-headers
