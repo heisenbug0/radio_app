@@ -1,9 +1,11 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.conf import settings
 from datetime import timedelta
 from radio_app.models import Category, RadioStation, Event, BlogPost
 import random
+import os
 
 
 class Command(BaseCommand):
@@ -11,6 +13,22 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.stdout.write('Creating sample data...')
+        
+        # Create media/audio directory for local audio files
+        audio_dir = os.path.join(settings.MEDIA_ROOT, 'audio')
+        os.makedirs(audio_dir, exist_ok=True)
+        
+        # Check if setup.mp3 exists
+        audio_file_path = os.path.join(audio_dir, 'setup.mp3')
+        use_local_audio = os.path.exists(audio_file_path)
+        
+        if use_local_audio:
+            self.stdout.write('✓ Found setup.mp3 - using local audio file for all stations')
+            base_stream_url = "http://localhost:8000/media/audio/setup.mp3"
+        else:
+            self.stdout.write('⚠ setup.mp3 not found - using placeholder URLs')
+            self.stdout.write('  Copy your setup.mp3 to media/audio/setup.mp3 for working audio')
+            base_stream_url = "http://localhost:8000/media/audio/setup.mp3"
 
         # Create categories
         categories_data = [
@@ -35,92 +53,92 @@ class Command(BaseCommand):
         # Create radio stations
         stations_data = [
             {
-                'name': 'BBC World Service',
-                'description': 'International news and current affairs from the BBC',
-                'stream_url': 'http://stream.live.vc.bbcmedia.co.uk/bbc_world_service',
-                'website_url': 'https://www.bbc.co.uk/worldservice',
-                'country': 'Canada',
+                'name': 'Nigeria Farm Radio',
+                'description': 'Agricultural news and farming tips for Nigerian farmers',
+                'stream_url': base_stream_url,
+                'website_url': 'https://example.com/nigeria-farm-radio',
+                'country': 'Nigeria',
                 'language': 'English',
                 'quality': 'high',
                 'bitrate': 256,
-                'listeners_count': 1250,
+                'listeners_count': 850,
             },
             {
-                'name': 'Capital FM Kenya',
-                'description': 'Kenya\'s hit music station with news and entertainment',
-                'stream_url': 'https://capitalfm.co.ke:8443/stream',
-                'website_url': 'https://www.capitalfm.co.ke',
-                'country': 'Kenya',
+                'name': 'West Africa Agricultural Radio',
+                'description': 'Regional farming information and market prices',
+                'stream_url': base_stream_url,
+                'website_url': 'https://example.com/west-africa-agri',
+                'country': 'Nigeria',
                 'language': 'English',
                 'quality': 'medium',
                 'bitrate': 128,
-                'listeners_count': 890,
+                'listeners_count': 650,
             },
             {
-                'name': 'All India Radio',
-                'description': 'National broadcaster of India with news and cultural programs',
-                'stream_url': 'http://air.pc.cdn.bitgravity.com/air/live/pbaudio001/playlist.m3u8',
-                'website_url': 'https://www.allindiaradio.gov.in',
-                'country': 'India',
-                'language': 'Hindi',
+                'name': 'Hausa Farm Network',
+                'description': 'Agricultural programming in Hausa language',
+                'stream_url': base_stream_url,
+                'website_url': 'https://example.com/hausa-farm',
+                'country': 'Nigeria',
+                'language': 'Hausa',
                 'quality': 'medium',
                 'bitrate': 128,
-                'listeners_count': 2100,
+                'listeners_count': 720,
             },
             {
-                'name': 'KCRW Santa Monica',
-                'description': 'Eclectic music, news and cultural programming from California',
-                'stream_url': 'https://kcrw.streamguys1.com/kcrw_192k_mp3_on_air',
-                'website_url': 'https://www.kcrw.com',
-                'country': 'USA',
+                'name': 'Igbo Agricultural Voice',
+                'description': 'Farming education and news in Igbo language',
+                'stream_url': base_stream_url,
+                'website_url': 'https://example.com/igbo-agri',
+                'country': 'Nigeria',
+                'language': 'Igbo',
+                'quality': 'high',
+                'bitrate': 256,
+                'listeners_count': 580,
+            },
+            {
+                'name': 'Yoruba Farm Radio',
+                'description': 'Agricultural content and market updates in Yoruba',
+                'stream_url': base_stream_url,
+                'website_url': 'https://example.com/yoruba-farm',
+                'country': 'Nigeria',
+                'language': 'Yoruba',
+                'quality': 'medium',
+                'bitrate': 128,
+                'listeners_count': 490,
+            },
+            {
+                'name': 'African Music & Culture',
+                'description': 'Traditional and modern African music with cultural programs',
+                'stream_url': base_stream_url,
+                'website_url': 'https://example.com/african-music',
+                'country': 'Nigeria',
                 'language': 'English',
                 'quality': 'ultra',
                 'bitrate': 320,
-                'listeners_count': 3500,
+                'listeners_count': 920,
             },
             {
-                'name': 'ABC Country Radio',
-                'description': 'Australian country music and rural news',
-                'stream_url': 'https://live-radio02.mediahubaustralia.com/2CTW/mp3/',
-                'website_url': 'https://www.abc.net.au/radio/country',
-                'country': 'Australia',
+                'name': 'Ghana Farm Connect',
+                'description': 'Cross-border agricultural information for West Africa',
+                'stream_url': base_stream_url,
+                'website_url': 'https://example.com/ghana-farm',
+                'country': 'Ghana',
                 'language': 'English',
                 'quality': 'high',
                 'bitrate': 256,
-                'listeners_count': 750,
+                'listeners_count': 380,
             },
             {
-                'name': 'Radio France Info',
-                'description': 'French news and information radio',
-                'stream_url': 'https://icecast.radiofrance.fr/franceinfo-midfi.mp3',
-                'website_url': 'https://www.francetvinfo.fr/radio-france-info',
-                'country': 'France',
-                'language': 'French',
-                'quality': 'medium',
-                'bitrate': 128,
-                'listeners_count': 1800,
-            },
-            {
-                'name': 'NPR News',
-                'description': 'National Public Radio with news, talk, and cultural programming',
-                'stream_url': 'https://npr-ice.streamguys1.com/live.mp3',
-                'website_url': 'https://www.npr.org',
-                'country': 'USA',
+                'name': 'International Farm News',
+                'description': 'Global agricultural news and commodity prices',
+                'stream_url': base_stream_url,
+                'website_url': 'https://example.com/intl-farm-news',
+                'country': 'International',
                 'language': 'English',
                 'quality': 'high',
                 'bitrate': 256,
-                'listeners_count': 3200,
-            },
-            {
-                'name': 'CBC Radio One',
-                'description': 'Canadian public radio with news, current affairs and documentaries',
-                'stream_url': 'https://cbc_r1_tor.akacast.akamaistream.net/7/750/451661/v1/rc.akacast.akamaistream.net/cbc_r1_tor',
-                'website_url': 'https://www.cbc.ca/radio/radio1',
-                'country': 'Canada',
-                'language': 'English',
-                'quality': 'high',
-                'bitrate': 256,
-                'listeners_count': 2400,
+                'listeners_count': 1200,
             },
         ]
 
@@ -282,5 +300,21 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS('Successfully populated database with sample data!')
         )
+        
+        if use_local_audio:
+            self.stdout.write('')
+            self.stdout.write(
+                self.style.SUCCESS('✓ All stations configured to use your local audio file')
+            )
+            self.stdout.write('  Audio URL: http://localhost:8000/media/audio/setup.mp3')
+        else:
+            self.stdout.write('')
+            self.stdout.write(
+                self.style.WARNING('⚠ To enable audio playback:')
+            )
+            self.stdout.write('  1. Copy your setup.mp3 to media/audio/setup.mp3')
+            self.stdout.write('  2. Run: python manage.py populate_sample_data (again)')
+            self.stdout.write('  3. Start server: python manage.py runserver')
+        
         self.stdout.write('You can now access the admin panel at /admin/')
         self.stdout.write('Username: admin, Password: admin123')
