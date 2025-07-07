@@ -43,7 +43,13 @@
             <option value="ultra" {% if request.GET.quality == "ultra" %}selected{% endif %}>Ultra (320kbps)</option>
         </select>
     </div>
-    <input type="submit" value="Search">
+    <button type="submit" style="display: flex; align-items: center; gap: 8px;" title="Search stations">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+        </svg>
+        Search
+    </button>
     {% if request.GET %}
     <a href="{% url 'stations' %}">Clear Filters</a>
     {% endif %}

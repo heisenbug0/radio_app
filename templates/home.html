@@ -7,6 +7,23 @@
 
 <p>Your premier destination for agricultural radio programming. Listen to farming news, weather updates, market prices, and educational content from around the world.</p>
 
+<!-- Search Section -->
+<div style="background: #f8f9fa; border: 1px solid #a2a9b1; padding: 20px; margin: 20px 0; border-radius: 4px;">
+    <h3>Find Stations</h3>
+    <form method="GET" action="{% url 'stations' %}" style="display: flex; gap: 10px; align-items: end; margin: 0;">
+        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+            <label for="search" style="margin-bottom: 5px;">Search stations by name, country, or category:</label>
+            <input type="text" id="search" name="search" placeholder="e.g. Farm Radio, Kenya, Agriculture..." style="width: 100%;">
+        </div>
+        <button type="submit" style="height: 36px; padding: 8px 16px; display: flex; align-items: center; justify-content: center; min-width: 44px;" title="Search stations">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+            </svg>
+        </button>
+    </form>
+</div>
+
 <!-- Audio Player -->
 <div class="audio-player">
     <h3>Radio Player</h3>
