@@ -237,9 +237,10 @@ class ListeningHistoryViewSet(viewsets.ModelViewSet):
         })
 
 
-class ContactViewSet(viewsets.CreateOnlyModelViewSet):
+class ContactViewSet(viewsets.ModelViewSet):
     queryset = Contact.objects.all()
     serializer_class = ContactSerializer
+    http_method_names = ['post']  # Only allow POST requests
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
