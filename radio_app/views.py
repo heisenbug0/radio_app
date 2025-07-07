@@ -314,8 +314,10 @@ def stations_view(request):
     
     # Filters
     category = request.GET.get('category')
+    selected_category = None
     if category:
         stations = stations.filter(category_id=category)
+        selected_category = Category.objects.filter(id=category).first()
     
     country = request.GET.get('country')
     if country:
@@ -347,6 +349,7 @@ def stations_view(request):
         'stations': stations,
         'categories': categories,
         'countries': countries,
+        'selected_category': selected_category,
     }
     return render(request, 'stations.html', context)
 

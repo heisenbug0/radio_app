@@ -89,7 +89,7 @@
                 {% endif %}
                 {% if request.GET.category %}
                 <span style="background: #e1e3e6; padding: 4px 8px; border-radius: 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
-                    Category: {{ categories|first.name }}
+                    Category: {{ selected_category.name|default:"Unknown" }}
                     <a href="?{% for key, value in request.GET.items %}{% if key != 'category' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" style="color: #d33; text-decoration: none; font-weight: bold;">×</a>
                 </span>
                 {% endif %}
