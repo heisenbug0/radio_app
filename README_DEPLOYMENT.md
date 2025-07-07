@@ -1,4 +1,4 @@
-# Deploying Farmer's Radio App to Render
+# Deploying Bellefu Radio App to Render
 
 ## Quick Deploy with Render Dashboard
 
@@ -16,16 +16,16 @@
 #### Step 1: Create PostgreSQL Database
 1. Go to [Render Dashboard](https://dashboard.render.com)
 2. Click "New" → "PostgreSQL"
-3. Name: `farmers-radio-db`
-4. Database Name: `farmers_radio`
-5. User: `farmers_radio_user`
+3. Name: `bellefu-radio-db`
+4. Database Name: `bellefu_radio`
+5. User: `bellefu_radio_user`
 6. Region: Choose your preferred region
 7. Plan: Choose your plan (Free tier available)
 8. Click "Create Database"
 
 #### Step 2: Create Redis Instance
 1. Click "New" → "Redis"
-2. Name: `farmers-radio-redis`
+2. Name: `bellefu-radio-redis`
 3. Region: Same as your database
 4. Plan: Choose your plan (Free tier available)
 5. Click "Create Redis"
@@ -35,7 +35,7 @@
 2. Connect your GitHub repository
 3. Select the repository containing this project
 4. **Configuration:**
-   - **Name:** `farmers-radio-app`
+   - **Name:** `bellefu-radio-app`
    - **Region:** Same as database and Redis
    - **Branch:** `main` (or your preferred branch)
    - **Root Directory:** Leave blank
@@ -166,6 +166,6 @@ If you encounter issues:
 
 ---
 
-🎵 **Your Farmer's Radio App is now live on Render!**
+🎵 **Your Bellefu Radio App is now live on Render!**
 
 Access your app at: `https://your-app-name.onrender.com`

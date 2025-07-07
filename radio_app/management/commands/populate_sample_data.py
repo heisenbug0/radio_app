@@ -287,7 +287,7 @@ class Command(BaseCommand):
         admin_user, created = User.objects.get_or_create(
             username='admin',
             defaults={
-                'email': 'admin@farmradio.com',
+                'email': 'admin@bellefuradio.com',
                 'first_name': 'Admin',
                 'last_name': 'User',
                 'is_staff': True,

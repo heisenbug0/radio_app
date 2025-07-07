@@ -1,6 +1,6 @@
-# 🎵 Farmer's Radio App - Django Backend with WebSockets
+# 🎵 Bellefu Radio App - Django Backend with WebSockets
 
-A comprehensive Django radio streaming application for farmers with both REST API backend and web frontend. This application provides radio station management, user profiles, events, blog content, audio streaming, and **real-time WebSocket features**.
+A comprehensive Django radio streaming application with both REST API backend and web frontend. This application provides radio station management, user profiles, events, blog content, audio streaming, and **real-time WebSocket features**.
 
 ## 🚀 New Features Added
 
@@ -16,7 +16,7 @@ A comprehensive Django radio streaming application for farmers with both REST AP
 - **Better Performance**: Lightweight SVG icons load instantly
 - **Accessibility**: Icons work with screen readers and high contrast modes
 
-## 🛠️ Installation & Setup
+## 🛠️ Installation & Setup for Bellefu Radio
 
 ### Prerequisites
 - Python 3.8+
@@ -93,7 +93,7 @@ python manage.py populate_sample_data
 python manage.py runserver
 ```
 
-The application will be available at `http://localhost:8000/`
+Bellefu Radio will be available at `http://localhost:8000/`
 
 ### Admin Panel
 Access the admin panel at `http://localhost:8000/admin/`
@@ -119,7 +119,7 @@ CHANNEL_LAYERS = {
 
 **Note**: In-memory channels don't work with multiple server processes and should only be used for development.
 
-## 🧪 Testing the Application
+## 🧪 Testing Bellefu Radio
 
 ### 1. **Real-time Features Testing**
 
@@ -391,7 +391,7 @@ REDIS_URL=redis://your-redis-server:6379
 
 ## 🎵 Ready to Test!
 
-Your radio app now features:
+Bellefu Radio now features:
 - ✅ **Real-time WebSocket updates**
 - ✅ **Professional SVG icon system**
 - ✅ **Instant live event updates**
@@ -401,4 +401,4 @@ Your radio app now features:
 - ✅ **Proper migration sequence**
 - ✅ **Comprehensive troubleshooting**
 
-Start the server and experience the real-time features!
+Start the server and experience Bellefu Radio's real-time features!

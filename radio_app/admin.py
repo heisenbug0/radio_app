@@ -98,6 +98,6 @@ class ContactAdmin(admin.ModelAdmin):
     list_editable = ['is_resolved']
 
 # Customize admin site
-admin.site.site_header = "🎵 Farmer's Radio Admin"
+admin.site.site_header = "🎵 Bellefu Radio Admin"
 admin.site.site_title = "Radio Admin"
-admin.site.index_title = "Welcome to Farmer's Radio Administration"
+admin.site.index_title = "Welcome to Bellefu Radio Administration"
