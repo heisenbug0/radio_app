@@ -9,7 +9,6 @@ channels
 channels-redis
 redis
 asgiref
-daphne
 gunicorn
 psycopg2-binary
 dj-database-url
