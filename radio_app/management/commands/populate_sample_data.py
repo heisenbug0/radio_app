@@ -37,7 +37,7 @@ class Command(BaseCommand):
             {
                 'name': 'BBC World Service',
                 'description': 'International news and current affairs from the BBC',
-                'stream_url': '/audio/setup.mp3',
+                'stream_url': 'http://stream.live.vc.bbcmedia.co.uk/bbc_world_service',
                 'website_url': 'https://www.bbc.co.uk/worldservice',
                 'country': 'Canada',
                 'language': 'English',
@@ -48,7 +48,7 @@ class Command(BaseCommand):
             {
                 'name': 'Capital FM Kenya',
                 'description': 'Kenya\'s hit music station with news and entertainment',
-                'stream_url': '/audio/setup.mp3',
+                'stream_url': 'https://capitalfm.co.ke:8443/stream',
                 'website_url': 'https://www.capitalfm.co.ke',
                 'country': 'Kenya',
                 'language': 'English',
@@ -59,7 +59,7 @@ class Command(BaseCommand):
             {
                 'name': 'All India Radio',
                 'description': 'National broadcaster of India with news and cultural programs',
-                'stream_url': '/audio/setup.mp3',
+                'stream_url': 'http://air.pc.cdn.bitgravity.com/air/live/pbaudio001/playlist.m3u8',
                 'website_url': 'https://www.allindiaradio.gov.in',
                 'country': 'India',
                 'language': 'Hindi',
@@ -70,7 +70,7 @@ class Command(BaseCommand):
             {
                 'name': 'KCRW Santa Monica',
                 'description': 'Eclectic music, news and cultural programming from California',
-                'stream_url': '/audio/setup.mp3',
+                'stream_url': 'https://kcrw.streamguys1.com/kcrw_192k_mp3_on_air',
                 'website_url': 'https://www.kcrw.com',
                 'country': 'USA',
                 'language': 'English',
@@ -81,7 +81,7 @@ class Command(BaseCommand):
             {
                 'name': 'ABC Country Radio',
                 'description': 'Australian country music and rural news',
-                'stream_url': '/audio/setup.mp3',
+                'stream_url': 'https://live-radio02.mediahubaustralia.com/2CTW/mp3/',
                 'website_url': 'https://www.abc.net.au/radio/country',
                 'country': 'Australia',
                 'language': 'English',
@@ -92,7 +92,7 @@ class Command(BaseCommand):
             {
                 'name': 'Radio France Info',
                 'description': 'French news and information radio',
-                'stream_url': '/audio/setup.mp3',
+                'stream_url': 'https://icecast.radiofrance.fr/franceinfo-midfi.mp3',
                 'website_url': 'https://www.francetvinfo.fr/radio-france-info',
                 'country': 'France',
                 'language': 'French',
@@ -103,7 +103,7 @@ class Command(BaseCommand):
             {
                 'name': 'NPR News',
                 'description': 'National Public Radio with news, talk, and cultural programming',
-                'stream_url': '/audio/setup.mp3',
+                'stream_url': 'https://npr-ice.streamguys1.com/live.mp3',
                 'website_url': 'https://www.npr.org',
                 'country': 'USA',
                 'language': 'English',
@@ -114,7 +114,7 @@ class Command(BaseCommand):
             {
                 'name': 'CBC Radio One',
                 'description': 'Canadian public radio with news, current affairs and documentaries',
-                'stream_url': '/audio/setup.mp3',
+                'stream_url': 'https://cbc_r1_tor.akacast.akamaistream.net/7/750/451661/v1/rc.akacast.akamaistream.net/cbc_r1_tor',
                 'website_url': 'https://www.cbc.ca/radio/radio1',
                 'country': 'Canada',
                 'language': 'English',
