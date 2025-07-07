@@ -74,18 +74,21 @@ DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 ```
 
-6. **Database Setup**:
+6. **Database Setup** (CRITICAL - Follow this exact order):
 ```bash
-python manage.py makemigrations
-python manage.py migrate
-```
+# Step 1: Create migrations for radio_app models
+python manage.py makemigrations radio_app
 
-7. **Load Sample Data**:
-```bash
+# Step 2: Apply all migrations (Django built-in + radio_app)
+python manage.py migrate
+
+# Step 3: Load sample data (only after tables are created)
 python manage.py populate_sample_data
 ```
 
-8. **Run Development Server**:
+**⚠️ IMPORTANT**: You must run `makemigrations radio_app` before `migrate`, otherwise the custom model tables won't be created and sample data loading will fail.
+
+7. **Run Development Server**:
 ```bash
 python manage.py runserver
 ```
@@ -183,7 +186,29 @@ CHANNEL_LAYERS = {
 
 ### Common Issues
 
-**1. WebSocket Connection Failed**
+**1. Migration Errors**
+```
+django.db.utils.OperationalError: no such table: radio_app_category
+```
+**Solution**: You need to create migrations for radio_app models first:
+```bash
+# Create migrations for radio_app
+python manage.py makemigrations radio_app
+
+# Then apply all migrations
+python manage.py migrate
+
+# Finally load sample data
+python manage.py populate_sample_data
+```
+
+**2. ViewSet Import Error**
+```
+AttributeError: module 'rest_framework.viewsets' has no attribute 'CreateOnlyModelViewSet'
+```
+**Solution**: This has been fixed in the updated code. The ContactViewSet now uses `ModelViewSet` with `http_method_names = ['post']`.
+
+**3. WebSocket Connection Failed**
 ```
 Error: WebSocket connection failed
 ```
@@ -199,7 +224,7 @@ redis-cli ping
 # Linux: sudo systemctl start redis-server
 ```
 
-**2. Directory Error**
+**4. Directory Error**
 ```
 can't open file 'manage.py': No such file or directory
 ```
@@ -211,16 +236,25 @@ ls manage.py  # This should show the file exists
 cd ..  # Go up one level if you're in radio_app folder
 ```
 
-**3. Icons Not Showing**
+**5. Icons Not Showing**
 **Solution**: Make sure static files are properly configured:
 ```bash
 python manage.py collectstatic
 ```
 
-**4. WebSocket Not Working Without Redis**
+**6. WebSocket Not Working Without Redis**
 **Solution**: Use in-memory channel layer for development:
 - Uncomment the in-memory configuration in `settings.py`
 - Restart the server
+
+**7. Missing Dependencies**
+```
+ModuleNotFoundError: No module named 'channels'
+```
+**Solution**: Install all required dependencies:
+```bash
+pip install -r requirements.txt
+```
 
 ### Performance Issues
 - **Slow WebSocket**: Check Redis connection and network
@@ -342,6 +376,17 @@ REDIS_URL=redis://your-redis-server:6379
 - **Check Firewall**: Ensure WebSocket ports aren't blocked
 - **Update Dependencies**: `pip install -r requirements.txt --upgrade`
 
+### Step-by-Step Installation Verification
+
+**After each step, verify it worked:**
+
+1. **Dependencies installed**: `pip list` should show Django, channels, redis, etc.
+2. **Migrations created**: `ls radio_app/migrations/` should show migration files
+3. **Database migrated**: `python manage.py showmigrations` should show all applied
+4. **Sample data loaded**: Admin panel should show categories, stations, etc.
+5. **Server running**: `http://localhost:8000/` should load the homepage
+6. **WebSockets working**: Browser console should show WebSocket connections
+
 ---
 
 ## 🎵 Ready to Test!
@@ -353,5 +398,7 @@ Your radio app now features:
 - ✅ **Real-time listener counts**
 - ✅ **No more page refreshes**
 - ✅ **Better performance and UX**
+- ✅ **Proper migration sequence**
+- ✅ **Comprehensive troubleshooting**
 
 Start the server and experience the real-time features!
