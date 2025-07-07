@@ -5,6 +5,9 @@ set -o errexit
 # Install dependencies
 pip install -r requirements.txt
 
+# Set Django settings module
+export DJANGO_SETTINGS_MODULE=radio_project.settings
+
 # Run migrations
 python manage.py migrate
 
@@ -15,7 +18,7 @@ python manage.py collectstatic --no-input
 python manage.py shell -c "
 from django.contrib.auth.models import User
 if not User.objects.filter(username='admin').exists():
-    User.objects.create_superuser('admin', 'admin@farmradio.com', 'admin123')
+    User.objects.create_superuser('admin', 'admin@bellefuradio.com', 'admin123')
     print('Superuser created: admin/admin123')
 else:
     print('Superuser already exists')
