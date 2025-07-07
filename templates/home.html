@@ -95,7 +95,7 @@
         <tr>
             <th>Event</th>
             <th>Station</th>
-            <th>Host</th>
+            <th class="hide-mobile">Host</th>
             <th>Time</th>
             <th>Status</th>
         </tr>
@@ -105,7 +105,7 @@
         <tr>
             <td><strong>{{ event.title }}</strong></td>
             <td>{{ event.station.name }}</td>
-            <td>{{ event.host|default:"N/A" }}</td>
+            <td class="hide-mobile">{{ event.host|default:"N/A" }}</td>
             <td>{{ event.start_time|date:"H:i" }} - {{ event.end_time|date:"H:i" }}</td>
             <td class="event-status status-live" data-event-id="{{ event.id }}">
                 <span class="live-indicator"></span>LIVE

@@ -13,9 +13,9 @@
         <tr>
             <th>Event</th>
             <th>Station</th>
-            <th>Host</th>
+            <th class="hide-mobile">Host</th>
             <th>Time</th>
-            <th>Type</th>
+            <th class="hide-mobile">Type</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -27,12 +27,15 @@
                 {% if event.description %}
                 <br><small>{{ event.description|truncatewords:15 }}</small>
                 {% endif %}
+                <div class="hide-mobile" style="font-size: 12px; color: #666; margin-top: 4px;">
+                    Host: {{ event.host|default:"N/A" }} • {{ event.get_event_type_display }}
+                </div>
             </td>
             <td>{{ event.station.name }}</td>
-            <td>{{ event.host|default:"N/A" }}</td>
+            <td class="hide-mobile">{{ event.host|default:"N/A" }}</td>
             <td>{{ event.start_time|date:"H:i" }} - {{ event.end_time|date:"H:i" }}</td>
-            <td>{{ event.get_event_type_display }}</td>
-            <td>
+            <td class="hide-mobile">{{ event.get_event_type_display }}</td>
+            <td class="actions-cell">
                 <span class="event-status status-live" data-event-id="{{ event.id }}">
                     <svg class="live-indicator icon-small" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="3"/>
@@ -66,9 +69,9 @@
         <tr>
             <th>Event</th>
             <th>Station</th>
-            <th>Host</th>
+            <th class="hide-mobile">Host</th>
             <th>Date & Time</th>
-            <th>Type</th>
+            <th class="hide-mobile">Type</th>
             <th>Featured</th>
         </tr>
     </thead>
@@ -80,14 +83,17 @@
                 {% if event.description %}
                 <br><small>{{ event.description|truncatewords:15 }}</small>
                 {% endif %}
+                <div class="hide-mobile" style="font-size: 12px; color: #666; margin-top: 4px;">
+                    Host: {{ event.host|default:"N/A" }} • {{ event.get_event_type_display }}
+                </div>
             </td>
             <td>{{ event.station.name }}</td>
-            <td>{{ event.host|default:"N/A" }}</td>
+            <td class="hide-mobile">{{ event.host|default:"N/A" }}</td>
             <td>
                 {{ event.start_time|date:"M d, Y H:i" }} - {{ event.end_time|date:"H:i" }}
                 <br><small>{{ event.start_time|timesince }} from now</small>
             </td>
-            <td>{{ event.get_event_type_display }}</td>
+            <td class="hide-mobile">{{ event.get_event_type_display }}</td>
             <td>
                 {% if event.is_featured %}
                     <strong>
