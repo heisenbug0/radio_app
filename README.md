@@ -106,18 +106,28 @@ Access the admin panel at `http://localhost:8000/admin/`
 The app is configured to use Redis for WebSocket channel layers. Make sure Redis is running on `localhost:6379`.
 
 ### In-Memory Alternative (Development Only)
-If you can't install Redis, you can use the in-memory channel layer by uncommenting these lines in `settings.py`:
+**For development without Redis**, the app is already configured to use in-memory channels. You'll see WebSocket connection errors in the browser console, but this is normal and the app will work fine without real-time features.
 
-```python
-# For development without Redis, use in-memory channel layer
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer'
-    }
-}
-```
+If you want to enable Redis later, comment out the in-memory configuration in `settings.py` and uncomment the Redis configuration.
 
 **Note**: In-memory channels don't work with multiple server processes and should only be used for development.
+
+## 🎵 Adding Your Audio File
+
+To use your local `setup.mp3` file:
+
+1. **Copy your audio file**:
+```bash
+# Copy your setup.mp3 file to the media/audio directory
+cp /path/to/your/setup.mp3 media/audio/setup.mp3
+```
+
+2. **The stations are already configured** to use this file. All sample stations will play your `setup.mp3` file.
+
+3. **To add more audio files**:
+   - Copy additional MP3 files to `media/audio/`
+   - Update station URLs in the admin panel or modify `populate_sample_data.py`
+   - Use URLs like `/audio/your-file.mp3`
 
 ## 🧪 Testing the Application
 

@@ -641,6 +641,8 @@
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}/ws/events/`;
             
+            console.log('Attempting to connect to Event WebSocket:', wsUrl);
+            
             eventSocket = new WebSocket(wsUrl);
             
             eventSocket.onopen = function(e) {
@@ -653,19 +655,25 @@
             };
             
             eventSocket.onclose = function(e) {
-                console.log('Event WebSocket disconnected');
+                console.log('Event WebSocket disconnected. Code:', e.code, 'Reason:', e.reason);
                 // Attempt to reconnect after 3 seconds
-                setTimeout(connectEventWebSocket, 3000);
+                if (e.code !== 1000) { // Don't reconnect if it was a normal closure
+                    console.log('Attempting to reconnect Event WebSocket in 3 seconds...');
+                    setTimeout(connectEventWebSocket, 3000);
+                }
             };
             
             eventSocket.onerror = function(e) {
-                console.error('Event WebSocket error:', e);
+                console.error('Event WebSocket error. This is normal if Redis is not running.');
+                console.log('WebSocket functionality will be disabled. The app will still work without real-time updates.');
             };
         }
 
         function connectStationWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}/ws/stations/`;
+            
+            console.log('Attempting to connect to Station WebSocket:', wsUrl);
             
             stationSocket = new WebSocket(wsUrl);
             
@@ -679,13 +687,17 @@
             };
             
             stationSocket.onclose = function(e) {
-                console.log('Station WebSocket disconnected');
+                console.log('Station WebSocket disconnected. Code:', e.code, 'Reason:', e.reason);
                 // Attempt to reconnect after 3 seconds
-                setTimeout(connectStationWebSocket, 3000);
+                if (e.code !== 1000) { // Don't reconnect if it was a normal closure
+                    console.log('Attempting to reconnect Station WebSocket in 3 seconds...');
+                    setTimeout(connectStationWebSocket, 3000);
+                }
             };
             
             stationSocket.onerror = function(e) {
-                console.error('Station WebSocket error:', e);
+                console.error('Station WebSocket error. This is normal if Redis is not running.');
+                console.log('WebSocket functionality will be disabled. The app will still work without real-time updates.');
             };
         }
 

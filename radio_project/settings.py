@@ -121,8 +121,9 @@ CHANNEL_LAYERS = {
 }
 
 # For development without Redis, use in-memory channel layer
-# CHANNEL_LAYERS = {
-#     'default': {
-#         'BACKEND': 'channels.layers.InMemoryChannelLayer'
-#     }
-# }
+# Uncomment below if you don't have Redis installed
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
