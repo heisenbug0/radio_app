@@ -7,11 +7,31 @@
 
 <!-- Search -->
 <form method="GET" class="search-form">
-    <div class="form-group">
+    <div class="form-group" style="flex: 1;">
         <label for="search">Search Articles:</label>
         <input type="text" id="search" name="search" value="{{ request.GET.search }}" placeholder="Search articles...">
     </div>
-    <button type="submit" style="display: flex; align-items: center; gap: 8px;" title="Search articles">
+    <div class="form-group" style="margin-bottom: 0;">
+        <label>&nbsp;</label>
+        <button type="submit" style="width: 44px; height: 36px; display: flex; align-items: center; justify-content: center; padding: 0;" title="Search articles">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+            </svg>
+        </button>
+    </div>
+    {% if request.GET.search %}
+    <div class="form-group" style="margin-bottom: 0;">
+        <label>&nbsp;</label>
+        <a href="{% url 'blog' %}" style="width: 44px; height: 36px; display: flex; align-items: center; justify-content: center; text-decoration: none; border: 1px solid #a2a9b1; background: #f8f9fa; color: #000;" title="Clear search">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" x2="6" y1="6" y2="18"/>
+                <line x1="6" x2="18" y1="6" y2="18"/>
+            </svg>
+        </a>
+    </div>
+    {% endif %}
+</form>
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/>
             <path d="m21 21-4.35-4.35"/>
@@ -56,9 +76,9 @@
     <thead>
         <tr>
             <th>Title</th>
-            <th>Author</th>
-            <th>Published</th>
-            <th>Tags</th>
+            <th class="hide-mobile">Author</th>
+            <th class="hide-mobile">Published</th>
+            <th class="hide-mobile">Tags</th>
         </tr>
     </thead>
     <tbody>
@@ -74,10 +94,19 @@
                 {% if post.excerpt %}
                 <br><small>{{ post.excerpt|truncatewords:20 }}</small>
                 {% endif %}
+                <div class="hide-mobile" style="font-size: 12px; color: #666; margin-top: 4px;">
+                    By {{ post.author.get_full_name|default:post.author.username }} • {{ post.published_at|date:"M d, Y" }}
+                    {% if post.tags %}
+                        <br>Tags: 
+                        {% for tag in post.tags_list %}
+                            <span style="background: #f8f9fa; padding: 1px 4px; border: 1px solid #a2a9b1; font-size: 11px;">{{ tag }}</span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
             </td>
-            <td>{{ post.author.get_full_name|default:post.author.username }}</td>
-            <td>{{ post.published_at|date:"M d, Y" }}</td>
-            <td>
+            <td class="hide-mobile">{{ post.author.get_full_name|default:post.author.username }}</td>
+            <td class="hide-mobile">{{ post.published_at|date:"M d, Y" }}</td>
+            <td class="hide-mobile">
                 {% if post.tags %}
                     {% for tag in post.tags_list %}
                         <span style="background: #f8f9fa; padding: 2px 6px; border: 1px solid #a2a9b1; font-size: 12px;">{{ tag }}</span>

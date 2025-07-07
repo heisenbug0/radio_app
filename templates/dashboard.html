@@ -29,19 +29,19 @@
 <h2>Your Statistics</h2>
 <table>
     <tr>
-        <td><strong>Favorite Stations:</strong></td>
+        <th>Favorite Stations:</th>
         <td>{{ profile.favorite_stations_count }}</td>
     </tr>
     <tr>
-        <td><strong>Listening Sessions:</strong></td>
+        <th>Listening Sessions:</th>
         <td>{{ listening_stats.total_sessions }}</td>
     </tr>
     <tr>
-        <td><strong>Total Listening Time:</strong></td>
+        <th>Total Listening Time:</th>
         <td>{{ listening_stats.total_hours }} hours</td>
     </tr>
     <tr>
-        <td><strong>Member Since:</strong></td>
+        <th>Member Since:</th>
         <td>{{ user.date_joined|date:"M d, Y" }}</td>
     </tr>
 </table>
@@ -121,15 +121,20 @@
     <thead>
         <tr>
             <th>Station</th>
-            <th>Date</th>
+            <th class="hide-mobile">Date</th>
             <th>Duration</th>
         </tr>
     </thead>
     <tbody>
         {% for session in listening_history %}
         <tr>
-            <td>{{ session.station.name }}</td>
-            <td>{{ session.started_at|date:"M d, Y H:i" }}</td>
+            <td>
+                {{ session.station.name }}
+                <div class="hide-mobile" style="font-size: 12px; color: #666; margin-top: 4px;">
+                    {{ session.started_at|date:"M d, Y H:i" }}
+                </div>
+            </td>
+            <td class="hide-mobile">{{ session.started_at|date:"M d, Y H:i" }}</td>
             <td>{{ session.duration_minutes }} minutes</td>
         </tr>
         {% endfor %}
@@ -149,15 +154,20 @@
         <tr>
             <th>Station</th>
             <th>Sessions</th>
-            <th>Total Time</th>
+            <th class="hide-mobile">Total Time</th>
         </tr>
     </thead>
     <tbody>
         {% for stat in listening_stats.most_listened_stations %}
         <tr>
-            <td>{{ stat.station__name }}</td>
+            <td>
+                {{ stat.station__name }}
+                <div class="hide-mobile" style="font-size: 12px; color: #666; margin-top: 4px;">
+                    Total: {{ stat.total_minutes }} minutes
+                </div>
+            </td>
             <td>{{ stat.count }}</td>
-            <td>{{ stat.total_minutes }} minutes</td>
+            <td class="hide-mobile">{{ stat.total_minutes }} minutes</td>
         </tr>
         {% endfor %}
     </tbody>

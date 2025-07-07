@@ -28,17 +28,22 @@
         <tr>
             <th>Station</th>
             <th>Sessions</th>
-            <th>Total Time</th>
-            <th>Average Session</th>
+            <th class="hide-mobile">Total Time</th>
+            <th class="hide-mobile">Average Session</th>
         </tr>
     </thead>
     <tbody>
         {% for stat in stats.most_listened_stations %}
         <tr>
-            <td>{{ stat.station__name }}</td>
+            <td>
+                {{ stat.station__name }}
+                <div class="hide-mobile" style="font-size: 12px; color: #666; margin-top: 4px;">
+                    Total: {{ stat.total_minutes }} min • Avg: {{ stat.total_minutes|floatformat:0|add:0|div:stat.count|floatformat:1 }} min
+                </div>
+            </td>
             <td>{{ stat.count }}</td>
-            <td>{{ stat.total_minutes }} minutes</td>
-            <td>{{ stat.total_minutes|floatformat:0|add:0|div:stat.count|floatformat:1 }} minutes</td>
+            <td class="hide-mobile">{{ stat.total_minutes }} minutes</td>
+            <td class="hide-mobile">{{ stat.total_minutes|floatformat:0|add:0|div:stat.count|floatformat:1 }} minutes</td>
         </tr>
         {% endfor %}
     </tbody>
@@ -52,7 +57,7 @@
     <thead>
         <tr>
             <th>Station</th>
-            <th>Date & Time</th>
+            <th class="hide-mobile">Date & Time</th>
             <th>Duration</th>
         </tr>
     </thead>
@@ -62,8 +67,11 @@
             <td>
                 <strong>{{ session.station.name }}</strong>
                 <br><small>{{ session.station.category.name }} • {{ session.station.country }}</small>
+                <div class="hide-mobile" style="font-size: 12px; color: #666; margin-top: 4px;">
+                    {{ session.started_at|date:"M d, Y H:i" }}
+                </div>
             </td>
-            <td>{{ session.started_at|date:"M d, Y H:i" }}</td>
+            <td class="hide-mobile">{{ session.started_at|date:"M d, Y H:i" }}</td>
             <td>{{ session.duration_minutes }} minutes</td>
         </tr>
         {% endfor %}
