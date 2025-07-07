@@ -272,7 +272,35 @@ class Command(BaseCommand):
             },
         ]
 
-        # Update events to include local content
+        stations = []
+        for i, station_data in enumerate(stations_data):
+            station_data['category'] = categories[i % len(categories)]
+            station, created = RadioStation.objects.get_or_create(
+                name=station_data['name'],
+                defaults=station_data
+            )
+            stations.append(station)
+            if created:
+                self.stdout.write(f'Created station: {station.name}')
+
+        # Create admin user if it doesn't exist
+        admin_user, created = User.objects.get_or_create(
+            username='admin',
+            defaults={
+                'email': 'admin@farmradio.com',
+                'first_name': 'Admin',
+                'last_name': 'User',
+                'is_staff': True,
+                'is_superuser': True,
+            }
+        )
+        if created:
+            admin_user.set_password('admin123')
+            admin_user.save()
+            self.stdout.write('Created admin user (username: admin, password: admin123)')
+
+        # Create sample events
+        now = timezone.now()
         events_data = [
             {
                 'title': 'Port Harcourt Morning Market Report',
@@ -321,7 +349,16 @@ class Command(BaseCommand):
             },
         ]
 
-        # Update blog posts with Nigerian content
+        for i, event_data in enumerate(events_data):
+            event_data['station'] = stations[i % len(stations)]
+            event, created = Event.objects.get_or_create(
+                title=event_data['title'],
+                defaults=event_data
+            )
+            if created:
+                self.stdout.write(f'Created event: {event.title}')
+
+        # Create sample blog posts with Nigerian content
         blog_posts_data = [
             {
                 'title': 'Cassava Farming in Rivers State: A Complete Guide',
@@ -452,155 +489,6 @@ class Command(BaseCommand):
             },
         ]
 
-        # Create sample events
-        now = timezone.now()
-        events_data = [
-            {
-                'title': 'Port Harcourt Morning Market Report',
-                'description': 'Daily agricultural market prices from Mile 3 Market',
-                'event_type': 'news',
-                'start_time': now + timedelta(hours=1),
-                'end_time': now + timedelta(hours=1, minutes=30),
-                'host': 'Chief Emeka Okafor',
-                'is_featured': True,
-            },
-            {
-                'title': 'Rivers State Farming Workshop',
-                'description': 'Learn about cassava and yam cultivation in Rivers State',
-                'event_type': 'live_show',
-                'start_time': now + timedelta(days=1, hours=14),
-                'end_time': now + timedelta(days=1, hours=16),
-                'host': 'Dr. Blessing Okoro',
-                'is_featured': True,
-            },
-            {
-                'title': 'Niger Delta Weather Update',
-                'description': 'Weather forecast for farming communities in the Niger Delta',
-                'event_type': 'other',
-                'start_time': now + timedelta(hours=6),
-                'end_time': now + timedelta(hours=6, minutes=30),
-                'host': 'Meteorologist James Udo',
-                'is_featured': False,
-            },
-        ]
-
-        # Create sample blog posts
-        blog_posts_data = [
-            {
-                'title': 'Cassava Farming in Rivers State: A Complete Guide',
-                'slug': 'cassava-farming-rivers-state-guide',
-                'content': '''
-                Cassava is one of the most important crops in Rivers State, Nigeria. This comprehensive 
-                guide covers everything you need to know about successful cassava cultivation in our region.
-
-                **Best Varieties for Rivers State:**
-                1. TMS 30572 - High yielding and disease resistant
-                2. TME 419 - Good for processing into garri
-                3. NR 8082 - Suitable for wet season planting
-
-                **Planting Season:**
-                - Early season: March - May
-                - Late season: July - September
-
-                **Soil Requirements:**
-                Rivers State's sandy-loam soils are ideal for cassava. Ensure good drainage 
-                as waterlogged conditions can cause root rot.
-
-                **Market Opportunities:**
-                Port Harcourt has strong demand for cassava products. Consider value addition 
-                through processing into garri, fufu, or cassava flour.
-                ''',
-                'excerpt': 'Complete guide to growing cassava successfully in Rivers State, Nigeria.',
-                'status': 'published',
-                'tags': 'cassava, rivers state, nigeria, farming, agriculture',
-                'is_featured': True,
-                'published_at': now - timedelta(days=1),
-            },
-            {
-                'title': 'Fish Farming in the Niger Delta: Opportunities and Challenges',
-                'slug': 'fish-farming-niger-delta',
-                'content': '''
-                The Niger Delta region offers excellent opportunities for aquaculture development. 
-                With abundant water resources and favorable climate, fish farming can be highly profitable.
-
-                **Popular Fish Species:**
-                - Catfish (Clarias gariepinus) - Most popular and profitable
-                - Tilapia - Fast growing and disease resistant
-                - Carp - Good for polyculture systems
-
-                **Market Access:**
-                Port Harcourt and surrounding areas have high demand for fresh fish. 
-                Consider direct sales to hotels and restaurants.
-                ''',
-                'excerpt': 'Explore fish farming opportunities in the Niger Delta region.',
-                'status': 'published',
-                'tags': 'fish farming, aquaculture, niger delta, catfish, tilapia',
-                'is_featured': True,
-                'published_at': now - timedelta(days=3),
-            },
-            {
-                'title': 'Urban Farming in Port Harcourt: Growing Food in the City',
-                'slug': 'urban-farming-port-harcourt',
-                'content': '''
-                With increasing urbanization in Port Harcourt, urban farming presents opportunities 
-                for food security and income generation within the city.
-
-                **Suitable Crops for Urban Farming:**
-                - Leafy vegetables: Spinach, lettuce, cabbage
-                - Herbs: Basil, parsley, scent leaves
-                - Fruits: Tomatoes, peppers, okra
-
-                **Market Opportunities:**
-                Supply fresh vegetables to local markets, restaurants, and neighbors. 
-                Organic produce commands premium prices.
-                ''',
-                'excerpt': 'Learn how to grow food in Port Harcourt urban environment.',
-                'status': 'published',
-                'tags': 'urban farming, port harcourt, vegetables, container gardening',
-                'is_featured': False,
-                'published_at': now - timedelta(days=5),
-            },
-        ]
-
-        # Remove duplicate events and blog posts sections
-        # (keeping only the updated versions above)
-
-        stations = []
-        for i, station_data in enumerate(stations_data):
-            station_data['category'] = categories[i % len(categories)]
-            station, created = RadioStation.objects.get_or_create(
-                name=station_data['name'],
-                defaults=station_data
-            )
-            stations.append(station)
-            if created:
-                self.stdout.write(f'Created station: {station.name}')
-
-        # Create admin user if it doesn't exist
-        admin_user, created = User.objects.get_or_create(
-            username='admin',
-            defaults={
-                'email': 'admin@farmradio.com',
-                'first_name': 'Admin',
-                'last_name': 'User',
-                'is_staff': True,
-                'is_superuser': True,
-            }
-        )
-        if created:
-            admin_user.set_password('admin123')
-            admin_user.save()
-            self.stdout.write('Created admin user (username: admin, password: admin123)')
-
-        for i, event_data in enumerate(events_data):
-            event_data['station'] = stations[i % len(stations)]
-            event, created = Event.objects.get_or_create(
-                title=event_data['title'],
-                defaults=event_data
-            )
-            if created:
-                self.stdout.write(f'Created event: {event.title}')
-
         for post_data in blog_posts_data:
             post_data['author'] = admin_user
             post, created = BlogPost.objects.get_or_create(
@@ -643,211 +531,6 @@ class Command(BaseCommand):
         self.stdout.write('✓ Niger Delta weather updates')
         self.stdout.write('✓ Cassava & fish farming articles')
         self.stdout.write('✓ Urban farming in Port Harcourt')
-        self.stdout.write('')
-        self.stdout.write('You can now access the admin panel at /admin/')
-        self.stdout.write('Username: admin, Password: admin123')
-                'language': 'English',
-                'quality': 'high',
-                'bitrate': 256,
-                'listeners_count': 750,
-            },
-            {
-                'name': 'Wazobia FM',
-                'description': 'Nigerian pidgin radio station',
-                'stream_url': 'https://stream.zeno.fm/17q2aa9ek18uv',
-                'website_url': 'https://wazobiafm.ng',
-                'country': 'Nigeria',
-                'language': 'Pidgin English',
-                'quality': 'medium',
-                'bitrate': 128,
-                'listeners_count': 680,
-            },
-            {
-                'name': 'NPR News',
-                'description': 'National Public Radio with news and cultural programming',
-                'stream_url': 'https://npr-ice.streamguys1.com/live.mp3',
-                'website_url': 'https://www.npr.org',
-                'country': 'United States',
-                'language': 'English',
-                'quality': 'high',
-                'bitrate': 256,
-                'listeners_count': 3200,
-            },
-            {
-                'name': 'Radio Biafra',
-                'description': 'Igbo language radio with cultural programming',
-                'stream_url': 'https://stream.zeno.fm/8wv4d7q8k18uv',
-                'website_url': 'https://radiobiafra.co',
-                'country': 'Nigeria',
-                'language': 'Igbo',
-                'quality': 'medium',
-                'bitrate': 128,
-                'listeners_count': 420,
-            },
-        ]
-
-        stations = []
-        for i, station_data in enumerate(stations_data):
-            station_data['category'] = categories[i % len(categories)]
-            station, created = RadioStation.objects.get_or_create(
-                name=station_data['name'],
-                defaults=station_data
-            )
-            stations.append(station)
-            if created:
-                self.stdout.write(f'Created station: {station.name}')
-
-        # Create admin user if it doesn't exist
-        admin_user, created = User.objects.get_or_create(
-            username='admin',
-            defaults={
-                'email': 'admin@farmradio.com',
-                'first_name': 'Admin',
-                'last_name': 'User',
-                'is_staff': True,
-                'is_superuser': True,
-            }
-        )
-        if created:
-            admin_user.set_password('admin123')
-            admin_user.save()
-            self.stdout.write('Created admin user (username: admin, password: admin123)')
-
-        # Create sample events
-        now = timezone.now()
-        events_data = [
-            {
-                'title': 'Morning Farm Report',
-                'description': 'Daily agricultural news and market prices',
-                'event_type': 'news',
-                'start_time': now + timedelta(hours=1),
-                'end_time': now + timedelta(hours=2),
-                'host': 'John Farmer',
-                'is_featured': True,
-            },
-            {
-                'title': 'Crop Disease Prevention Workshop',
-                'description': 'Learn about preventing common crop diseases',
-                'event_type': 'live_show',
-                'start_time': now + timedelta(days=1, hours=10),
-                'end_time': now + timedelta(days=1, hours=12),
-                'host': 'Dr. Sarah Green',
-                'is_featured': True,
-            },
-            {
-                'title': 'Weather Forecast Special',
-                'description': 'Extended weather forecast for the farming season',
-                'event_type': 'other',
-                'start_time': now + timedelta(hours=6),
-                'end_time': now + timedelta(hours=6, minutes=30),
-                'host': 'Mike Weather',
-                'is_featured': False,
-            },
-        ]
-
-        for i, event_data in enumerate(events_data):
-            event_data['station'] = stations[i % len(stations)]
-            event, created = Event.objects.get_or_create(
-                title=event_data['title'],
-                defaults=event_data
-            )
-            if created:
-                self.stdout.write(f'Created event: {event.title}')
-
-        # Create sample blog posts
-        blog_posts_data = [
-            {
-                'title': 'Top 10 Farming Tips for Beginners',
-                'slug': 'top-10-farming-tips-beginners',
-                'content': '''
-                Starting a farm can be overwhelming, but with the right knowledge and preparation, 
-                anyone can become a successful farmer. Here are our top 10 tips for beginners:
-
-                1. Start small and gradually expand
-                2. Choose crops suitable for your climate
-                3. Invest in quality soil preparation
-                4. Learn about pest management
-                5. Plan your irrigation system carefully
-                6. Keep detailed records
-                7. Connect with local farming communities
-                8. Stay updated with agricultural news
-                9. Consider sustainable farming practices
-                10. Be patient and persistent
-
-                Remember, farming is both an art and a science. Don't be afraid to experiment 
-                and learn from your mistakes.
-                ''',
-                'excerpt': 'Essential tips for new farmers to start their agricultural journey successfully.',
-                'status': 'published',
-                'tags': 'farming, beginners, agriculture, tips',
-                'is_featured': True,
-                'published_at': now - timedelta(days=2),
-            },
-            {
-                'title': 'Understanding Weather Patterns for Better Crop Planning',
-                'slug': 'weather-patterns-crop-planning',
-                'content': '''
-                Weather plays a crucial role in agricultural success. Understanding local weather 
-                patterns can help farmers make better decisions about when to plant, irrigate, 
-                and harvest their crops.
-
-                Key factors to consider:
-                - Seasonal rainfall patterns
-                - Temperature variations
-                - Frost dates
-                - Wind patterns
-                - Humidity levels
-
-                By monitoring these factors and using weather forecasting tools, farmers can 
-                optimize their crop planning and reduce weather-related risks.
-                ''',
-                'excerpt': 'Learn how weather patterns affect farming and how to use this knowledge for better crop planning.',
-                'status': 'published',
-                'tags': 'weather, farming, crop planning, agriculture',
-                'is_featured': False,
-                'published_at': now - timedelta(days=5),
-            },
-            {
-                'title': 'The Future of Sustainable Agriculture',
-                'slug': 'future-sustainable-agriculture',
-                'content': '''
-                Sustainable agriculture is becoming increasingly important as we face challenges 
-                like climate change, soil degradation, and water scarcity. This article explores 
-                the latest trends and technologies in sustainable farming.
-
-                Topics covered:
-                - Precision agriculture
-                - Organic farming methods
-                - Water conservation techniques
-                - Renewable energy in farming
-                - Biodiversity preservation
-
-                The future of farming lies in balancing productivity with environmental stewardship.
-                ''',
-                'excerpt': 'Exploring the latest trends and technologies in sustainable farming practices.',
-                'status': 'published',
-                'tags': 'sustainable agriculture, environment, technology, future',
-                'is_featured': True,
-                'published_at': now - timedelta(days=1),
-            },
-        ]
-
-        for post_data in blog_posts_data:
-            post_data['author'] = admin_user
-            post, created = BlogPost.objects.get_or_create(
-                slug=post_data['slug'],
-                defaults=post_data
-            )
-            if created:
-                self.stdout.write(f'Created blog post: {post.title}')
-
-        self.stdout.write(
-            self.style.SUCCESS('Successfully populated database with sample data!')
-        )
-        self.stdout.write('')
-        self.stdout.write('✓ All stations use REAL radio stream URLs')
-        self.stdout.write('✓ Includes Nigerian stations: Radio Nigeria, Cool FM, Wazobia FM')
-        self.stdout.write('✓ International stations: BBC, NPR, VOA, RFI')
         self.stdout.write('')
         self.stdout.write('You can now access the admin panel at /admin/')
         self.stdout.write('Username: admin, Password: admin123')
