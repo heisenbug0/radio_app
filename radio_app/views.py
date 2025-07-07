@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth.models import User
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from django.utils import timezone
 from datetime import timedelta
 from django.shortcuts import render, get_object_or_404, redirect
@@ -444,7 +444,7 @@ def dashboard(request):
     
     most_listened = ListeningHistory.objects.filter(user=request.user).values('station__name').annotate(
         count=Count('station'),
-        total_minutes=models.Sum('duration_minutes')
+        total_minutes=Sum('duration_minutes')
     ).order_by('-total_minutes')[:5]
     
     listening_stats = {
@@ -474,7 +474,7 @@ def listening_history_view(request):
     
     most_listened = history.values('station__name').annotate(
         count=Count('station'),
-        total_minutes=models.Sum('duration_minutes')
+        total_minutes=Sum('duration_minutes')
     ).order_by('-total_minutes')[:10]
     
     stats = {
