@@ -11,7 +11,13 @@
         <label for="search">Search Articles:</label>
         <input type="text" id="search" name="search" value="{{ request.GET.search }}" placeholder="Search articles...">
     </div>
-    <input type="submit" value="Search">
+    <button type="submit" style="display: flex; align-items: center; gap: 8px;" title="Search articles">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+        </svg>
+        Search
+    </button>
     {% if request.GET.search %}
     <a href="{% url 'blog' %}">Clear Search</a>
     {% endif %}
