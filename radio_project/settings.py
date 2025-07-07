@@ -1,404 +1,128 @@
-# 🎵 Farmer's Radio App - Django Backend with WebSockets
+import os
+from decouple import config
+from pathlib import Path
 
-A comprehensive Django radio streaming application for farmers with both REST API backend and web frontend. This application provides radio station management, user profiles, events, blog content, audio streaming, and **real-time WebSocket features**.
+BASE_DIR = Path(__file__).resolve().parent.parent
 
-## 🚀 New Features Added
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me')
+DEBUG = config('DEBUG', default=True, cast=bool)
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
-### **Real-time WebSocket Integration**
-- **Live Event Updates**: Events automatically update without page refresh
-- **Real-time Listener Counts**: See listener counts update in real-time
-- **Automatic Reconnection**: WebSocket connections automatically reconnect if dropped
-- **Efficient Updates**: No more 30-second page refreshes - updates happen instantly
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'rest_framework',
+    'corsheaders',
+    'channels',
+    'radio_app',
+]
 
-### **SVG Icon System**
-- **Professional Icons**: All emojis replaced with scalable SVG icons
-- **Consistent Design**: Unified icon system across the entire application
-- **Better Performance**: Lightweight SVG icons load instantly
-- **Accessibility**: Icons work with screen readers and high contrast modes
+MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
 
-## 🛠️ Installation & Setup
+ROOT_URLCONF = 'radio_project.urls'
 
-### Prerequisites
-- Python 3.8+
-- pip
-- Virtual environment (recommended)
-- **Redis** (for WebSocket functionality)
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
 
-### Quick Start
+WSGI_APPLICATION = 'radio_project.wsgi.application'
 
-1. **Navigate to the correct directory**:
-```bash
-# Make sure you're in the project root directory (where manage.py is located)
-cd /path/to/your/project  # Not inside radio_app folder!
-```
-
-2. **Create and activate virtual environment**:
-```bash
-python -m venv radio_env
-# On Windows:
-radio_env\Scripts\activate
-# On macOS/Linux:
-source radio_env/bin/activate
-```
-
-3. **Install dependencies**:
-```bash
-pip install -r requirements.txt
-```
-
-4. **Install and Start Redis** (Required for WebSockets):
-
-**Windows:**
-- Download Redis from: https://github.com/microsoftarchive/redis/releases
-- Install and start Redis server
-- Or use Docker: `docker run -d -p 6379:6379 redis:alpine`
-
-**macOS:**
-```bash
-brew install redis
-brew services start redis
-```
-
-**Linux (Ubuntu/Debian):**
-```bash
-sudo apt update
-sudo apt install redis-server
-sudo systemctl start redis-server
-```
-
-5. **Environment Configuration**:
-Create a `.env` file in the project root:
-```
-SECRET_KEY=your-secret-key-here
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
-```
-
-6. **Database Setup** (CRITICAL - Follow this exact order):
-```bash
-# Step 1: Create migrations for radio_app models
-python manage.py makemigrations radio_app
-
-# Step 2: Apply all migrations (Django built-in + radio_app)
-python manage.py migrate
-
-# Step 3: Load sample data (only after tables are created)
-python manage.py populate_sample_data
-```
-
-**⚠️ IMPORTANT**: You must run `makemigrations radio_app` before `migrate`, otherwise the custom model tables won't be created and sample data loading will fail.
-
-7. **Run Development Server**:
-```bash
-python manage.py runserver
-```
-
-The application will be available at `http://localhost:8000/`
-
-### Admin Panel
-Access the admin panel at `http://localhost:8000/admin/`
-- Username: `admin`
-- Password: `admin123`
-
-## 🔧 WebSocket Configuration
-
-### Redis Setup (Recommended for Production)
-The app is configured to use Redis for WebSocket channel layers. Make sure Redis is running on `localhost:6379`.
-
-### In-Memory Alternative (Development Only)
-If you can't install Redis, you can use the in-memory channel layer by uncommenting these lines in `settings.py`:
-
-```python
-# For development without Redis, use in-memory channel layer
-CHANNEL_LAYERS = {
+DATABASES = {
     'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-```
 
-**Note**: In-memory channels don't work with multiple server processes and should only be used for development.
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
 
-## 🧪 Testing the Application
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'UTC'
+USE_I18N = True
+USE_TZ = True
 
-### 1. **Real-time Features Testing**
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-**WebSocket Connection Test**:
-1. Open browser developer tools (F12)
-2. Go to Console tab
-3. Visit any page - you should see:
-   - "Event WebSocket connected"
-   - "Station WebSocket connected"
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
-**Live Event Updates**:
-1. Open the Events page (`/events/`)
-2. In admin panel, create a new event with current time
-3. The event should appear on the page **instantly** without refresh
-4. When the event time passes, status updates automatically
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-**Real-time Listener Counts**:
-1. Open two browser windows/tabs
-2. In one tab, start playing a station
-3. In the other tab, watch the listener count increase **instantly**
-4. Stop playing - count decreases immediately
+# REST Framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20
+}
 
-### 2. **SVG Icons Testing**
+# CORS settings
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
 
-**Icon Functionality**:
-- ▶ Play buttons show proper play/pause icons
-- ⭐ Star icons toggle between filled/unfilled states
-- 🌐 Globe icons for website links
-- 🔴 Live indicators with pulsing animation
+# Channels settings
+ASGI_APPLICATION = 'radio_project.asgi.application'
 
-**Responsive Icons**:
-- Icons scale properly on mobile devices
-- Icons maintain quality at all zoom levels
-- Icons work in high contrast mode
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
 
-### 3. **Audio Player Testing**
-
-**Enhanced Player**:
-- Click ▶ on any station to start streaming
-- Icon changes to ⏸ when playing
-- Use volume slider to adjust audio
-- Click ⏹ to stop playback
-- Listener counts update in real-time
-
-### 4. **Mobile Testing**
-- All SVG icons work perfectly on mobile
-- WebSocket connections work on mobile browsers
-- Touch interactions work with new icon system
-
-### 5. **Performance Testing**
-
-**WebSocket Efficiency**:
-- No more 30-second page refreshes
-- Updates happen instantly when events change
-- Automatic reconnection if connection drops
-- Minimal bandwidth usage
-
-**Icon Performance**:
-- Pages load faster with SVG icons
-- No broken image links
-- Icons render immediately
-
-## 🔧 Troubleshooting
-
-### Common Issues
-
-**1. Migration Errors**
-```
-django.db.utils.OperationalError: no such table: radio_app_category
-```
-**Solution**: You need to create migrations for radio_app models first:
-```bash
-# Create migrations for radio_app
-python manage.py makemigrations radio_app
-
-# Then apply all migrations
-python manage.py migrate
-
-# Finally load sample data
-python manage.py populate_sample_data
-```
-
-**2. ViewSet Import Error**
-```
-AttributeError: module 'rest_framework.viewsets' has no attribute 'CreateOnlyModelViewSet'
-```
-**Solution**: This has been fixed in the updated code. The ContactViewSet now uses `ModelViewSet` with `http_method_names = ['post']`.
-
-**3. WebSocket Connection Failed**
-```
-Error: WebSocket connection failed
-```
-**Solution**: Make sure Redis is running:
-```bash
-# Check if Redis is running
-redis-cli ping
-# Should return "PONG"
-
-# If not running, start Redis:
-# Windows: Start Redis service
-# macOS: brew services start redis
-# Linux: sudo systemctl start redis-server
-```
-
-**4. Directory Error**
-```
-can't open file 'manage.py': No such file or directory
-```
-**Solution**: Make sure you're in the correct directory:
-```bash
-# You should be in the directory that contains manage.py
-ls manage.py  # This should show the file exists
-# If not, navigate to the correct directory:
-cd ..  # Go up one level if you're in radio_app folder
-```
-
-**5. Icons Not Showing**
-**Solution**: Make sure static files are properly configured:
-```bash
-python manage.py collectstatic
-```
-
-**6. WebSocket Not Working Without Redis**
-**Solution**: Use in-memory channel layer for development:
-- Uncomment the in-memory configuration in `settings.py`
-- Restart the server
-
-**7. Missing Dependencies**
-```
-ModuleNotFoundError: No module named 'channels'
-```
-**Solution**: Install all required dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-### Performance Issues
-- **Slow WebSocket**: Check Redis connection and network
-- **High Memory**: Restart development server
-- **Connection Drops**: WebSocket will auto-reconnect
-
-## 📊 Real-time Features
-
-### WebSocket Endpoints
-- `ws://localhost:8000/ws/events/` - Live event updates
-- `ws://localhost:8000/ws/stations/` - Station listener count updates
-
-### Real-time Updates
-1. **Event Status Changes**: Live/upcoming/past status updates instantly
-2. **Listener Counts**: Real-time listener count updates across all pages
-3. **New Events**: New events appear immediately when created
-4. **Event Deletions**: Removed events disappear instantly
-
-### Automatic Features
-- **Auto-reconnection**: WebSocket connections automatically reconnect
-- **Error Handling**: Graceful fallback if WebSocket fails
-- **Cross-tab Updates**: Changes in one tab reflect in all open tabs
-
-## 🎨 SVG Icon System
-
-### Icon Categories
-- **Player Controls**: Play, pause, stop, volume
-- **User Actions**: Star (favorite), globe (website)
-- **Status Indicators**: Live indicator, featured star
-- **Category Icons**: Agriculture, news, music, education, weather, microphone
-
-### Icon Features
-- **Scalable**: Perfect quality at any size
-- **Accessible**: Work with screen readers
-- **Consistent**: Unified design language
-- **Lightweight**: Fast loading and rendering
-
-## 🚀 Production Deployment
-
-### WebSocket Requirements
-1. **Redis Server**: Required for production WebSocket functionality
-2. **ASGI Server**: Use Daphne or Uvicorn instead of WSGI
-3. **WebSocket Support**: Ensure your hosting supports WebSockets
-
-### Deployment Commands
-```bash
-# Install production dependencies
-pip install daphne
-
-# Run with ASGI server
-daphne -p 8000 radio_project.asgi:application
-
-# Or with Uvicorn
-uvicorn radio_project.asgi:application --host 0.0.0.0 --port 8000
-```
-
-### Environment Variables
-```
-SECRET_KEY=your-production-secret-key
-DEBUG=False
-ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
-REDIS_URL=redis://your-redis-server:6379
-```
-
-## 📈 Performance Improvements
-
-### WebSocket Benefits
-- **90% Less Server Load**: No more polling every 30 seconds
-- **Instant Updates**: Real-time user experience
-- **Better UX**: No page refreshes or loading delays
-- **Scalable**: Handles many concurrent users efficiently
-
-### SVG Benefits
-- **Faster Loading**: No external image requests
-- **Better Caching**: Icons cached with CSS
-- **Smaller Size**: SVGs are typically smaller than images
-- **Perfect Quality**: Crisp at any resolution
-
-## 🔄 Development Workflow
-
-### Testing Real-time Features
-1. **Start Redis**: `redis-server` or service
-2. **Run Django**: `python manage.py runserver`
-3. **Open Multiple Tabs**: Test cross-tab updates
-4. **Monitor Console**: Check WebSocket connections
-5. **Test Admin Changes**: Create/modify events and see instant updates
-
-### Adding New Real-time Features
-1. **Update Consumers**: Add new WebSocket message types
-2. **Update Views**: Send WebSocket messages on data changes
-3. **Update Frontend**: Handle new WebSocket message types
-4. **Test**: Verify real-time updates work correctly
-
-## 📚 Technical Details
-
-### WebSocket Architecture
-- **Django Channels**: Handles WebSocket connections
-- **Redis**: Channel layer for message passing
-- **ASGI**: Asynchronous server gateway interface
-- **Consumer Classes**: Handle WebSocket events
-
-### Icon Implementation
-- **Inline SVG**: Icons embedded directly in HTML
-- **CSS Classes**: Consistent styling and sizing
-- **JavaScript Integration**: Dynamic icon state changes
-- **Accessibility**: Proper ARIA labels and titles
-
-## 🆘 Support
-
-### Getting Help
-1. **Check Console**: Look for WebSocket connection messages
-2. **Verify Redis**: Ensure Redis is running and accessible
-3. **Test Icons**: Verify SVG icons are loading properly
-4. **Check Network**: Ensure WebSocket connections aren't blocked
-
-### Common Solutions
-- **Restart Redis**: `sudo systemctl restart redis-server`
-- **Clear Browser Cache**: Hard refresh (Ctrl+F5)
-- **Check Firewall**: Ensure WebSocket ports aren't blocked
-- **Update Dependencies**: `pip install -r requirements.txt --upgrade`
-
-### Step-by-Step Installation Verification
-
-**After each step, verify it worked:**
-
-1. **Dependencies installed**: `pip list` should show Django, channels, redis, etc.
-2. **Migrations created**: `ls radio_app/migrations/` should show migration files
-3. **Database migrated**: `python manage.py showmigrations` should show all applied
-4. **Sample data loaded**: Admin panel should show categories, stations, etc.
-5. **Server running**: `http://localhost:8000/` should load the homepage
-6. **WebSockets working**: Browser console should show WebSocket connections
-
----
-
-## 🎵 Ready to Test!
-
-Your radio app now features:
-- ✅ **Real-time WebSocket updates**
-- ✅ **Professional SVG icon system**
-- ✅ **Instant live event updates**
-- ✅ **Real-time listener counts**
-- ✅ **No more page refreshes**
-- ✅ **Better performance and UX**
-- ✅ **Proper migration sequence**
-- ✅ **Comprehensive troubleshooting**
-
-Start the server and experience the real-time features!
+# For development without Redis, use in-memory channel layer
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels.layers.InMemoryChannelLayer'
+#     }
+# }
