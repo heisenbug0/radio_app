@@ -22,12 +22,11 @@ services:
           name: bellefu-radio-redis
           property: connectionString
 
+  - type: redis
+    name: bellefu-radio-redis
+    ipAllowList: []
+
 databases:
   - name: bellefu-radio-db
     databaseName: bellefu_radio
     user: bellefu_radio_user
-
-services:
-  - type: redis
-    name: bellefu-radio-redis
-    ipAllowList: []
