@@ -111,6 +111,7 @@ CORS_ALLOWED_ORIGINS = [
 # Channels settings
 ASGI_APPLICATION = 'radio_project.asgi.application'
 
+# Channel layers configuration
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
