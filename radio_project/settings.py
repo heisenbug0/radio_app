@@ -111,7 +111,26 @@ CORS_ALLOWED_ORIGINS = [
 # Channels settings
 ASGI_APPLICATION = 'radio_project.asgi.application'
 
+# Channel layers configuration
 CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        # Use in-memory for development - no Redis required
+    },
+}
+
+# For production with Redis, use this instead:
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             "hosts": [('127.0.0.1', 6379)],
+#         },
+#     },
+# }
+
+# Alternative Redis configuration if you have Redis running
+CHANNEL_LAYERS_REDIS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
@@ -120,9 +139,5 @@ CHANNEL_LAYERS = {
     },
 }
 
-# For development without Redis, use in-memory channel layer
-# CHANNEL_LAYERS = {
-#     'default': {
-#         'BACKEND': 'channels.layers.InMemoryChannelLayer'
-#     }
-# }
+# To use Redis instead of in-memory, uncomment this line:
+# CHANNEL_LAYERS = CHANNEL_LAYERS_REDIS
