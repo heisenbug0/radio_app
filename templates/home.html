@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Farmer's Radio{% endblock %}
+
+{% block content %}
+<h1>Welcome to Farmer's Radio</h1>
+
+<p>Your premier destination for agricultural radio programming. Listen to farming news, weather updates, market prices, and educational content from around the world.</p>
+
+<!-- Audio Player -->
+<div class="audio-player">
+    <h3>Radio Player</h3>
+    <div class="player-controls">
+        <button class="play-btn" onclick="radioPlayer.pause()" title="Stop">⏹</button>
+        <div class="volume-control">
+            <label for="volume">Volume:</label>
+            <input type="range" id="volume" class="volume-slider" min="0" max="100" value="70">
+        </div>
+        <span class="player-status">Ready</span>
+    </div>
+    <div class="station-info">Select a station to start listening</div>
+</div>
+
+<!-- Featured Stations -->
+<h2>Featured Stations</h2>
+<div class="grid">
+    {% for station in featured_stations %}
+    <div class="card">
+        <h3>{{ station.name }}</h3>
+        <p><strong>Category:</strong> {{ station.category.name }}</p>
+        <p><strong>Country:</strong> {{ station.country }}</p>
+        <p><strong>Language:</strong> {{ station.language }}</p>
+        <p><strong>Quality:</strong> {{ station.get_quality_display }}</p>
+        <p><strong>Listeners:</strong> {{ station.listeners_count }}</p>
+        {% if station.description %}
+        <p>{{ station.description|truncatewords:20 }}</p>
+        {% endif %}
+        <div style="margin-top: 10px;">
+            <button class="play-btn"
+                    data-station-id="{{ station.id }}"
+                    onclick="radioPlayer.play({{ station.id }}, '{{ station.name }}', '{{ station.stream_url }}')"
+                    title="Play">
+                <svg class="play-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5,3 19,12 5,21"/>
+                </svg>
+                <svg class="pause-icon" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="6" y="4" width="4" height="16"/>
+                    <rect x="14" y="4" width="4" height="16"/>
+                </svg>
+            </button>
+            {% if user.is_authenticated %}
+            <button class="favorite-btn {% if station.is_favorited %}favorited{% endif %}"
+                    onclick="toggleFavorite({{ station.id }}, this)"
+                    title="{% if station.is_favorited %}Remove from favorites{% else %}Add to favorites{% endif %}">
+                {% if station.is_favorited %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                </svg>
+                {% else %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                </svg>
+                {% endif %}
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <p>No featured stations available.</p>
+    {% endfor %}
+</div>
+
+<!-- Live Events -->
+<h2>Live Events</h2>
+{% if live_events %}
+<table>
+    <thead>
+        <tr>
+            <th>Event</th>
+            <th>Station</th>
+            <th>Host</th>
+            <th>Time</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event in live_events %}
+        <tr>
+            <td><strong>{{ event.title }}</strong></td>
+            <td>{{ event.station.name }}</td>
+            <td>{{ event.host|default:"N/A" }}</td>
+            <td>{{ event.start_time|date:"H:i" }} - {{ event.end_time|date:"H:i" }}</td>
+            <td class="event-status status-live" data-event-id="{{ event.id }}">
+                <span class="live-indicator"></span>LIVE
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No live events at the moment. <a href="{% url 'events' %}">View upcoming events</a></p>
+{% endif %}
+
+<!-- Recent Blog Posts -->
+<h2>Latest News & Articles</h2>
+<div class="grid">
+    {% for post in recent_posts %}
+    <div class="card">
+        <h3><a href="{% url 'blog_detail' post.slug %}">{{ post.title }}</a></h3>
+        <p><strong>By:</strong> {{ post.author.get_full_name|default:post.author.username }}</p>
+        <p><strong>Published:</strong> {{ post.published_at|date:"M d, Y" }}</p>
+        {% if post.excerpt %}
+        <p>{{ post.excerpt }}</p>
+        {% endif %}
+        <p><a href="{% url 'blog_detail' post.slug %}">Read more →</a></p>
+    </div>
+    {% empty %}
+    <p>No recent posts available.</p>
+    {% endfor %}
+</div>
+
+<!-- Quick Stats -->
+<h2>Platform Statistics</h2>
+<table>
+    <tr>
+        <td><strong>Total Stations:</strong></td>
+        <td>{{ stats.total_stations }}</td>
+    </tr>
+    <tr>
+        <td><strong>Active Listeners:</strong></td>
+        <td id="total-listeners">{{ stats.total_listeners }}</td>
+    </tr>
+    <tr>
+        <td><strong>Live Events:</strong></td>
+        <td>{{ stats.live_events }}</td>
+    </tr>
+    <tr>
+        <td><strong>Countries Covered:</strong></td>
+        <td>{{ stats.countries_count }}</td>
+    </tr>
+</table>
+
+{% csrf_token %}
+{% endblock %}

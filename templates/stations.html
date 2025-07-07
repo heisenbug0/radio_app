@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}Radio Stations - Farmer's Radio{% endblock %}
+
+{% block content %}
+<h1>Radio Stations</h1>
+
+<!-- Search and Filters -->
+<form method="GET" class="search-form">
+    <div class="form-group">
+        <label for="search">Search Stations:</label>
+        <input type="text" id="search" name="search" value="{{ request.GET.search }}" placeholder="Search by name, description, country...">
+    </div>
+    <div class="form-group">
+        <label for="category">Category:</label>
+        <select id="category" name="category">
+            <option value="">All Categories</option>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>
+                {{ cat.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="country">Country:</label>
+        <select id="country" name="country">
+            <option value="">All Countries</option>
+            {% for country in countries %}
+            <option value="{{ country }}" {% if request.GET.country == country %}selected{% endif %}>
+                {{ country }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="quality">Quality:</label>
+        <select id="quality" name="quality">
+            <option value="">All Qualities</option>
+            <option value="low" {% if request.GET.quality == "low" %}selected{% endif %}>Low (64kbps)</option>
+            <option value="medium" {% if request.GET.quality == "medium" %}selected{% endif %}>Medium (128kbps)</option>
+            <option value="high" {% if request.GET.quality == "high" %}selected{% endif %}>High (256kbps)</option>
+            <option value="ultra" {% if request.GET.quality == "ultra" %}selected{% endif %}>Ultra (320kbps)</option>
+        </select>
+    </div>
+    <input type="submit" value="Search">
+    {% if request.GET %}
+    <a href="{% url 'stations' %}">Clear Filters</a>
+    {% endif %}
+</form>
+
+<!-- Audio Player -->
+<div class="audio-player">
+    <h3>Radio Player</h3>
+    <div class="player-controls">
+        <button class="play-btn" onclick="radioPlayer.pause()" title="Stop">⏹</button>
+        <div class="volume-control">
+            <label for="volume">Volume:</label>
+            <input type="range" id="volume" class="volume-slider" min="0" max="100" value="70">
+        </div>
+        <span class="player-status">Ready</span>
+    </div>
+    <div class="station-info">Select a station to start listening</div>
+</div>
+
+<!-- Stations List -->
+<h2>Available Stations ({{ stations|length }} found)</h2>
+
+{% if stations %}
+<table>
+    <thead>
+        <tr>
+            <th>Station</th>
+            <th>Category</th>
+            <th>Country</th>
+            <th>Language</th>
+            <th>Quality</th>
+            <th>Listeners</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for station in stations %}
+        <tr>
+            <td>
+                <strong>{{ station.name }}</strong>
+                {% if station.description %}
+                <br><small>{{ station.description|truncatewords:15 }}</small>
+                {% endif %}
+            </td>
+            <td>{{ station.category.name }}</td>
+            <td>{{ station.country }}</td>
+            <td>{{ station.language }}</td>
+            <td>{{ station.get_quality_display }}</td>
+            <td class="listener-count" data-station-id="{{ station.id }}">{{ station.listeners_count }}</td>
+            <td>
+                <button class="play-btn"
+                        data-station-id="{{ station.id }}"
+                        onclick="radioPlayer.play({{ station.id }}, '{{ station.name }}', '{{ station.stream_url }}')"
+                        title="Play">
+                    <svg class="play-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5,3 19,12 5,21"/>
+                    </svg>
+                    <svg class="pause-icon" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="6" y="4" width="4" height="16"/>
+                        <rect x="14" y="4" width="4" height="16"/>
+                    </svg>
+                </button>
+                {% if user.is_authenticated %}
+                <button class="favorite-btn {% if station.is_favorited %}favorited{% endif %}"
+                        onclick="toggleFavorite({{ station.id }}, this)"
+                        title="{% if station.is_favorited %}Remove from favorites{% else %}Add to favorites{% endif %}">
+                    {% if station.is_favorited %}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                    </svg>
+                    {% else %}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                    </svg>
+                    {% endif %}
+                </button>
+                {% endif %}
+                {% if station.website_url %}
+                <a href="{{ station.website_url }}" target="_blank" title="Visit website">
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="2" x2="22" y1="12" y2="12"/>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                    </svg>
+                </a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Pagination -->
+{% if stations.has_other_pages %}
+<div class="pagination">
+    {% if stations.has_previous %}
+        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page=1">&laquo; First</a>
+        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ stations.previous_page_number }}">Previous</a>
+    {% endif %}
+    
+    <span class="current">
+        Page {{ stations.number }} of {{ stations.paginator.num_pages }}
+    </span>
+    
+    {% if stations.has_next %}
+        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ stations.next_page_number }}">Next</a>
+        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ stations.paginator.num_pages }}">Last &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<p>No stations found matching your criteria. <a href="{% url 'stations' %}">View all stations</a></p>
+{% endif %}
+
+{% csrf_token %}
+{% endblock %}

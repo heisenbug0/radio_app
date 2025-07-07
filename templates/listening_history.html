@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Listening History - Farmer's Radio{% endblock %}
+
+{% block content %}
+<h1>Your Listening History</h1>
+
+<p><a href="{% url 'dashboard' %}">← Back to Dashboard</a></p>
+
+<!-- Statistics Summary -->
+<h2>Summary</h2>
+<table>
+    <tr>
+        <td><strong>Total Sessions:</strong></td>
+        <td>{{ stats.total_sessions }}</td>
+    </tr>
+    <tr>
+        <td><strong>Total Listening Time:</strong></td>
+        <td>{{ stats.total_hours }} hours ({{ stats.total_minutes }} minutes)</td>
+    </tr>
+</table>
+
+<!-- Most Listened Stations -->
+{% if stats.most_listened_stations %}
+<h2>Your Top Stations</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Station</th>
+            <th>Sessions</th>
+            <th>Total Time</th>
+            <th>Average Session</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for stat in stats.most_listened_stations %}
+        <tr>
+            <td>{{ stat.station__name }}</td>
+            <td>{{ stat.count }}</td>
+            <td>{{ stat.total_minutes }} minutes</td>
+            <td>{{ stat.total_minutes|floatformat:0|add:0|div:stat.count|floatformat:1 }} minutes</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<!-- Full History -->
+<h2>Complete History</h2>
+{% if history %}
+<table>
+    <thead>
+        <tr>
+            <th>Station</th>
+            <th>Date & Time</th>
+            <th>Duration</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for session in history %}
+        <tr>
+            <td>
+                <strong>{{ session.station.name }}</strong>
+                <br><small>{{ session.station.category.name }} • {{ session.station.country }}</small>
+            </td>
+            <td>{{ session.started_at|date:"M d, Y H:i" }}</td>
+            <td>{{ session.duration_minutes }} minutes</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Pagination -->
+{% if history.has_other_pages %}
+<div class="pagination">
+    {% if history.has_previous %}
+        <a href="?page=1">&laquo; First</a>
+        <a href="?page={{ history.previous_page_number }}">Previous</a>
+    {% endif %}
+    
+    <span class="current">
+        Page {{ history.number }} of {{ history.paginator.num_pages }}
+    </span>
+    
+    {% if history.has_next %}
+        <a href="?page={{ history.next_page_number }}">Next</a>
+        <a href="?page={{ history.paginator.num_pages }}">Last &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<p>No listening history found. Start listening to some stations to build your history!</p>
+<p><a href="{% url 'stations' %}">Browse Stations →</a></p>
+{% endif %}
+
+{% endblock %}

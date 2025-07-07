@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block title %}Events - Farmer's Radio{% endblock %}
+
+{% block content %}
+<h1>Radio Events & Programming</h1>
+
+<!-- Live Events -->
+{% if live_events %}
+<h2>🔴 Live Now</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Event</th>
+            <th>Station</th>
+            <th>Host</th>
+            <th>Time</th>
+            <th>Type</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event in live_events %}
+        <tr style="background: #fee7e6;">
+            <td>
+                <strong>{{ event.title }}</strong>
+                {% if event.description %}
+                <br><small>{{ event.description|truncatewords:15 }}</small>
+                {% endif %}
+            </td>
+            <td>{{ event.station.name }}</td>
+            <td>{{ event.host|default:"N/A" }}</td>
+            <td>{{ event.start_time|date:"H:i" }} - {{ event.end_time|date:"H:i" }}</td>
+            <td>{{ event.get_event_type_display }}</td>
+            <td>
+                <span class="event-status status-live" data-event-id="{{ event.id }}">
+                    <svg class="live-indicator icon-small" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    LIVE
+                </span>
+                <button class="play-btn"
+                        data-station-id="{{ event.station.id }}"
+                        onclick="radioPlayer.play({{ event.station.id }}, '{{ event.station.name }}', '{{ event.station.stream_url }}')"
+                        title="Listen to {{ event.station.name }}">
+                    <svg class="play-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5,3 19,12 5,21"/>
+                    </svg>
+                    <svg class="pause-icon" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="6" y="4" width="4" height="16"/>
+                        <rect x="14" y="4" width="4" height="16"/>
+                    </svg>
+                </button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<!-- Upcoming Events -->
+<h2>📅 Upcoming Events</h2>
+{% if upcoming_events %}
+<table>
+    <thead>
+        <tr>
+            <th>Event</th>
+            <th>Station</th>
+            <th>Host</th>
+            <th>Date & Time</th>
+            <th>Type</th>
+            <th>Featured</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event in upcoming_events %}
+        <tr>
+            <td>
+                <strong>{{ event.title }}</strong>
+                {% if event.description %}
+                <br><small>{{ event.description|truncatewords:15 }}</small>
+                {% endif %}
+            </td>
+            <td>{{ event.station.name }}</td>
+            <td>{{ event.host|default:"N/A" }}</td>
+            <td>
+                {{ event.start_time|date:"M d, Y H:i" }} - {{ event.end_time|date:"H:i" }}
+                <br><small>{{ event.start_time|timesince }} from now</small>
+            </td>
+            <td>{{ event.get_event_type_display }}</td>
+            <td>
+                {% if event.is_featured %}
+                    <strong>
+                        <svg class="icon-small" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                        </svg>
+                        Featured
+                    </strong>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Pagination -->
+{% if upcoming_events.has_other_pages %}
+<div class="pagination">
+    {% if upcoming_events.has_previous %}
+        <a href="?page=1">&laquo; First</a>
+        <a href="?page={{ upcoming_events.previous_page_number }}">Previous</a>
+    {% endif %}
+    
+    <span class="current">
+        Page {{ upcoming_events.number }} of {{ upcoming_events.paginator.num_pages }}
+    </span>
+    
+    {% if upcoming_events.has_next %}
+        <a href="?page={{ upcoming_events.next_page_number }}">Next</a>
+        <a href="?page={{ upcoming_events.paginator.num_pages }}">Last &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<p>No upcoming events scheduled.</p>
+{% endif %}
+
+<!-- Event Types Legend -->
+<h3>Event Types</h3>
+<table>
+    <tr><td><strong>Live Show:</strong></td><td>Interactive live programming</td></tr>
+    <tr><td><strong>Interview:</strong></td><td>Guest interviews and discussions</td></tr>
+    <tr><td><strong>Music Special:</strong></td><td>Special music programming</td></tr>
+    <tr><td><strong>News:</strong></td><td>News broadcasts and updates</td></tr>
+    <tr><td><strong>Sports:</strong></td><td>Sports coverage and commentary</td></tr>
+    <tr><td><strong>Talk Show:</strong></td><td>Talk shows and discussions</td></tr>
+</table>
+
+<script>
+// WebSocket will handle real-time updates automatically
+// No need for manual refresh
+</script>
+
+{% endblock %}
