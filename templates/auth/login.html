@@ -28,7 +28,11 @@
         <input type="password" id="password" name="password" required>
     </div>
     
-    <input type="submit" value="Login">
+    <div class="form-group">
+        <button type="submit" style="width: auto; padding: 10px 20px; background: #000; color: white; border: 1px solid #000; cursor: pointer;">
+            Login
+        </button>
+    </div>
 </form>
 
 <p>Don't have an account? <a href="{% url 'register' %}">Register here</a></p>

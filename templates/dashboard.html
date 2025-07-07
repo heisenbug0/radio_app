@@ -176,7 +176,7 @@
 
 <!-- Profile Management -->
 <h2>Profile Settings</h2>
-<form method="POST" action="{% url 'update_profile' %}">
+<form method="POST" action="{% url 'update_profile' %}" style="max-width: 600px;">
     {% csrf_token %}
     <div class="form-group">
         <label for="first_name">First Name:</label>
@@ -198,7 +198,11 @@
         <label for="bio">Bio:</label>
         <textarea id="bio" name="bio" rows="3" placeholder="Tell us about yourself">{{ profile.bio }}</textarea>
     </div>
-    <input type="submit" value="Update Profile">
+    <div class="form-group" style="margin-bottom: 0;">
+        <button type="submit" style="width: auto; padding: 10px 20px; background: #000; color: white; border: 1px solid #000; cursor: pointer;">
+            Update Profile
+        </button>
+    </div>
 </form>
 
 {% csrf_token %}
