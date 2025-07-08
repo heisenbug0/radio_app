@@ -14,6 +14,12 @@
     <!-- Radiojar DJs List Stylesheet -->
     <link rel="stylesheet" href="//www.radiojar.com/wrappers/api-plugins/v1/css/djs-list.css">
     
+    <!-- Radiojar Current Show Stylesheet -->
+    <link rel="stylesheet" href="//www.radiojar.com/wrappers/api-plugins/v1/css/current-show.css">
+    
+    <!-- Radiojar Show Profile Stylesheet -->
+    <link rel="stylesheet" href="//www.radiojar.com/wrappers/api-plugins/v1/css/show-profile.css">
+    
     <style>
         /* Clean, modern CSS */
         * {
@@ -375,6 +381,284 @@
                 margin: 10px 0;
             }
         }
+
+        /* Radiojar Current Show Custom Styling */
+        #rjp-currentshow {
+            margin: 20px 0;
+        }
+
+        .element-show-current {
+            border: 1px solid #a2a9b1;
+            border-radius: 8px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            overflow: hidden;
+            min-height: 120px;
+        }
+
+        .element-show-current .wrapper {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 20px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .element-label {
+            color: #ff4444 !important;
+            font-size: 14px !important;
+            font-weight: bold !important;
+            margin: 0 0 10px 0 !important;
+            border: none !important;
+        }
+
+        .element-label i {
+            margin-right: 8px;
+        }
+
+        .rjp-show-title {
+            font-size: 20px !important;
+            margin: 0 0 5px 0 !important;
+            border: none !important;
+            color: white !important;
+        }
+
+        .rjp-show-tagline {
+            font-size: 14px !important;
+            margin: 0 0 15px 0 !important;
+            border: none !important;
+            color: #ccc !important;
+            font-style: italic;
+        }
+
+        .rjp-show-hosts {
+            list-style: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rjp-show-hosts li {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: white;
+        }
+
+        .host-label {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .rjp-show-host {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 10px;
+            border-radius: 15px;
+        }
+
+        .rjp-show-host-thumb {
+            width: 24px !important;
+            height: 24px !important;
+            border-radius: 50% !important;
+            border: 2px solid white !important;
+        }
+
+        /* Mobile responsive for current show */
+        @media (max-width: 768px) {
+            .element-show-current .wrapper {
+                padding: 15px;
+            }
+
+            .rjp-show-title {
+                font-size: 18px !important;
+            }
+
+            .rjp-show-hosts {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+        }
+
+        /* Radiojar Show Profile Custom Styling */
+        #rjp-show {
+            margin: 20px 0;
+        }
+
+        .item-show {
+            border: 1px solid #a2a9b1;
+            border-radius: 8px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            overflow: hidden;
+            min-height: 200px;
+            margin-bottom: 20px;
+        }
+
+        .item-status {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 3;
+        }
+
+        .item-onair {
+            background: #ff4444 !important;
+            color: white !important;
+            padding: 5px 12px !important;
+            border-radius: 15px !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+            text-transform: uppercase;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .item-hostdjs {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 3;
+            display: flex;
+            gap: 10px;
+        }
+
+        .item-dj {
+            display: block;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .item-dj .content {
+            width: 100%;
+            height: 100%;
+        }
+
+        .item-dj .item-thumb {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+        }
+
+        .overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            padding: 40px 20px 20px;
+        }
+
+        .overlay .content {
+            display: flex;
+            align-items: flex-end;
+            gap: 15px;
+        }
+
+        .item-hoststation {
+            flex-shrink: 0;
+        }
+
+        .item-station {
+            display: block;
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid white;
+        }
+
+        .item-station .item-thumb {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+        }
+
+        .item-showinfo {
+            flex: 1;
+            text-decoration: none !important;
+        }
+
+        .item-name {
+            color: white !important;
+            font-size: 20px !important;
+            margin: 0 0 5px 0 !important;
+            border: none !important;
+        }
+
+        .item-tagline {
+            color: #ccc !important;
+            font-size: 14px !important;
+            margin: 0 0 10px 0 !important;
+            border: none !important;
+            font-style: italic;
+        }
+
+        .item-schedule {
+            color: #fff !important;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .item-schedule i {
+            opacity: 0.8;
+        }
+
+        .item-label {
+            font-weight: bold;
+        }
+
+        /* Mobile responsive for show profile */
+        @media (max-width: 768px) {
+            .item-show {
+                min-height: 180px;
+            }
+
+            .item-hostdjs {
+                top: 10px;
+                left: 10px;
+            }
+
+            .item-status {
+                top: 10px;
+                right: 10px;
+            }
+
+            .overlay {
+                padding: 30px 15px 15px;
+            }
+
+            .overlay .content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .item-name {
+                font-size: 18px !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -485,6 +769,18 @@
             } else {
                 rjq('.element-show-current').attr('style', 'display:none;')
             }
+        });
+        
+        // Initialize Radiojar Show Profile Widget
+        // Note: Replace the example ID with your actual show ID from Radiojar dashboard
+        rjq('#rjp-show').radiojar('show', {
+            id: "ag1zfnJhZGlvamFyY29tckALEgpBdXRoQ2xpZW50GICAgICA8IsKDAsSDlN0YXRpb25Qcm9maWxlGKGECQwLEgtTaG93UHJvZmlsZRj5ihkMogEDZGV2"
+        });
+        
+        rjq('#rjp-show').off('rj-show-on-air');
+        rjq('#rjp-show').on('rj-show-on-air', function (event) {
+            // When the show is on air this event is triggered
+            console.log('Show is now on air!');
         });
     </script>
 </body>
