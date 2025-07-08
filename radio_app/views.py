@@ -154,11 +154,8 @@ class ListeningHistoryViewSet(viewsets.ModelViewSet):
 # Template Views - Most are now PUBLIC
 def home(request):
     """Home page - PUBLIC, no authentication required"""
-    # Get the single Bellefu Radio station
-    try:
-        bellefu_station = RadioStation.objects.get(is_active=True)
-    except RadioStation.DoesNotExist:
-        bellefu_station = None
+    # Get the single Bellefu Radio station (handle multiple or none)
+    bellefu_station = RadioStation.objects.filter(is_active=True).first()
     
     # Get live events
     now = timezone.now()

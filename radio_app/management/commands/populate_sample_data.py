@@ -29,6 +29,10 @@ class Command(BaseCommand):
 
         # Create the single Bellefu Radio station
         # NOTE: You'll need to replace this stream_url with your actual Radiojar stream URL
+        # Clear existing stations first to avoid MultipleObjectsReturned error
+        RadioStation.objects.all().delete()
+        
+        # Create the single Bellefu Radio station
         station_data = {
             'name': 'Bellefu Radio',
             'description': 'Your premier agricultural radio station broadcasting from Nigeria. Featuring farming news, weather updates, market prices, and educational content for farmers and agricultural communities.',
@@ -42,14 +46,8 @@ class Command(BaseCommand):
             'is_active': True,
         }
 
-        station, created = RadioStation.objects.get_or_create(
-            name='Bellefu Radio',
-            defaults=station_data
-        )
-        if created:
-            self.stdout.write(f'Created station: {station.name}')
-        else:
-            self.stdout.write(f'Station already exists: {station.name}')
+        station = RadioStation.objects.create(**station_data)
+        self.stdout.write(f'Created station: {station.name}')
 
         # Create sample events for Bellefu Radio
         now = timezone.now()
@@ -121,13 +119,12 @@ class Command(BaseCommand):
 
         for event_data in events_data:
             event_data['station'] = station
-            event, created = Event.objects.get_or_create(
-                title=event_data['title'],
-                station=station,
-                defaults=event_data
-            )
-            if created:
-                self.stdout.write(f'Created event: {event.title}')
+            # Clear existing events for this station first
+            Event.objects.filter(station=station, title=event_data['title']).delete()
+            
+            # Create new event
+            event = Event.objects.create(**event_data)
+            self.stdout.write(f'Created event: {event.title}')
 
         self.stdout.write(
             self.style.SUCCESS('Successfully populated database with Bellefu Radio data!')

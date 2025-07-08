@@ -59,7 +59,7 @@ ASGI_APPLICATION = 'radio_project.asgi.application'
 # Database configuration for Render (PostgreSQL)
 DATABASES = {
     'default': dj_database_url.config(
-        default='sqlite:///db.sqlite3',  # Fallback for local development
+        default=f'sqlite:///{BASE_DIR}/db.sqlite3',  # Fallback for local development
         conn_max_age=600,
         conn_health_checks=True,
     )
@@ -144,6 +144,16 @@ else:
 
 # Security settings for production
 if not DEBUG:
+    # CORS settings for production
+    CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOW_CREDENTIALS = True
+    
+    # CSRF settings for production
+    CSRF_TRUSTED_ORIGINS = [
+        'https://*.onrender.com',
+        'https://bellefu-radio-app.onrender.com',
+    ]
+    
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
