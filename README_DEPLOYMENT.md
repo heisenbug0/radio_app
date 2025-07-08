@@ -1,15 +1,15 @@
-# Deploying Bellefu Radio App to Render
+# Deploying Bellefu Radio to Render
 
 ## Quick Deploy with Render Dashboard
 
 ### Option 1: One-Click Deploy (Recommended)
 1. Fork this repository to your GitHub account
 2. Go to [Render Dashboard](https://dashboard.render.com)
-3. Click "New" → "Blueprint"
+3. Click "New" → "Web Service"
 4. Connect your GitHub repository
 5. Select the repository containing this project
-6. Render will automatically detect the `render.yaml` file and create all services
-7. Click "Apply" to deploy
+6. Configure the deployment settings (see below)
+7. Click "Create Web Service" to deploy
 
 ### Option 2: Manual Setup
 
@@ -62,28 +62,58 @@ Add these environment variables in the Render dashboard:
 
 ## Post-Deployment Setup
 
-### Access Admin Panel
+### 1. Access Admin Panel
 1. Go to `https://your-app-name.onrender.com/admin/`
 2. Login with:
    - Username: `admin`
    - Password: `admin123`
 3. **Important:** Change the admin password immediately after first login
 
-### Test WebSocket Functionality
+### 2. Configure Radiojar Stream
+1. In the admin panel, edit the "Bellefu Radio" station
+2. Update the `stream_url` field with your actual Radiojar stream URL
+3. Get your Radiojar embed code from your Radiojar dashboard
+4. Update the `templates/home.html` file to replace the placeholder with your actual embed code
+5. Redeploy the application
+
+### 3. Test WebSocket Functionality
 1. Visit your deployed app
 2. Open browser developer tools (F12)
 3. Check Console for WebSocket connection messages:
    - "Event WebSocket connected"
    - "Station WebSocket connected"
-4. Test real-time features by playing stations and checking live events
+4. Test real-time features by checking program updates
 
-### Verify Features
-- ✅ Radio stations load and play
-- ✅ User registration and login work
+### 4. Verify Features
+- ✅ Radio stream loads and plays (after Radiojar setup)
+- ✅ User registration and login work (optional)
 - ✅ Real-time listener counts update
-- ✅ Live events show current status
+- ✅ Live programs show current status
 - ✅ Admin panel is accessible
-- ✅ Blog posts and events display correctly
+- ✅ Programs and events display correctly
+
+## Radiojar Integration
+
+### Setting Up Your Stream
+1. **Get Radiojar Account**: Sign up at [Radiojar.com](https://www.radiojar.com)
+2. **Create Your Station**: Set up your Bellefu Radio station
+3. **Get Stream URL**: Copy your stream URL from the dashboard
+4. **Get Embed Code**: Copy the HTML embed code for your player
+5. **Update Application**:
+   - Update stream_url in admin panel
+   - Replace placeholder in `templates/home.html` with embed code
+   - Redeploy the application
+
+### Example Radiojar Embed Code
+Replace the placeholder in `templates/home.html` with something like:
+```html
+<iframe src="https://www.radiojar.com/embed/your-station-id" 
+        width="100%" 
+        height="150" 
+        frameborder="0" 
+        scrolling="no">
+</iframe>
+```
 
 ## Troubleshooting
 
@@ -103,6 +133,11 @@ Add these environment variables in the Render dashboard:
 - Ensure `REDIS_URL` is set correctly
 - Check that Redis service is running
 - Verify WebSocket connections in browser console
+
+**Radiojar Player Not Loading:**
+- Verify you've replaced the placeholder with actual embed code
+- Check that your Radiojar stream URL is correct
+- Test the stream URL directly in a browser
 
 **Static Files Not Loading:**
 - Run `python manage.py collectstatic` manually if needed
@@ -148,14 +183,6 @@ Add these environment variables in the Render dashboard:
 | `REDIS_URL` | No | In-memory | Redis connection string for WebSockets |
 | `DJANGO_LOG_LEVEL` | No | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
 
-## Support
-
-If you encounter issues:
-1. Check Render's deployment logs
-2. Review Django error logs
-3. Test locally with production settings
-4. Check Render's [documentation](https://render.com/docs)
-
 ## Security Notes
 
 - Change default admin credentials immediately
@@ -163,9 +190,52 @@ If you encounter issues:
 - Keep DEBUG=False in production
 - Regularly update dependencies
 - Monitor for security vulnerabilities
+- Secure your Radiojar account with strong passwords
+
+## Monitoring and Maintenance
+
+### Regular Tasks
+1. **Monitor listener counts** and server performance
+2. **Update program schedules** regularly in admin panel
+3. **Check WebSocket connections** are working properly
+4. **Backup database** regularly (Render provides automated backups)
+5. **Update dependencies** periodically for security
+
+### Analytics
+- Monitor listener engagement through admin dashboard
+- Track popular programs and listening patterns
+- Use Render's built-in metrics for server performance
+
+## Support
+
+If you encounter issues:
+1. Check Render's deployment logs
+2. Review Django error logs
+3. Test locally with production settings
+4. Check Render's [documentation](https://render.com/documentation)
+5. Verify Radiojar stream is working independently
+
+## Success Checklist
+
+After deployment, verify:
+- [ ] Application loads at your Render URL
+- [ ] Admin panel is accessible and secure
+- [ ] Radiojar player is embedded and working
+- [ ] WebSocket connections are established
+- [ ] Real-time features work (listener counts, program updates)
+- [ ] Mobile responsiveness works correctly
+- [ ] User registration/login works (if enabled)
+- [ ] Program schedule displays correctly
 
 ---
 
-🎵 **Your Bellefu Radio App is now live on Render!**
+## 🎵 Your Bellefu Radio is Now Live!
 
 Access your app at: `https://your-app-name.onrender.com`
+
+**Next Steps:**
+1. Set up your Radiojar stream
+2. Add your program schedule
+3. Start broadcasting!
+
+Your agricultural radio station is now ready to reach farmers and agricultural communities worldwide!

@@ -20,43 +20,13 @@
     </tr>
 </table>
 
-<!-- Most Listened Stations -->
-{% if stats.most_listened_stations %}
-<h2>Your Top Stations</h2>
-<table>
-    <thead>
-        <tr>
-            <th>Station</th>
-            <th>Sessions</th>
-            <th class="hide-mobile">Total Time</th>
-            <th class="hide-mobile">Average Session</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for stat in stats.most_listened_stations %}
-        <tr>
-            <td>
-                {{ stat.station__name }}
-                <div class="hide-mobile" style="font-size: 12px; color: #666; margin-top: 4px;">
-                    Total: {{ stat.total_minutes }} min • Avg: {{ stat.total_minutes|floatformat:0|add:0|div:stat.count|floatformat:1 }} min
-                </div>
-            </td>
-            <td>{{ stat.count }}</td>
-            <td class="hide-mobile">{{ stat.total_minutes }} minutes</td>
-            <td class="hide-mobile">{{ stat.total_minutes|floatformat:0|add:0|div:stat.count|floatformat:1 }} minutes</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% endif %}
-
 <!-- Full History -->
 <h2>Complete History</h2>
 {% if history %}
 <table>
     <thead>
         <tr>
-            <th>Station</th>
+            <th>Session</th>
             <th class="hide-mobile">Date & Time</th>
             <th>Duration</th>
         </tr>
@@ -66,7 +36,7 @@
         <tr>
             <td>
                 <strong>{{ session.station.name }}</strong>
-                <br><small>{{ session.station.category.name }} • {{ session.station.country }}</small>
+                <br><small>{{ session.station.description|truncatewords:10 }}</small>
                 <div class="hide-mobile" style="font-size: 12px; color: #666; margin-top: 4px;">
                     {{ session.started_at|date:"M d, Y H:i" }}
                 </div>
@@ -98,8 +68,14 @@
 {% endif %}
 
 {% else %}
-<p>No listening history found. Start listening to some stations to build your history!</p>
-<p><a href="{% url 'stations' %}">Browse Stations →</a></p>
+<p>No listening history found. Start listening to Bellefu Radio to build your history!</p>
+<p><a href="{% url 'home' %}">Start Listening →</a></p>
 {% endif %}
+
+<div class="optional-feature">
+    <h3>About Listening History</h3>
+    <p>Your listening history is automatically tracked when you're logged in. This helps you see your listening patterns and total time spent with Bellefu Radio.</p>
+    <p><strong>Privacy Note:</strong> Your listening history is private and only visible to you.</p>
+</div>
 
 {% endblock %}
