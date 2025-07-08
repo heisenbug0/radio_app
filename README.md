@@ -2,20 +2,6 @@
 
 A comprehensive Django radio streaming application with both REST API backend and web frontend. This application provides radio station management, user profiles, events, blog content, audio streaming, and **real-time WebSocket features**.
 
-## 🚀 New Features Added
-
-### **Real-time WebSocket Integration**
-- **Live Event Updates**: Events automatically update without page refresh
-- **Real-time Listener Counts**: See listener counts update in real-time
-- **Automatic Reconnection**: WebSocket connections automatically reconnect if dropped
-- **Efficient Updates**: No more 30-second page refreshes - updates happen instantly
-
-### **SVG Icon System**
-- **Professional Icons**: All emojis replaced with scalable SVG icons
-- **Consistent Design**: Unified icon system across the entire application
-- **Better Performance**: Lightweight SVG icons load instantly
-- **Accessibility**: Icons work with screen readers and high contrast modes
-
 ## 🛠️ Installation & Setup for Bellefu Radio
 
 ### Prerequisites
