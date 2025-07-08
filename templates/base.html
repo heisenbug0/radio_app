@@ -465,6 +465,27 @@
             scrolling: "auto",
             cssfile: ""
         });
+        
+        // Initialize Radiojar Current Show Widget
+        rjq('#rjp-currentshow').radiojar('currentShow', {
+            streamname: "v994btp2gd0uv"
+        });
+        
+        rjq('#rjp-currentshow').off('rj-show-change-event');
+        rjq('#rjp-currentshow').on('rj-show-change-event', function (event, data) {
+            if (data) {
+                rjq('.element-show-current').attr('style', 'display:block;background-image: url("//www.radiojar.com/content/shows/' + data.key + '/cover/")');
+                rjq('#show-title').html(data.title);
+                rjq('#show-tagline').html(data.tagline);
+                rjq('#host-info').empty();
+                rjq('#host-info').append('<li class="host-label">with:</li>');
+                for (x in data.host_profiles) {
+                    rjq('.host-label').after('<li class="rjp-show-host"><img class="rjp-show-host-thumb" src="//www.radiojar.com/content/users/' + data.host_profiles[x].id + '/image/?resize=small"> ' + data.host_profiles[x].dj_info.nickname + ' </li>')
+                }
+            } else {
+                rjq('.element-show-current').attr('style', 'display:none;')
+            }
+        });
     </script>
 </body>
 </html>
