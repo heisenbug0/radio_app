@@ -1,29 +1,15 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import (
-    Category, RadioStation, UserProfile, Event, 
-    BlogPost, ListeningHistory, Contact
-)
-
-
-@admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['name', 'description', 'icon', 'stations_count', 'created_at']
-    search_fields = ['name', 'description']
-    readonly_fields = ['created_at']
-
-    def stations_count(self, obj):
-        return obj.stations.filter(is_active=True).count()
-    stations_count.short_description = 'Active Stations'
+from .models import RadioStation, UserProfile, Event, ListeningHistory
 
 
 @admin.register(RadioStation)
 class RadioStationAdmin(admin.ModelAdmin):
     list_display = [
-        'name', 'category', 'country', 'language', 'quality', 
+        'name', 'country', 'language', 'quality', 
         'listeners_count', 'is_active', 'created_at'
     ]
-    list_filter = ['category', 'country', 'language', 'quality', 'is_active']
+    list_filter = ['country', 'language', 'quality', 'is_active']
     search_fields = ['name', 'description', 'country', 'language']
     readonly_fields = ['created_at', 'updated_at']
     list_editable = ['is_active', 'listeners_count']
@@ -37,14 +23,9 @@ class RadioStationAdmin(admin.ModelAdmin):
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ['user', 'location', 'favorites_count', 'created_at']
+    list_display = ['user', 'location', 'created_at']
     search_fields = ['user__username', 'user__email', 'location']
     readonly_fields = ['created_at']
-    filter_horizontal = ['favorite_stations']
-
-    def favorites_count(self, obj):
-        return obj.favorite_stations.count()
-    favorites_count.short_description = 'Favorite Stations'
 
 
 @admin.register(Event)
@@ -68,19 +49,6 @@ class EventAdmin(admin.ModelAdmin):
     status.short_description = 'Status'
 
 
-@admin.register(BlogPost)
-class BlogPostAdmin(admin.ModelAdmin):
-    list_display = [
-        'title', 'author', 'status', 'is_featured', 
-        'published_at', 'created_at'
-    ]
-    list_filter = ['status', 'is_featured', 'author', 'created_at']
-    search_fields = ['title', 'content', 'tags']
-    readonly_fields = ['created_at', 'updated_at']
-    prepopulated_fields = {'slug': ('title',)}
-    list_editable = ['status', 'is_featured']
-
-
 @admin.register(ListeningHistory)
 class ListeningHistoryAdmin(admin.ModelAdmin):
     list_display = ['user', 'station', 'started_at', 'duration_minutes']
@@ -89,15 +57,7 @@ class ListeningHistoryAdmin(admin.ModelAdmin):
     readonly_fields = ['started_at']
 
 
-@admin.register(Contact)
-class ContactAdmin(admin.ModelAdmin):
-    list_display = ['name', 'email', 'subject', 'is_resolved', 'created_at']
-    list_filter = ['subject', 'is_resolved', 'created_at']
-    search_fields = ['name', 'email', 'message']
-    readonly_fields = ['created_at']
-    list_editable = ['is_resolved']
-
 # Customize admin site
 admin.site.site_header = "🎵 Bellefu Radio Admin"
-admin.site.site_title = "Radio Admin"
+admin.site.site_title = "Bellefu Radio Admin"
 admin.site.index_title = "Welcome to Bellefu Radio Administration"

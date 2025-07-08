@@ -19,67 +19,19 @@ import json
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
-from .models import (
-    Category, RadioStation, UserProfile, Event, 
-    BlogPost, ListeningHistory, Contact
-)
+from .models import RadioStation, UserProfile, Event, ListeningHistory
 from .serializers import (
-    CategorySerializer, RadioStationSerializer, UserProfileSerializer,
-    EventSerializer, BlogPostSerializer, ListeningHistorySerializer,
-    ContactSerializer
+    RadioStationSerializer, UserProfileSerializer,
+    EventSerializer, ListeningHistorySerializer
 )
-
-
-class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['name', 'description']
-    ordering_fields = ['name', 'created_at']
 
 
 class RadioStationViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = RadioStation.objects.filter(is_active=True)
     serializer_class = RadioStationSerializer
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['category', 'country', 'language', 'quality']
-    search_fields = ['name', 'description', 'country', 'language']
-    ordering_fields = ['name', 'listeners_count', 'created_at']
-    ordering = ['-listeners_count']
-
-    @action(detail=False, methods=['get'])
-    def popular(self, request):
-        """Get most popular stations"""
-        popular_stations = self.queryset.order_by('-listeners_count')[:10]
-        serializer = self.get_serializer(popular_stations, many=True)
-        return Response(serializer.data)
-
-    @action(detail=False, methods=['get'])
-    def featured(self, request):
-        """Get featured stations (top 5 by listeners)"""
-        featured_stations = self.queryset.order_by('-listeners_count')[:5]
-        serializer = self.get_serializer(featured_stations, many=True)
-        return Response(serializer.data)
-
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    def toggle_favorite(self, request, pk=None):
-        """Toggle station as favorite for authenticated user"""
-        station = self.get_object()
-        user_profile, created = UserProfile.objects.get_or_create(user=request.user)
-        
-        if station in user_profile.favorite_stations.all():
-            user_profile.favorite_stations.remove(station)
-            is_favorited = False
-            message = "Station removed from favorites"
-        else:
-            user_profile.favorite_stations.add(station)
-            is_favorited = True
-            message = "Station added to favorites"
-        
-        return Response({
-            'is_favorited': is_favorited,
-            'message': message
-        })
+    
+    def get_queryset(self):
+        # Always return the single Bellefu Radio station
+        return RadioStation.objects.filter(is_active=True)
 
     @action(detail=True, methods=['post'])
     def increment_listeners(self, request, pk=None):
@@ -137,14 +89,6 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(profile)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['get'])
-    def favorites(self, request):
-        """Get user's favorite stations"""
-        profile, created = UserProfile.objects.get_or_create(user=request.user)
-        stations = profile.favorite_stations.filter(is_active=True)
-        serializer = RadioStationSerializer(stations, many=True, context={'request': request})
-        return Response(serializer.data)
-
 
 class EventViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Event.objects.all()
@@ -182,30 +126,6 @@ class EventViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
 
-class BlogPostViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = BlogPost.objects.filter(status='published')
-    serializer_class = BlogPostSerializer
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['title', 'content', 'excerpt', 'tags']
-    ordering_fields = ['created_at', 'published_at']
-    ordering = ['-published_at']
-    lookup_field = 'slug'
-
-    @action(detail=False, methods=['get'])
-    def featured(self, request):
-        """Get featured blog posts"""
-        featured_posts = self.queryset.filter(is_featured=True)[:5]
-        serializer = self.get_serializer(featured_posts, many=True)
-        return Response(serializer.data)
-
-    @action(detail=False, methods=['get'])
-    def recent(self, request):
-        """Get recent blog posts"""
-        recent_posts = self.queryset.order_by('-published_at')[:10]
-        serializer = self.get_serializer(recent_posts, many=True)
-        return Response(serializer.data)
-
-
 class ListeningHistoryViewSet(viewsets.ModelViewSet):
     serializer_class = ListeningHistorySerializer
     permission_classes = [IsAuthenticated]
@@ -223,51 +143,21 @@ class ListeningHistoryViewSet(viewsets.ModelViewSet):
         total_sessions = history.count()
         total_minutes = sum(h.duration_minutes for h in history)
         
-        # Most listened stations
-        most_listened = history.values('station__name').annotate(
-            count=Count('station'),
-            total_minutes=models.Sum('duration_minutes')
-        ).order_by('-total_minutes')[:5]
-        
         return Response({
             'total_sessions': total_sessions,
             'total_minutes': total_minutes,
             'total_hours': round(total_minutes / 60, 1),
-            'most_listened_stations': most_listened
         })
-
-
-class ContactViewSet(viewsets.ModelViewSet):
-    queryset = Contact.objects.all()
-    serializer_class = ContactSerializer
-    http_method_names = ['post']  # Only allow POST requests
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        
-        return Response({
-            'message': 'Thank you for your message. We will get back to you soon!',
-            'data': serializer.data
-        }, status=status.HTTP_201_CREATED)
 
 
 # Template Views
 def home(request):
-    """Home page with featured content"""
-    # Get featured stations (top 5 by listeners)
-    featured_stations = RadioStation.objects.filter(is_active=True).order_by('-listeners_count')[:5]
-    
-    # Add is_favorited field for authenticated users
-    if request.user.is_authenticated:
-        user_profile, created = UserProfile.objects.get_or_create(user=request.user)
-        favorite_ids = user_profile.favorite_stations.values_list('id', flat=True)
-        for station in featured_stations:
-            station.is_favorited = station.id in favorite_ids
-    else:
-        for station in featured_stations:
-            station.is_favorited = False
+    """Home page with Bellefu Radio station and events"""
+    # Get the single Bellefu Radio station
+    try:
+        bellefu_station = RadioStation.objects.get(is_active=True)
+    except RadioStation.DoesNotExist:
+        bellefu_station = None
     
     # Get live events
     now = timezone.now()
@@ -276,82 +166,25 @@ def home(request):
         end_time__gte=now
     )[:5]
     
-    # Get recent blog posts
-    recent_posts = BlogPost.objects.filter(status='published').order_by('-published_at')[:3]
+    # Get upcoming events
+    upcoming_events = Event.objects.filter(
+        start_time__gt=now
+    ).order_by('start_time')[:3]
     
     # Get platform statistics
     stats = {
-        'total_stations': RadioStation.objects.filter(is_active=True).count(),
-        'total_listeners': sum(station.listeners_count for station in RadioStation.objects.filter(is_active=True)),
+        'total_listeners': bellefu_station.listeners_count if bellefu_station else 0,
         'live_events': live_events.count(),
-        'countries_count': RadioStation.objects.filter(is_active=True).values('country').distinct().count(),
+        'upcoming_events': upcoming_events.count(),
     }
     
     context = {
-        'featured_stations': featured_stations,
+        'bellefu_station': bellefu_station,
         'live_events': live_events,
-        'recent_posts': recent_posts,
+        'upcoming_events': upcoming_events,
         'stats': stats,
     }
     return render(request, 'home.html', context)
-
-
-def stations_view(request):
-    """Stations listing with search and filters"""
-    stations = RadioStation.objects.filter(is_active=True)
-    categories = Category.objects.all()
-    countries = RadioStation.objects.filter(is_active=True).values_list('country', flat=True).distinct().order_by('country')
-    
-    # Search
-    search = request.GET.get('search')
-    if search:
-        stations = stations.filter(
-            Q(name__icontains=search) |
-            Q(description__icontains=search) |
-            Q(country__icontains=search) |
-            Q(language__icontains=search)
-        )
-    
-    # Filters
-    category = request.GET.get('category')
-    selected_category = None
-    if category:
-        stations = stations.filter(category_id=category)
-        selected_category = Category.objects.filter(id=category).first()
-    
-    country = request.GET.get('country')
-    if country:
-        stations = stations.filter(country=country)
-    
-    quality = request.GET.get('quality')
-    if quality:
-        stations = stations.filter(quality=quality)
-    
-    # Order by listeners count
-    stations = stations.order_by('-listeners_count')
-    
-    # Add is_favorited field for authenticated users
-    if request.user.is_authenticated:
-        user_profile, created = UserProfile.objects.get_or_create(user=request.user)
-        favorite_ids = user_profile.favorite_stations.values_list('id', flat=True)
-        for station in stations:
-            station.is_favorited = station.id in favorite_ids
-    else:
-        for station in stations:
-            station.is_favorited = False
-    
-    # Pagination
-    paginator = Paginator(stations, 20)
-    page_number = request.GET.get('page')
-    stations = paginator.get_page(page_number)
-    
-    context = {
-        'stations': stations,
-        'categories': categories,
-        'countries': countries,
-        'selected_category': selected_category,
-    }
-    return render(request, 'stations.html', context)
 
 
 def events_view(request):
@@ -381,62 +214,10 @@ def events_view(request):
     return render(request, 'events.html', context)
 
 
-def blog_view(request):
-    """Blog listing with search"""
-    posts = BlogPost.objects.filter(status='published')
-    featured_posts = posts.filter(is_featured=True)[:3] if not request.GET.get('search') else []
-    
-    # Search
-    search = request.GET.get('search')
-    if search:
-        posts = posts.filter(
-            Q(title__icontains=search) |
-            Q(content__icontains=search) |
-            Q(excerpt__icontains=search) |
-            Q(tags__icontains=search)
-        )
-    
-    posts = posts.order_by('-published_at')
-    
-    # Pagination
-    paginator = Paginator(posts, 10)
-    page_number = request.GET.get('page')
-    posts = paginator.get_page(page_number)
-    
-    context = {
-        'posts': posts,
-        'featured_posts': featured_posts,
-    }
-    return render(request, 'blog.html', context)
-
-
-def blog_detail(request, slug):
-    """Blog post detail"""
-    post = get_object_or_404(BlogPost, slug=slug, status='published')
-    
-    # Get related posts (same tags)
-    related_posts = []
-    if post.tags:
-        tags = [tag.strip() for tag in post.tags.split(',')]
-        related_posts = BlogPost.objects.filter(
-            status='published',
-            tags__iregex=r'(' + '|'.join(tags) + ')'
-        ).exclude(id=post.id)[:3]
-    
-    context = {
-        'post': post,
-        'related_posts': related_posts,
-    }
-    return render(request, 'blog_detail.html', context)
-
-
 @login_required
 def dashboard(request):
     """User dashboard"""
     user_profile, created = UserProfile.objects.get_or_create(user=request.user)
-    
-    # Get favorite stations
-    favorite_stations = user_profile.favorite_stations.filter(is_active=True)
     
     # Get listening history
     listening_history = ListeningHistory.objects.filter(user=request.user).order_by('-started_at')[:10]
@@ -445,21 +226,14 @@ def dashboard(request):
     total_sessions = ListeningHistory.objects.filter(user=request.user).count()
     total_minutes = sum(h.duration_minutes for h in ListeningHistory.objects.filter(user=request.user))
     
-    most_listened = ListeningHistory.objects.filter(user=request.user).values('station__name').annotate(
-        count=Count('station'),
-        total_minutes=Sum('duration_minutes')
-    ).order_by('-total_minutes')[:5]
-    
     listening_stats = {
         'total_sessions': total_sessions,
         'total_minutes': total_minutes,
         'total_hours': round(total_minutes / 60, 1) if total_minutes else 0,
-        'most_listened_stations': most_listened,
     }
     
     context = {
         'profile': user_profile,
-        'favorite_stations': favorite_stations,
         'listening_history': listening_history,
         'listening_stats': listening_stats,
     }
@@ -475,16 +249,10 @@ def listening_history_view(request):
     total_sessions = history.count()
     total_minutes = sum(h.duration_minutes for h in history)
     
-    most_listened = history.values('station__name').annotate(
-        count=Count('station'),
-        total_minutes=Sum('duration_minutes')
-    ).order_by('-total_minutes')[:10]
-    
     stats = {
         'total_sessions': total_sessions,
         'total_minutes': total_minutes,
         'total_hours': round(total_minutes / 60, 1) if total_minutes else 0,
-        'most_listened_stations': most_listened,
     }
     
     # Pagination

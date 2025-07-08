@@ -7,38 +7,16 @@
 
 <p>Welcome back, <strong>{{ user.get_full_name|default:user.username }}</strong>!</p>
 
-<!-- Audio Player -->
-<div class="audio-player">
-    <h3>Radio Player</h3>
-    <div class="player-controls">
-        <button class="play-btn" onclick="radioPlayer.pause()" title="Stop">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-            </svg>
-        </button>
-        <div class="volume-control">
-            <label for="volume">Volume:</label>
-            <input type="range" id="volume" class="volume-slider" min="0" max="100" value="70">
-        </div>
-        <span class="player-status">Ready</span>
-    </div>
-    <div class="station-info">Select a station to start listening</div>
-</div>
-
 <!-- Quick Stats -->
-<h2>Your Statistics</h2>
+<h2>Your Listening Statistics</h2>
 <table>
     <tr>
-        <th>Favorite Stations:</th>
-        <td>{{ profile.favorite_stations_count }}</td>
-    </tr>
-    <tr>
-        <th>Listening Sessions:</th>
+        <th>Total Listening Sessions:</th>
         <td>{{ listening_stats.total_sessions }}</td>
     </tr>
     <tr>
         <th>Total Listening Time:</th>
-        <td>{{ listening_stats.total_hours }} hours</td>
+        <td>{{ listening_stats.total_hours }} hours ({{ listening_stats.total_minutes }} minutes)</td>
     </tr>
     <tr>
         <th>Member Since:</th>
@@ -46,82 +24,14 @@
     </tr>
 </table>
 
-<!-- Favorite Stations -->
-<h2>Your Favorite Stations</h2>
-{% if favorite_stations %}
-<table>
-    <thead>
-        <tr>
-            <th>Station</th>
-            <th>Category</th>
-            <th class="hide-mobile">Country</th>
-            <th class="hide-mobile">Language</th>
-            <th>Listeners</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for station in favorite_stations %}
-        <tr>
-            <td>
-                <strong>{{ station.name }}</strong>
-                {% if station.description %}
-                <br><small>{{ station.description|truncatewords:10 }}</small>
-                {% endif %}
-                <div class="hide-mobile" style="font-size: 12px; color: #666; margin-top: 4px;">
-                    {{ station.country }} • {{ station.language }}
-                </div>
-            </td>
-            <td>{{ station.category.name }}</td>
-            <td class="hide-mobile">{{ station.country }}</td>
-            <td class="hide-mobile">{{ station.language }}</td>
-            <td>{{ station.listeners_count }}</td>
-            <td class="actions-cell">
-                <button class="play-btn"
-                        data-station-id="{{ station.id }}"
-                        onclick="radioPlayer.play({{ station.id }}, '{{ station.name }}', '{{ station.stream_url }}')"
-                        title="Play">
-                    <svg class="play-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="5,3 19,12 5,21"/>
-                    </svg>
-                    <svg class="pause-icon" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="6" y="4" width="4" height="16"/>
-                        <rect x="14" y="4" width="4" height="16"/>
-                    </svg>
-                </button>
-                <button class="favorite-btn favorited"
-                        onclick="toggleFavorite({{ station.id }}, this)"
-                        title="Remove from favorites">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
-                    </svg>
-                </button>
-                {% if station.website_url %}
-                <a href="{{ station.website_url }}" target="_blank" title="Visit website">
-                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="2" x2="22" y1="12" y2="12"/>
-                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                    </svg>
-                </a>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p>You haven't added any favorite stations yet. <a href="{% url 'stations' %}">Browse stations</a> to add some!</p>
-{% endif %}
-
 <!-- Recent Listening History -->
 <h2>Recent Listening History</h2>
 {% if listening_history %}
 <table>
     <thead>
         <tr>
-            <th>Station</th>
-            <th class="hide-mobile">Date</th>
+            <th>Program/Session</th>
+            <th class="hide-mobile">Date & Time</th>
             <th>Duration</th>
         </tr>
     </thead>
@@ -129,7 +39,8 @@
         {% for session in listening_history %}
         <tr>
             <td>
-                {{ session.station.name }}
+                <strong>{{ session.station.name }}</strong>
+                <br><small>{{ session.station.description|truncatewords:10 }}</small>
                 <div class="hide-mobile" style="font-size: 12px; color: #666; margin-top: 4px;">
                     {{ session.started_at|date:"M d, Y H:i" }}
                 </div>
@@ -143,35 +54,8 @@
 
 <p><a href="{% url 'listening_history' %}">View full listening history →</a></p>
 {% else %}
-<p>No listening history yet. Start listening to some stations!</p>
-{% endif %}
-
-<!-- Most Listened Stations -->
-{% if listening_stats.most_listened_stations %}
-<h2>Your Most Listened Stations</h2>
-<table>
-    <thead>
-        <tr>
-            <th>Station</th>
-            <th>Sessions</th>
-            <th class="hide-mobile">Total Time</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for stat in listening_stats.most_listened_stations %}
-        <tr>
-            <td>
-                {{ stat.station__name }}
-                <div class="hide-mobile" style="font-size: 12px; color: #666; margin-top: 4px;">
-                    Total: {{ stat.total_minutes }} minutes
-                </div>
-            </td>
-            <td>{{ stat.count }}</td>
-            <td class="hide-mobile">{{ stat.total_minutes }} minutes</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<p>No listening history yet. Start listening to Bellefu Radio to track your sessions!</p>
+<p><a href="{% url 'home' %}">Go to Home Page →</a></p>
 {% endif %}
 
 <!-- Profile Management -->
@@ -204,6 +88,26 @@
         </button>
     </div>
 </form>
+
+<!-- Quick Links -->
+<h2>Quick Links</h2>
+<div class="grid">
+    <div class="card">
+        <h3>Listen Live</h3>
+        <p>Tune in to Bellefu Radio's live programming</p>
+        <p><a href="{% url 'home' %}">Go to Home Page →</a></p>
+    </div>
+    <div class="card">
+        <h3>Program Schedule</h3>
+        <p>View upcoming programs and events</p>
+        <p><a href="{% url 'events' %}">View Programs →</a></p>
+    </div>
+    <div class="card">
+        <h3>Listening History</h3>
+        <p>Review your complete listening history</p>
+        <p><a href="{% url 'listening_history' %}">View History →</a></p>
+    </div>
+</div>
 
 {% csrf_token %}
 {% endblock %}

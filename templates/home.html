@@ -5,99 +5,75 @@
 {% block content %}
 <h1>Welcome to Bellefu Radio</h1>
 
-<p>Your premier destination for agricultural radio programming. Listen to farming news, weather updates, market prices, and educational content from around the world.</p>
+<p>Your premier destination for agricultural radio programming. Listen to farming news, weather updates, market prices, and educational content from Nigeria and around the world.</p>
 
-<!-- Search Section -->
-<div style="background: #f8f9fa; border: 1px solid #a2a9b1; padding: 20px; margin: 20px 0; border-radius: 4px;">
-    <h3>Find Stations</h3>
-    <form method="GET" action="{% url 'stations' %}" class="search-form" style="margin: 0;">
-        <div class="form-group" style="flex: 1;">
-            <label for="search" style="margin-bottom: 5px;">Search stations by name, country, or category:</label>
-            <input type="text" id="search" name="search" placeholder="e.g. Farm Radio, Nigeria, Agriculture...">
-        </div>
-        <div class="form-group" style="margin-bottom: 0;">
-            <label>&nbsp;</label>
-            <button type="submit" style="width: 44px; height: 36px; display: flex; align-items: center; justify-content: center; padding: 0;" title="Search stations">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"/>
-                    <path d="m21 21-4.35-4.35"/>
-                </svg>
-            </button>
-        </div>
-    </form>
-</div>
-
-<!-- Audio Player -->
-<div class="audio-player">
-    <h3>Radio Player</h3>
-    <div class="player-controls">
-        <button class="play-btn" onclick="radioPlayer.pause()" title="Stop">⏹</button>
-        <div class="volume-control">
-            <label for="volume">Volume:</label>
-            <input type="range" id="volume" class="volume-slider" min="0" max="100" value="70">
-        </div>
-        <span class="player-status">Ready</span>
-    </div>
-    <div class="station-info">Select a station to start listening</div>
-</div>
-
-<!-- Featured Stations -->
-<h2>Featured Stations</h2>
-<div class="grid">
-    {% for station in featured_stations %}
-    <div class="card">
-        <h3>{{ station.name }}</h3>
-        <p><strong>Category:</strong> {{ station.category.name }}</p>
-        <p><strong>Country:</strong> {{ station.country }}</p>
-        <p><strong>Language:</strong> {{ station.language }}</p>
-        <p><strong>Quality:</strong> {{ station.get_quality_display }}</p>
-        <p><strong>Listeners:</strong> {{ station.listeners_count }}</p>
-        {% if station.description %}
-        <p>{{ station.description|truncatewords:20 }}</p>
+<!-- Radiojar Player -->
+<div class="radiojar-player">
+    <h3>🎵 Listen Live to Bellefu Radio</h3>
+    
+    <!-- TODO: Replace this placeholder with actual Radiojar embed code -->
+    <div class="radiojar-placeholder">
+        <p><strong>Radiojar Player will be embedded here</strong></p>
+        <p>Replace this section with the embed code from your Radiojar dashboard</p>
+        <p>Example: &lt;iframe src="your-radiojar-embed-url"&gt;&lt;/iframe&gt;</p>
+        {% if bellefu_station %}
+        <p><strong>Station:</strong> {{ bellefu_station.name }}</p>
+        <p><strong>Stream URL:</strong> {{ bellefu_station.stream_url }}</p>
+        <p><strong>Current Listeners:</strong> <span class="listener-count" data-station-id="{{ bellefu_station.id }}">{{ bellefu_station.listeners_count }}</span></p>
         {% endif %}
-        <div style="margin-top: 10px;">
-            <button class="play-btn"
-                    data-station-id="{{ station.id }}"
-                    onclick="radioPlayer.play({{ station.id }}, '{{ station.name }}', '{{ station.stream_url }}')"
-                    title="Play">
-                <svg class="play-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="5,3 19,12 5,21"/>
-                </svg>
-                <svg class="pause-icon" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="6" y="4" width="4" height="16"/>
-                    <rect x="14" y="4" width="4" height="16"/>
-                </svg>
-            </button>
-            {% if user.is_authenticated %}
-            <button class="favorite-btn {% if station.is_favorited %}favorited{% endif %}"
-                    onclick="toggleFavorite({{ station.id }}, this)"
-                    title="{% if station.is_favorited %}Remove from favorites{% else %}Add to favorites{% endif %}">
-                {% if station.is_favorited %}
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
-                </svg>
-                {% else %}
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
-                </svg>
-                {% endif %}
-            </button>
-            {% endif %}
-        </div>
     </div>
-    {% empty %}
-    <p>No featured stations available.</p>
-    {% endfor %}
+    
+    <!-- Instructions for admin -->
+    <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; font-size: 14px;">
+        <strong>Admin Note:</strong> To integrate Radiojar player:
+        <ol style="text-align: left; margin: 10px 0;">
+            <li>Get your embed code from Radiojar dashboard</li>
+            <li>Replace the placeholder div above with the embed code</li>
+            <li>Update the stream_url in the database with your Radiojar stream URL</li>
+        </ol>
+    </div>
 </div>
 
-<!-- Live Events -->
-<h2>Live Events</h2>
+<!-- Station Info -->
+{% if bellefu_station %}
+<h2>About Bellefu Radio</h2>
+<div class="card">
+    <h3>{{ bellefu_station.name }}</h3>
+    <p>{{ bellefu_station.description }}</p>
+    <table style="margin: 15px 0;">
+        <tr>
+            <td><strong>Country:</strong></td>
+            <td>{{ bellefu_station.country }}</td>
+        </tr>
+        <tr>
+            <td><strong>Language:</strong></td>
+            <td>{{ bellefu_station.language }}</td>
+        </tr>
+        <tr>
+            <td><strong>Quality:</strong></td>
+            <td>{{ bellefu_station.get_quality_display }}</td>
+        </tr>
+        <tr>
+            <td><strong>Current Listeners:</strong></td>
+            <td><span class="listener-count" data-station-id="{{ bellefu_station.id }}">{{ bellefu_station.listeners_count }}</span></td>
+        </tr>
+        {% if bellefu_station.website_url %}
+        <tr>
+            <td><strong>Website:</strong></td>
+            <td><a href="{{ bellefu_station.website_url }}" target="_blank">{{ bellefu_station.website_url }}</a></td>
+        </tr>
+        {% endif %}
+    </table>
+</div>
+{% endif %}
+
+<!-- Live Programs -->
+<h2>Live Now</h2>
 {% if live_events %}
 <table>
     <thead>
         <tr>
-            <th>Event</th>
-            <th>Station</th>
+            <th>Program</th>
             <th class="hide-mobile">Host</th>
             <th>Time</th>
             <th>Status</th>
@@ -105,9 +81,16 @@
     </thead>
     <tbody>
         {% for event in live_events %}
-        <tr>
-            <td><strong>{{ event.title }}</strong></td>
-            <td>{{ event.station.name }}</td>
+        <tr style="background: #fee7e6;">
+            <td>
+                <strong>{{ event.title }}</strong>
+                {% if event.description %}
+                <br><small>{{ event.description|truncatewords:15 }}</small>
+                {% endif %}
+                <div class="hide-mobile" style="font-size: 12px; color: #666; margin-top: 4px;">
+                    Host: {{ event.host|default:"N/A" }} • {{ event.get_event_type_display }}
+                </div>
+            </td>
             <td class="hide-mobile">{{ event.host|default:"N/A" }}</td>
             <td>{{ event.start_time|date:"H:i" }} - {{ event.end_time|date:"H:i" }}</td>
             <td class="event-status status-live" data-event-id="{{ event.id }}">
@@ -118,47 +101,66 @@
     </tbody>
 </table>
 {% else %}
-<p>No live events at the moment. <a href="{% url 'events' %}">View upcoming events</a></p>
+<p>No live programs at the moment. <a href="{% url 'events' %}">View upcoming programs</a></p>
 {% endif %}
 
-<!-- Recent Blog Posts -->
-<h2>Latest News & Articles</h2>
+<!-- Upcoming Programs -->
+<h2>Coming Up Next</h2>
+{% if upcoming_events %}
 <div class="grid">
-    {% for post in recent_posts %}
+    {% for event in upcoming_events %}
     <div class="card">
-        <h3><a href="{% url 'blog_detail' post.slug %}">{{ post.title }}</a></h3>
-        <p><strong>By:</strong> {{ post.author.get_full_name|default:post.author.username }}</p>
-        <p><strong>Published:</strong> {{ post.published_at|date:"M d, Y" }}</p>
-        {% if post.excerpt %}
-        <p>{{ post.excerpt }}</p>
+        <h3>{{ event.title }}</h3>
+        <p><strong>Host:</strong> {{ event.host|default:"N/A" }}</p>
+        <p><strong>Time:</strong> {{ event.start_time|date:"M d, Y H:i" }} - {{ event.end_time|date:"H:i" }}</p>
+        <p><strong>Type:</strong> {{ event.get_event_type_display }}</p>
+        {% if event.description %}
+        <p>{{ event.description|truncatewords:20 }}</p>
         {% endif %}
-        <p><a href="{% url 'blog_detail' post.slug %}">Read more →</a></p>
+        {% if event.is_featured %}
+        <p><strong>⭐ Featured Program</strong></p>
+        {% endif %}
+        <p><small>{{ event.start_time|timesince }} from now</small></p>
     </div>
-    {% empty %}
-    <p>No recent posts available.</p>
     {% endfor %}
 </div>
+<p><a href="{% url 'events' %}">View all upcoming programs →</a></p>
+{% else %}
+<p>No upcoming programs scheduled. Check back later!</p>
+{% endif %}
 
 <!-- Quick Stats -->
-<h2>Platform Statistics</h2>
+<h2>Station Statistics</h2>
 <table>
     <tr>
-        <th>Total Stations:</th>
-        <td>{{ stats.total_stations }}</td>
-    </tr>
-    <tr>
-        <th>Active Listeners:</th>
+        <th>Current Listeners:</th>
         <td id="total-listeners">{{ stats.total_listeners }}</td>
     </tr>
     <tr>
-        <th>Live Events:</th>
+        <th>Live Programs:</th>
         <td>{{ stats.live_events }}</td>
     </tr>
     <tr>
-        <th>Countries Covered:</th>
-        <td>{{ stats.countries_count }}</td>
+        <th>Upcoming Programs:</th>
+        <td>{{ stats.upcoming_events }}</td>
     </tr>
 </table>
+
+<!-- Call to Action -->
+<div style="background: #f8f9fa; border: 1px solid #a2a9b1; padding: 20px; margin: 30px 0; text-align: center; border-radius: 8px;">
+    <h3>Join Our Community</h3>
+    <p>Create an account to track your listening history and get personalized program recommendations.</p>
+    {% if not user.is_authenticated %}
+    <p style="margin-top: 15px;">
+        <a href="{% url 'register' %}" style="display: inline-block; padding: 10px 20px; background: #000; color: white; text-decoration: none; border-radius: 4px; margin-right: 10px;">Create Account</a>
+        <a href="{% url 'login' %}" style="display: inline-block; padding: 10px 20px; border: 1px solid #000; color: #000; text-decoration: none; border-radius: 4px;">Login</a>
+    </p>
+    {% else %}
+    <p style="margin-top: 15px;">
+        <a href="{% url 'dashboard' %}" style="display: inline-block; padding: 10px 20px; background: #000; color: white; text-decoration: none; border-radius: 4px;">Go to Dashboard</a>
+    </p>
+    {% endif %}
+</div>
 
 {% csrf_token %}
 {% endblock %}

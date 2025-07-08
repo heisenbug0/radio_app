@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Bellefu Radio{% endblock %}</title>
     <style>
-        /* Wikipedia-style CSS */
+        /* Clean, modern CSS */
         * {
             margin: 0;
             padding: 0;
@@ -126,22 +126,6 @@
             background: #f8f9fa;
         }
 
-        /* Actions column styling */
-        .actions-cell {
-            white-space: nowrap;
-            min-width: 120px;
-        }
-
-        .actions-cell > * {
-            display: inline-block;
-            margin-right: 5px;
-            vertical-align: middle;
-        }
-
-        .actions-cell > *:last-child {
-            margin-right: 0;
-        }
-
         /* Forms */
         form {
             margin: 20px 0;
@@ -176,51 +160,29 @@
             background: #e1e3e6;
         }
 
-        /* Audio Player */
-        .audio-player {
-            border: 1px solid #a2a9b1;
-            padding: 15px;
+        /* Radiojar Player Container */
+        .radiojar-player {
+            border: 2px solid #000;
+            padding: 20px;
             margin: 20px 0;
             background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
         }
 
-        .player-controls {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
+        .radiojar-player h3 {
+            margin: 0 0 15px 0;
+            border: none;
+            font-size: 20px;
         }
 
-        .play-btn {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 1px solid #a2a9b1;
-            background: #fff;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-        }
-
-        .play-btn svg {
-            width: 16px;
-            height: 16px;
-        }
-
-        .volume-control {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .volume-slider {
-            width: 100px;
-        }
-
-        .station-info {
-            font-size: 14px;
+        .radiojar-placeholder {
+            background: #eee;
+            border: 2px dashed #999;
+            padding: 40px 20px;
+            border-radius: 8px;
+            color: #666;
+            font-style: italic;
         }
 
         /* Cards */
@@ -278,20 +240,6 @@
                 grid-template-columns: 1fr;
             }
 
-            .player-controls {
-                flex-wrap: wrap;
-                gap: 5px;
-            }
-
-            .volume-control {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .volume-slider {
-                width: 150px;
-            }
-
             /* Mobile table styling */
             table {
                 font-size: 14px;
@@ -301,36 +249,9 @@
                 padding: 6px 8px;
             }
 
-            .actions-cell {
-                min-width: 100px;
-            }
-
-            /* Stack form elements on mobile */
-            .search-form {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 10px;
-            }
-
-            .search-form .form-group {
-                margin-bottom: 0;
-            }
-
-            .search-form .form-group:not(:last-child) {
-                margin-bottom: 10px;
-            }
-
-            .search-form input {
-                min-width: auto;
-                width: 100%;
-            }
-
-            .search-form button,
-            .search-form a {
-                width: 100%;
-                height: 44px;
-                justify-content: center;
-                margin-top: 5px;
+            /* Hide less important table columns on very small screens */
+            .hide-mobile {
+                display: none;
             }
         }
 
@@ -350,20 +271,6 @@
 
             .card {
                 padding: 10px;
-            }
-
-            .audio-player {
-                padding: 10px;
-            }
-
-            .player-controls {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            /* Hide less important table columns on very small screens */
-            .hide-mobile {
-                display: none;
             }
 
             table {
@@ -445,69 +352,6 @@
             font-weight: bold;
         }
 
-        /* Search */
-        .search-form {
-            display: flex;
-            gap: 8px;
-            margin: 20px 0;
-            align-items: end;
-            flex-wrap: wrap;
-        }
-
-        .search-form .form-group {
-            margin-bottom: 0;
-        }
-
-        .search-form input {
-            min-width: 200px;
-        }
-
-        .search-form button {
-            white-space: nowrap;
-            width: 44px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            background: #000;
-            color: white;
-            border: 1px solid #000;
-        }
-
-        .search-form a {
-            white-space: nowrap;
-            width: 44px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            border: 1px solid #a2a9b1;
-            background: #f8f9fa;
-            color: #000;
-        }
-
-        /* Favorites */
-        .favorite-btn {
-            background: none;
-            border: 1px solid #a2a9b1;
-            padding: 4px 8px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .favorite-btn svg {
-            width: 14px;
-            height: 14px;
-        }
-
-        .favorite-btn.favorited {
-            background: #eaecf0;
-        }
-
         /* Live indicator */
         .live-indicator {
             display: inline-block;
@@ -517,24 +361,6 @@
             border-radius: 50%;
             margin-right: 5px;
             animation: pulse 2s infinite;
-        }
-
-        /* Icon styles */
-        .icon {
-            width: 16px;
-            height: 16px;
-            display: inline-block;
-            vertical-align: middle;
-        }
-
-        .icon-small {
-            width: 12px;
-            height: 12px;
-        }
-
-        .icon-large {
-            width: 20px;
-            height: 20px;
         }
 
         @keyframes pulse {
@@ -558,13 +384,11 @@
     <header>
         <div class="container">
             <div class="header-content">
-                <a href="{% url 'home' %}" class="logo">🎵 Farmer's Radio</a>
+                <a href="{% url 'home' %}" class="logo">🎵 Bellefu Radio</a>
                 <nav>
                     <ul>
                         <li><a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' %}class="active"{% endif %}>Home</a></li>
-                        <li><a href="{% url 'stations' %}" {% if request.resolver_match.url_name == 'stations' %}class="active"{% endif %}>Stations</a></li>
-                        <li><a href="{% url 'events' %}" {% if request.resolver_match.url_name == 'events' %}class="active"{% endif %}>Events</a></li>
-                        <li><a href="{% url 'blog' %}" {% if request.resolver_match.url_name == 'blog' %}class="active"{% endif %}>Blog</a></li>
+                        <li><a href="{% url 'events' %}" {% if request.resolver_match.url_name == 'events' %}class="active"{% endif %}>Programs</a></li>
                         {% if user.is_authenticated %}
                             <li><a href="{% url 'dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}class="active"{% endif %}>Dashboard</a></li>
                             <li><a href="{% url 'logout' %}">Logout ({{ user.username }})</a></li>
@@ -594,194 +418,12 @@
 
     <footer>
         <div class="container">
-            <p>&copy; 2024 Bellefu Radio. Broadcasting quality content worldwide.</p>
+            <p>&copy; 2024 Bellefu Radio. Broadcasting quality agricultural content worldwide.</p>
         </div>
     </footer>
 
     <script>
-        // Audio Player functionality
-        class RadioPlayer {
-            constructor() {
-                this.audio = null;
-                this.currentStation = null;
-                this.isPlaying = false;
-                this.volume = 0.7;
-                this.initializePlayer();
-            }
-
-            initializePlayer() {
-                // Create audio element
-                this.audio = new Audio();
-                this.audio.volume = this.volume;
-                this.audio.preload = 'none';
-                
-                this.audio.addEventListener('loadstart', () => this.updateStatus('Loading...'));
-                this.audio.addEventListener('canplay', () => this.updateStatus('Ready'));
-                this.audio.addEventListener('playing', () => this.updateStatus('Playing'));
-                this.audio.addEventListener('pause', () => this.updateStatus('Paused'));
-                this.audio.addEventListener('error', () => this.updateStatus('Error loading stream'));
-            }
-
-            play(stationId, stationName, streamUrl) {
-                if (this.currentStation === stationId && this.isPlaying) {
-                    this.pause();
-                    return;
-                }
-
-                this.currentStationName = stationName;
-                this.currentStreamUrl = streamUrl;
-                this.currentStation = stationId;
-                this.audio.src = streamUrl;
-                this.audio.load();
-                
-                this.audio.play().then(() => {
-                    this.isPlaying = true;
-                    this.updatePlayerUI(stationName);
-                    this.updatePlayButtons();
-                    this.incrementListeners(stationId);
-                }).catch(error => {
-                    console.error('Error playing audio:', error);
-                    this.updateStatus('Error: Could not play stream');
-                });
-            }
-
-            pause() {
-                if (this.audio) {
-                    this.audio.pause();
-                    this.isPlaying = false;
-                    this.updatePlayButtons();
-                    if (this.currentStation) {
-                        this.decrementListeners(this.currentStation);
-                    }
-                }
-            }
-
-            setVolume(volume) {
-                this.volume = volume;
-                if (this.audio) {
-                    this.audio.volume = volume;
-                }
-            }
-
-            updatePlayerUI(stationName) {
-                const playerInfo = document.querySelector('.station-info');
-                if (playerInfo) {
-                    playerInfo.textContent = `Now playing: ${stationName}`;
-                }
-            }
-
-            updateStatus(status) {
-                const statusElement = document.querySelector('.player-status');
-                if (statusElement) {
-                    statusElement.textContent = status;
-                }
-            }
-
-            updatePlayButtons() {
-                document.querySelectorAll('.play-btn').forEach(btn => {
-                    const stationId = btn.dataset.stationId;
-                    const playIcon = btn.querySelector('.play-icon');
-                    const pauseIcon = btn.querySelector('.pause-icon');
-                    
-                    if (stationId == this.currentStation && this.isPlaying) {
-                        if (playIcon) playIcon.style.display = 'none';
-                        if (pauseIcon) pauseIcon.style.display = 'block';
-                        btn.title = 'Pause';
-                    } else {
-                        if (playIcon) playIcon.style.display = 'block';
-                        if (pauseIcon) pauseIcon.style.display = 'none';
-                        btn.title = 'Play';
-                    }
-                });
-            }
-
-            async incrementListeners(stationId) {
-                try {
-                    await fetch(`/api/stations/${stationId}/increment_listeners/`, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': this.getCSRFToken(),
-                            'Content-Type': 'application/json',
-                        },
-                    });
-                } catch (error) {
-                    console.error('Error incrementing listeners:', error);
-                }
-            }
-
-            async decrementListeners(stationId) {
-                try {
-                    await fetch(`/api/stations/${stationId}/decrement_listeners/`, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': this.getCSRFToken(),
-                            'Content-Type': 'application/json',
-                        },
-                    });
-                } catch (error) {
-                    console.error('Error decrementing listeners:', error);
-                }
-            }
-
-            getCSRFToken() {
-                return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
-            }
-        }
-
-        // Initialize player
-        const radioPlayer = new RadioPlayer();
-
-        // Favorite functionality
-        async function toggleFavorite(stationId, button) {
-            try {
-                const response = await fetch(`/api/stations/${stationId}/toggle_favorite/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': radioPlayer.getCSRFToken(),
-                        'Content-Type': 'application/json',
-                    },
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const svg = button.querySelector('svg');
-                    if (data.is_favorited) {
-                        svg.setAttribute('fill', 'currentColor');
-                        svg.setAttribute('stroke', 'currentColor');
-                    } else {
-                        svg.setAttribute('fill', 'none');
-                        svg.setAttribute('stroke', 'currentColor');
-                    }
-                    button.classList.toggle('favorited', data.is_favorited);
-                    button.title = data.is_favorited ? 'Remove from favorites' : 'Add to favorites';
-                } else if (response.status === 401) {
-                    alert('Please login to add favorites');
-                    window.location.href = '/login/';
-                }
-            } catch (error) {
-                console.error('Error toggling favorite:', error);
-            }
-        }
-
-        // Volume control
-        document.addEventListener('DOMContentLoaded', function() {
-            const volumeSlider = document.querySelector('.volume-slider');
-            if (volumeSlider) {
-                volumeSlider.addEventListener('input', function() {
-                    radioPlayer.setVolume(this.value / 100);
-                });
-            }
-
-            // Auto-refresh live events every 30 seconds
-            if (window.location.pathname.includes('events')) {
-                setInterval(refreshLiveEvents, 30000);
-            }
-
-            // Initialize WebSockets
-            initializeWebSockets();
-        });
-
-        // WebSocket Management
+        // WebSocket Management for real-time updates
         let eventSocket = null;
         let stationSocket = null;
 
@@ -862,43 +504,7 @@
         }
 
         function updateLiveEvents(events) {
-            // Update live event indicators on events page and home page
-            const liveEventsContainer = document.querySelector('#live-events-container');
-            
-            if (liveEventsContainer && events.length > 0) {
-                // Update the live events section
-                let liveEventsHtml = '';
-                events.forEach(event => {
-                    liveEventsHtml += `
-                        <tr style="background: #fee7e6;">
-                            <td>
-                                <strong>${event.title}</strong>
-                                ${event.description ? `<br><small>${event.description.substring(0, 100)}...</small>` : ''}
-                            </td>
-                            <td>${event.station_name}</td>
-                            <td>${event.host}</td>
-                            <td>${event.start_time} - ${event.end_time}</td>
-                            <td>${event.event_type}</td>
-                            <td>
-                                <span class="event-status status-live" data-event-id="${event.id}">
-                                    <span class="live-indicator"></span>LIVE
-                                </span>
-                                <button class="play-btn" 
-                                        data-station-id="${event.station_id}"
-                                        onclick="radioPlayer.play(${event.station_id}, '${event.station_name}', '${event.station_stream_url || '#'}')"
-                                        title="Listen to ${event.station_name}">▶</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-                
-                const tbody = liveEventsContainer.querySelector('tbody');
-                if (tbody) {
-                    tbody.innerHTML = liveEventsHtml;
-                }
-            }
-            
-            // Update individual event status indicators
+            // Update live event indicators
             document.querySelectorAll('.event-status').forEach(element => {
                 const eventId = parseInt(element.dataset.eventId);
                 const isLive = events.some(event => event.id === eventId);
@@ -907,7 +513,6 @@
                     element.innerHTML = '<span class="live-indicator"></span>LIVE';
                     element.className = 'event-status status-live';
                 } else {
-                    // Check if it's upcoming or past
                     element.innerHTML = 'Past';
                     element.className = 'event-status status-past';
                 }
@@ -934,19 +539,12 @@
                     element.textContent = listenersCount;
                 }
             });
-            
-            // Update in tables
-            const stationRows = document.querySelectorAll('tr');
-            stationRows.forEach(row => {
-                const playBtn = row.querySelector(`[data-station-id="${stationId}"]`);
-                if (playBtn) {
-                    const listenerCell = row.cells[5]; // Assuming listeners count is in 6th column
-                    if (listenerCell) {
-                        listenerCell.textContent = listenersCount;
-                    }
-                }
-            });
         }
+
+        // Initialize WebSockets when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeWebSockets();
+        });
 
         // Clean up WebSocket connections when page unloads
         window.addEventListener('beforeunload', function() {
@@ -958,46 +556,29 @@
             }
         });
 
-        // Refresh live events
-        async function refreshLiveEvents() {
+        // Helper function to get CSRF token
+        function getCSRFToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+        }
+
+        // Record listening session
+        async function recordListeningSession(stationId, durationMinutes) {
             try {
-                const response = await fetch('/api/events/live/');
-                const liveEvents = await response.json();
-                
-                // Update live indicators
-                document.querySelectorAll('.event-status').forEach(element => {
-                    const eventId = element.dataset.eventId;
-                    const isLive = liveEvents.some(event => event.id == eventId);
-                    
-                    if (isLive) {
-                        element.innerHTML = '<span class="live-indicator"></span>LIVE';
-                        element.className = 'event-status status-live';
-                    }
+                await fetch('/record-session/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken(),
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        station_id: stationId,
+                        duration_minutes: durationMinutes
+                    })
                 });
             } catch (error) {
-                console.error('Error refreshing live events:', error);
+                console.error('Error recording session:', error);
             }
         }
-
-        // Search functionality
-        function performSearch() {
-            const searchForm = document.querySelector('.search-form');
-            if (searchForm) {
-                searchForm.submit();
-            }
-        }
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            if (e.key === ' ' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-                e.preventDefault();
-                if (radioPlayer.isPlaying) {
-                    radioPlayer.pause();
-                } else if (radioPlayer.currentStation) {
-                    radioPlayer.play(radioPlayer.currentStation, radioPlayer.currentStationName, radioPlayer.currentStreamUrl);
-                }
-            }
-        });
     </script>
 </body>
 </html>

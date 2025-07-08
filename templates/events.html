@@ -1,25 +1,23 @@
 {% extends 'base.html' %}
 
-{% block title %}Events - Bellefu Radio{% endblock %}
+{% block title %}Programs - Bellefu Radio{% endblock %}
 
 {% block content %}
-<h1>Radio Events & Programming</h1>
+<h1>Bellefu Radio Programs</h1>
 
-<!-- Search Form (if needed in future) -->
-<!-- Currently events don't have search, but keeping consistent structure -->
+<p>Stay updated with our latest programming schedule. From agricultural news to educational workshops, we have something for every farmer and agricultural enthusiast.</p>
 
-<!-- Live Events -->
+<!-- Live Programs -->
 {% if live_events %}
 <h2>🔴 Live Now</h2>
 <table>
     <thead>
         <tr>
-            <th>Event</th>
-            <th>Station</th>
+            <th>Program</th>
             <th class="hide-mobile">Host</th>
             <th>Time</th>
             <th class="hide-mobile">Type</th>
-            <th>Actions</th>
+            <th>Status</th>
         </tr>
     </thead>
     <tbody>
@@ -34,29 +32,11 @@
                     Host: {{ event.host|default:"N/A" }} • {{ event.get_event_type_display }}
                 </div>
             </td>
-            <td>{{ event.station.name }}</td>
             <td class="hide-mobile">{{ event.host|default:"N/A" }}</td>
             <td>{{ event.start_time|date:"H:i" }} - {{ event.end_time|date:"H:i" }}</td>
             <td class="hide-mobile">{{ event.get_event_type_display }}</td>
-            <td class="actions-cell">
-                <span class="event-status status-live" data-event-id="{{ event.id }}">
-                    <svg class="live-indicator icon-small" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                    LIVE
-                </span>
-                <button class="play-btn"
-                        data-station-id="{{ event.station.id }}"
-                        onclick="radioPlayer.play({{ event.station.id }}, '{{ event.station.name }}', '{{ event.station.stream_url }}')"
-                        title="Listen to {{ event.station.name }}">
-                    <svg class="play-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="5,3 19,12 5,21"/>
-                    </svg>
-                    <svg class="pause-icon" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="6" y="4" width="4" height="16"/>
-                        <rect x="14" y="4" width="4" height="16"/>
-                    </svg>
-                </button>
+            <td class="event-status status-live" data-event-id="{{ event.id }}">
+                <span class="live-indicator"></span>LIVE
             </td>
         </tr>
         {% endfor %}
@@ -64,14 +44,13 @@
 </table>
 {% endif %}
 
-<!-- Upcoming Events -->
-<h2>📅 Upcoming Events</h2>
+<!-- Upcoming Programs -->
+<h2>📅 Upcoming Programs</h2>
 {% if upcoming_events %}
 <table>
     <thead>
         <tr>
-            <th>Event</th>
-            <th>Station</th>
+            <th>Program</th>
             <th class="hide-mobile">Host</th>
             <th>Date & Time</th>
             <th class="hide-mobile">Type</th>
@@ -90,7 +69,6 @@
                     Host: {{ event.host|default:"N/A" }} • {{ event.get_event_type_display }}
                 </div>
             </td>
-            <td>{{ event.station.name }}</td>
             <td class="hide-mobile">{{ event.host|default:"N/A" }}</td>
             <td>
                 {{ event.start_time|date:"M d, Y H:i" }} - {{ event.end_time|date:"H:i" }}
@@ -99,12 +77,7 @@
             <td class="hide-mobile">{{ event.get_event_type_display }}</td>
             <td>
                 {% if event.is_featured %}
-                    <strong>
-                        <svg class="icon-small" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
-                        </svg>
-                        Featured
-                    </strong>
+                    <strong>⭐ Featured</strong>
                 {% else %}
                     -
                 {% endif %}
@@ -134,23 +107,44 @@
 {% endif %}
 
 {% else %}
-<p>No upcoming events scheduled.</p>
+<p>No upcoming programs scheduled. Check back later for updates!</p>
 {% endif %}
 
-<!-- Event Types Legend -->
-<h3>Event Types</h3>
-<table>
-    <tr><td><strong>Live Show:</strong></td><td>Interactive live programming</td></tr>
-    <tr><td><strong>Interview:</strong></td><td>Guest interviews and discussions</td></tr>
-    <tr><td><strong>Music Special:</strong></td><td>Special music programming</td></tr>
-    <tr><td><strong>News:</strong></td><td>News broadcasts and updates</td></tr>
-    <tr><td><strong>Sports:</strong></td><td>Sports coverage and commentary</td></tr>
-    <tr><td><strong>Talk Show:</strong></td><td>Talk shows and discussions</td></tr>
-</table>
+<!-- Program Types Information -->
+<h3>Program Types</h3>
+<div class="grid">
+    <div class="card">
+        <h4>Live Shows</h4>
+        <p>Interactive live programming with call-ins and real-time discussions about farming topics.</p>
+    </div>
+    <div class="card">
+        <h4>Interviews</h4>
+        <p>Guest interviews with agricultural experts, successful farmers, and industry leaders.</p>
+    </div>
+    <div class="card">
+        <h4>News</h4>
+        <p>Agricultural news, weather updates, market prices, and policy changes affecting farmers.</p>
+    </div>
+    <div class="card">
+        <h4>Educational Content</h4>
+        <p>Workshops, tutorials, and educational programs on modern farming techniques and best practices.</p>
+    </div>
+</div>
 
-<script>
-// WebSocket will handle real-time updates automatically
-// No need for manual refresh
-</script>
+<!-- Call to Action -->
+<div style="background: #f8f9fa; border: 1px solid #a2a9b1; padding: 20px; margin: 30px 0; text-align: center; border-radius: 8px;">
+    <h3>Never Miss a Program</h3>
+    <p>Create an account to get personalized program recommendations and track your listening history.</p>
+    {% if not user.is_authenticated %}
+    <p style="margin-top: 15px;">
+        <a href="{% url 'register' %}" style="display: inline-block; padding: 10px 20px; background: #000; color: white; text-decoration: none; border-radius: 4px; margin-right: 10px;">Create Account</a>
+        <a href="{% url 'login' %}" style="display: inline-block; padding: 10px 20px; border: 1px solid #000; color: #000; text-decoration: none; border-radius: 4px;">Login</a>
+    </p>
+    {% else %}
+    <p style="margin-top: 15px;">
+        <a href="{% url 'home' %}" style="display: inline-block; padding: 10px 20px; background: #000; color: white; text-decoration: none; border-radius: 4px;">Listen Live Now</a>
+    </p>
+    {% endif %}
+</div>
 
 {% endblock %}
