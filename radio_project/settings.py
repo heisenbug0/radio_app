@@ -151,7 +151,8 @@ if not DEBUG:
     # CSRF settings for production
     CSRF_TRUSTED_ORIGINS = [
         'https://*.onrender.com',
-        'https://bellefu-radio-app.onrender.com',
+        'https://bellefu-radio-web-v2.onrender.com',
+        'https://bellefu-radio-app.onrender.com',  # Keep this as backup
     ]
     
     SECURE_BROWSER_XSS_FILTER = True
