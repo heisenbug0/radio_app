@@ -11,18 +11,48 @@
 <div class="radiojar-player">
     <h3>🔴 Live Radio Stream</h3>
     
-    <!-- Insert your Radiojar player embed code here -->
-    <div class="radiojar-placeholder">
-        <p><strong>🎵 Radiojar Player Embed Code Goes Here</strong></p>
-        <p>Replace this placeholder with your actual Radiojar player embed code from your dashboard</p>
-        <p><em>Example: &lt;iframe src="https://www.radiojar.com/embed/your-station-id"&gt;&lt;/iframe&gt;</em></p>
-        {% if bellefu_station %}
-        <div style="margin: 15px 0; padding: 15px; background: white; border-radius: 4px;">
-            <p><strong>Station:</strong> {{ bellefu_station.name }}</p>
-            <p><strong>Stream URL:</strong> <code>{{ bellefu_station.stream_url }}</code></p>
+    <!-- Radiojar Player Widget -->
+    <div id="rj-player">
+        <div class="player-v3 player-medium">
+            <div id="rj-cover">
+                <a href="#"><img src=""/></a>
+            </div>
+            <div class="info">
+                <div class="rjp-trackinfo-container">
+                    <h4 class="rjp-label">Now playing:</h4>
+                    <p id="trackInfo" class="rjp-info"></p>
+                </div>
+                <div class="rjp-player-container">
+                    <div id="rjp-radiojar-player"></div>
+                    <div id="rj-player-controls" class="rj-player-controls">
+                        <div class="jp-gui jp-interface">
+                            <div class="jp-controls">
+                                <a href="javascript:;" style="display:block" class="jp-play" title="Play">&nbsp;<i class="icon-play"></i></a>
+                                <a href="javascript:;" style="display:none" class="jp-pause" title="Pause"><i class="icon-pause"></i></a>
+                                <a href="javascript:;" style="display:block" class="jp-mute" title="Mute"><i class="icon-volume-up"></i></a>
+                                <a href="javascript:;" style="display:none" class="jp-unmute" title="Unmute"><i class="icon-volume-off"></i></a>
+                                <div class="jp-volume-bar-wrapper">
+                                    <div class="jp-volume-bar">
+                                        <div class="jp-volume-bar-value"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="jp-no-solution">
+                        <span>Update Required</span>
+                        To play the media you will need to either update your browser to a recent version or update your <a href="//get.adobe.com/flashplayer/" target="_blank">Flash plugin</a>.
+                    </div>
+                </div>
+            </div>
         </div>
-        {% endif %}
     </div>
+    
+    {% if bellefu_station %}
+    <div style="margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px; font-size: 14px;">
+        <p><strong>Station:</strong> {{ bellefu_station.name }} | <strong>Quality:</strong> {{ bellefu_station.get_quality_display }}</p>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Station Information -->

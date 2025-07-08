@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Bellefu Radio{% endblock %}</title>
+    
+    <!-- Radiojar Player Stylesheet -->
+    <link rel="stylesheet" href="//www.radiojar.com/wrappers/api-plugins/v1/css/player.css">
+    
     <style>
         /* Clean, modern CSS */
         * {
@@ -378,5 +382,35 @@
             <p>&copy; 2024 Bellefu Radio. Broadcasting quality agricultural content worldwide.</p>
         </div>
     </footer>
+
+    <!-- Radiojar Player JavaScript -->
+    <script type="text/javascript" src="//www.radiojar.com/wrappers/api-plugins/v1/radiojar-min.js"></script>
+    <script>
+        rjq('#rjp-radiojar-player').radiojar('player', {
+            "streamName": "v994btp2gd0uv",
+            "enableUpdates": true,
+            "defaultImage": "//www.radiojar.com/img/sample_images/Radio_Stations_Avatar_BLUE.png",
+            "autoplay": false
+        });
+        
+        rjq('#rjp-radiojar-player').off('rj-track-load-event');
+        rjq('#rjp-radiojar-player').on('rj-track-load-event', function(event, data) {
+            updateInfo(data);
+            if (data.title != "" || data.artist != "") {
+                rjq('.rjp-trackinfo-container').show();
+                rjq('#trackInfo').html(data.artist + ' - "' + data.title + '"')
+            } else {
+                rjq('.rjp-trackinfo-container').hide();
+            }
+        });
+
+        function updateInfo(data) {
+            if (data.thumb) {
+                rjq('#rj-cover').html('<a href="#"><img src="' + data.thumb + '" alt="" title="" /></a>')
+            } else {
+                rjq('#rj-cover').html('')
+            }
+        }
+    </script>
 </body>
 </html>
