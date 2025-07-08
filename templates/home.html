@@ -111,11 +111,72 @@
 <h2>📅 Programs & Schedule</h2>
 <div class="card">
     <h3>Live Programs & Upcoming Shows</h3>
-    <div class="radiojar-placeholder">
-        <p><strong>📅 Radiojar Schedule Widget</strong></p>
-        <p>Shows current live programs and upcoming scheduled shows</p>
-        <p><em>Features: Live indicators, program descriptions, host information</em></p>
-        <p><em>Embed: Schedule widget from Radiojar dashboard</em></p>
+    
+    <!-- Radiojar Schedule Widget -->
+    <div id="rj-schedule">
+        <div id="rj-tabs">
+            <ul class="rj-nav rj-nav-tabs" id="radio_schedule">
+                <li class="active"><a href="#monday" data-toggle="tab">Monday</a></li>
+                <li><a href="#tuesday" data-toggle="tab">Tuesday</a></li>
+                <li><a href="#wednesday" data-toggle="tab">Wednesday</a></li>
+                <li><a href="#thursday" data-toggle="tab">Thursday</a></li>
+                <li><a href="#friday" data-toggle="tab">Friday</a></li>
+                <li><a href="#saturday" data-toggle="tab">Saturday</a></li>
+                <li><a href="#sunday" data-toggle="tab">Sunday</a></li>
+            </ul>
+            <div class="rj-tab-content">
+                <div class="tab-pane active" id="monday">
+                    <ul class="itemlist schedule"></ul>
+                </div>
+                <div class="tab-pane" id="tuesday">
+                    <ul class="itemlist schedule"></ul>
+                </div>
+                <div class="tab-pane" id="wednesday">
+                    <ul class="itemlist schedule"></ul>
+                </div>
+                <div class="tab-pane" id="thursday">
+                    <ul class="itemlist schedule"></ul>
+                </div>
+                <div class="tab-pane" id="friday">
+                    <ul class="itemlist schedule"></ul>
+                </div>
+                <div class="tab-pane" id="saturday">
+                    <ul class="itemlist schedule"></ul>
+                </div>
+                <div class="tab-pane" id="sunday">
+                    <ul class="itemlist schedule"></ul>
+                </div>
+            </div>
+        </div>
+
+        <script id="schedule_list_item" type="text/html">
+            <li class="item item-show item-small" data-id="<%= sch.utc_from %>" style="background-image: url(//www.radiojar.com<%= sch.show_photo %>?resize=cover_small)">
+                <div class="item-hostdjs">
+                    <span></span>
+                    <a href="<%= sch.dj_url %>" class="item-dj" title="<%= sch.dj_nickname %>">
+                        <% if (sch.dj_photo.indexOf('image')!=-1) { %>
+                        <div class="content">
+                            <img class="item-thumb" src="<%= sch.dj_photo %>" />
+                        </div>
+                        <% } %>
+                    </a>
+                </div>
+                <div class="overlay">
+                    <div class="content">
+                        <div class="item-showinfo">
+                            <a href="<%= sch.show_url %>">
+                                <h4 class="item-name"><%= sch.show_title %></h4>
+                                <h5 class="item-tagline"><%= sch.show_tagline %></h5>
+                            </a>
+                        </div>
+                        <div class="item-schedule">
+                            <i class="icon-time"></i>
+                            <span class="localize-time" data-date='<%= sch.utc_from %>'></span> - <span class='localize-time' data-date='<%= sch.utc_to %>'></span>
+                        </div>
+                    </div>
+                </div>
+            </li>
+        </script>
     </div>
 </div>
 

@@ -8,6 +8,9 @@
     <!-- Radiojar Player Stylesheet -->
     <link rel="stylesheet" href="//www.radiojar.com/wrappers/api-plugins/v1/css/player.css">
     
+    <!-- Radiojar Schedule Stylesheet -->
+    <link rel="stylesheet" href="//www.radiojar.com/wrappers/api-plugins/v1/css/schedule.css">
+    
     <style>
         /* Clean, modern CSS */
         * {
@@ -411,6 +414,11 @@
                 rjq('#rj-cover').html('')
             }
         }
+        
+        // Initialize Radiojar Schedule Widget
+        rjq('#rj-schedule').radiojar('schedule', {
+            streamName: "v994btp2gd0uv"
+        });
     </script>
 </body>
 </html>
