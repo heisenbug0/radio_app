@@ -1,9 +1,14 @@
 {% extends 'base.html' %}
 
-{% block title %}Register - Bellefu Radio{% endblock %}
+{% block title %}Create Account - Bellefu Radio{% endblock %}
 
 {% block content %}
-<h1>Create Account</h1>
+<h1>Create a Free Account</h1>
+
+<div class="optional-feature">
+    <p><strong>Account creation is completely optional!</strong> You can listen to Bellefu Radio without creating an account. Signing up gives you access to additional features like listening history tracking.</p>
+    <p><a href="{% url 'home' %}">← Go back to listen live without an account</a></p>
+</div>
 
 <form method="POST">
     {% csrf_token %}
@@ -25,18 +30,18 @@
     </div>
     
     <div class="form-group">
-        <label for="email">Email:</label>
+        <label for="email">Email (Optional):</label>
         <input type="email" id="email" name="email" value="{{ form.email.value|default:'' }}">
         <small>Optional but recommended for account recovery.</small>
     </div>
     
     <div class="form-group">
-        <label for="first_name">First Name:</label>
+        <label for="first_name">First Name (Optional):</label>
         <input type="text" id="first_name" name="first_name" value="{{ form.first_name.value|default:'' }}">
     </div>
     
     <div class="form-group">
-        <label for="last_name">Last Name:</label>
+        <label for="last_name">Last Name (Optional):</label>
         <input type="text" id="last_name" name="last_name" value="{{ form.last_name.value|default:'' }}">
     </div>
     
@@ -54,11 +59,36 @@
     
     <div class="form-group">
         <button type="submit" style="width: auto; padding: 10px 20px; background: #000; color: white; border: 1px solid #000; cursor: pointer;">
-            Create Account
+            Create Free Account
         </button>
     </div>
 </form>
 
 <p>Already have an account? <a href="{% url 'login' %}">Login here</a></p>
+
+<h2>Benefits of Creating an Account</h2>
+<div class="grid">
+    <div class="card">
+        <h3>📊 Listening History</h3>
+        <p>Track your listening sessions and see how much time you spend with Bellefu Radio.</p>
+    </div>
+    <div class="card">
+        <h3>📈 Personal Statistics</h3>
+        <p>View detailed statistics about your listening habits and favorite programs.</p>
+    </div>
+    <div class="card">
+        <h3>👤 Profile Management</h3>
+        <p>Customize your profile with your location, bio, and agricultural interests.</p>
+    </div>
+    <div class="card">
+        <h3>🔒 Privacy Focused</h3>
+        <p>We only collect what's necessary to provide these features. Your privacy is important to us.</p>
+    </div>
+</div>
+
+<div style="background: #f8f9fa; border: 1px solid #a2a9b1; padding: 15px; margin: 20px 0; border-radius: 4px;">
+    <h3>Remember: Account is Optional!</h3>
+    <p>You can always create an account later if you decide you want these features. For now, you can just <a href="{% url 'home' %}">start listening to Bellefu Radio</a> without any registration.</p>
+</div>
 
 {% endblock %}

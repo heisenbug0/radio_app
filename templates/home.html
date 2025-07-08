@@ -1,40 +1,44 @@
 {% extends 'base.html' %}
 
-{% block title %}Home - Bellefu Radio{% endblock %}
+{% block title %}Bellefu Radio - Listen Live{% endblock %}
 
 {% block content %}
-<h1>Welcome to Bellefu Radio</h1>
+<h1>🎵 Bellefu Radio - Listen Live</h1>
 
 <p>Your premier destination for agricultural radio programming. Listen to farming news, weather updates, market prices, and educational content from Nigeria and around the world.</p>
 
-<!-- Radiojar Player -->
+<!-- Radiojar Player - Main Feature -->
 <div class="radiojar-player">
-    <h3>🎵 Listen Live to Bellefu Radio</h3>
+    <h3>🔴 Live Radio Stream</h3>
     
     <!-- TODO: Replace this placeholder with actual Radiojar embed code -->
     <div class="radiojar-placeholder">
-        <p><strong>Radiojar Player will be embedded here</strong></p>
+        <p><strong>🎵 Radiojar Player will be embedded here</strong></p>
         <p>Replace this section with the embed code from your Radiojar dashboard</p>
-        <p>Example: &lt;iframe src="your-radiojar-embed-url"&gt;&lt;/iframe&gt;</p>
+        <p>Example: <code>&lt;iframe src="your-radiojar-embed-url"&gt;&lt;/iframe&gt;</code></p>
         {% if bellefu_station %}
-        <p><strong>Station:</strong> {{ bellefu_station.name }}</p>
-        <p><strong>Stream URL:</strong> {{ bellefu_station.stream_url }}</p>
-        <p><strong>Current Listeners:</strong> <span class="listener-count" data-station-id="{{ bellefu_station.id }}">{{ bellefu_station.listeners_count }}</span></p>
+        <div style="margin: 15px 0; padding: 15px; background: white; border-radius: 4px;">
+            <p><strong>Station:</strong> {{ bellefu_station.name }}</p>
+            <p><strong>Stream URL:</strong> <code>{{ bellefu_station.stream_url }}</code></p>
+            <p><strong>Current Listeners:</strong> <span class="listener-count" data-station-id="{{ bellefu_station.id }}">{{ bellefu_station.listeners_count }}</span></p>
+        </div>
         {% endif %}
     </div>
     
     <!-- Instructions for admin -->
-    <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; font-size: 14px;">
-        <strong>Admin Note:</strong> To integrate Radiojar player:
+    <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; font-size: 14px;">
+        <strong>🔧 Admin Setup Instructions:</strong>
         <ol style="text-align: left; margin: 10px 0;">
-            <li>Get your embed code from Radiojar dashboard</li>
-            <li>Replace the placeholder div above with the embed code</li>
+            <li>Get your embed code from your Radiojar dashboard</li>
+            <li>Replace the placeholder div above with the actual embed code</li>
             <li>Update the stream_url in the database with your Radiojar stream URL</li>
+            <li>Test the player to ensure it works correctly</li>
         </ol>
+        <p><strong>Note:</strong> The player will automatically track listener counts and integrate with the real-time features.</p>
     </div>
 </div>
 
-<!-- Station Info -->
+<!-- Station Information -->
 {% if bellefu_station %}
 <h2>About Bellefu Radio</h2>
 <div class="card">
@@ -42,7 +46,7 @@
     <p>{{ bellefu_station.description }}</p>
     <table style="margin: 15px 0;">
         <tr>
-            <td><strong>Country:</strong></td>
+            <td><strong>Broadcasting from:</strong></td>
             <td>{{ bellefu_station.country }}</td>
         </tr>
         <tr>
@@ -50,12 +54,12 @@
             <td>{{ bellefu_station.language }}</td>
         </tr>
         <tr>
-            <td><strong>Quality:</strong></td>
+            <td><strong>Stream Quality:</strong></td>
             <td>{{ bellefu_station.get_quality_display }}</td>
         </tr>
         <tr>
             <td><strong>Current Listeners:</strong></td>
-            <td><span class="listener-count" data-station-id="{{ bellefu_station.id }}">{{ bellefu_station.listeners_count }}</span></td>
+            <td><strong><span class="listener-count" data-station-id="{{ bellefu_station.id }}">{{ bellefu_station.listeners_count }}</span></strong></td>
         </tr>
         {% if bellefu_station.website_url %}
         <tr>
@@ -68,7 +72,7 @@
 {% endif %}
 
 <!-- Live Programs -->
-<h2>Live Now</h2>
+<h2>🔴 Live Now</h2>
 {% if live_events %}
 <table>
     <thead>
@@ -101,11 +105,11 @@
     </tbody>
 </table>
 {% else %}
-<p>No live programs at the moment. <a href="{% url 'events' %}">View upcoming programs</a></p>
+<p>No live programs at the moment. Check our <a href="{% url 'events' %}">program schedule</a> for upcoming shows.</p>
 {% endif %}
 
 <!-- Upcoming Programs -->
-<h2>Coming Up Next</h2>
+<h2>📅 Coming Up Next</h2>
 {% if upcoming_events %}
 <div class="grid">
     {% for event in upcoming_events %}
@@ -120,21 +124,21 @@
         {% if event.is_featured %}
         <p><strong>⭐ Featured Program</strong></p>
         {% endif %}
-        <p><small>{{ event.start_time|timesince }} from now</small></p>
+        <p><small>Starts in {{ event.start_time|timesince }}</small></p>
     </div>
     {% endfor %}
 </div>
-<p><a href="{% url 'events' %}">View all upcoming programs →</a></p>
+<p><a href="{% url 'events' %}">View full program schedule →</a></p>
 {% else %}
-<p>No upcoming programs scheduled. Check back later!</p>
+<p>No upcoming programs scheduled. Check back later for updates!</p>
 {% endif %}
 
-<!-- Quick Stats -->
-<h2>Station Statistics</h2>
+<!-- Station Statistics -->
+<h2>📊 Live Statistics</h2>
 <table>
     <tr>
         <th>Current Listeners:</th>
-        <td id="total-listeners">{{ stats.total_listeners }}</td>
+        <td><strong id="total-listeners">{{ stats.total_listeners }}</strong></td>
     </tr>
     <tr>
         <th>Live Programs:</th>
@@ -146,21 +150,83 @@
     </tr>
 </table>
 
-<!-- Call to Action -->
-<div style="background: #f8f9fa; border: 1px solid #a2a9b1; padding: 20px; margin: 30px 0; text-align: center; border-radius: 8px;">
-    <h3>Join Our Community</h3>
-    <p>Create an account to track your listening history and get personalized program recommendations.</p>
+<!-- Optional User Features -->
+<div class="optional-feature">
+    <h3>📈 Track Your Listening (Optional)</h3>
+    <p>Want to track your listening history and get personalized recommendations? Create a free account!</p>
     {% if not user.is_authenticated %}
-    <p style="margin-top: 15px;">
-        <a href="{% url 'register' %}" style="display: inline-block; padding: 10px 20px; background: #000; color: white; text-decoration: none; border-radius: 4px; margin-right: 10px;">Create Account</a>
-        <a href="{% url 'login' %}" style="display: inline-block; padding: 10px 20px; border: 1px solid #000; color: #000; text-decoration: none; border-radius: 4px;">Login</a>
+    <p style="margin-top: 10px;">
+        <a href="{% url 'register' %}" style="display: inline-block; padding: 8px 16px; background: #000; color: white; text-decoration: none; border-radius: 4px; margin-right: 10px;">Create Free Account</a>
+        <a href="{% url 'login' %}" style="display: inline-block; padding: 8px 16px; border: 1px solid #000; color: #000; text-decoration: none; border-radius: 4px;">Login</a>
+    </p>
+    <p style="margin-top: 10px; font-size: 12px; color: #666;">
+        <strong>Note:</strong> Account creation is completely optional. You can listen to the radio without signing up!
     </p>
     {% else %}
-    <p style="margin-top: 15px;">
-        <a href="{% url 'dashboard' %}" style="display: inline-block; padding: 10px 20px; background: #000; color: white; text-decoration: none; border-radius: 4px;">Go to Dashboard</a>
+    <p style="margin-top: 10px;">
+        <a href="{% url 'dashboard' %}" style="display: inline-block; padding: 8px 16px; background: #000; color: white; text-decoration: none; border-radius: 4px;">View Your Dashboard</a>
     </p>
     {% endif %}
 </div>
 
+<!-- How to Listen -->
+<h2>📻 How to Listen</h2>
+<div class="grid">
+    <div class="card">
+        <h3>🌐 Web Player</h3>
+        <p>Listen directly in your browser using the player above. No downloads required!</p>
+    </div>
+    <div class="card">
+        <h3>📱 Mobile Friendly</h3>
+        <p>Our web player works perfectly on mobile devices. Just visit this page on your phone!</p>
+    </div>
+    <div class="card">
+        <h3>🔄 Always Live</h3>
+        <p>We broadcast 24/7 with a mix of live programs and curated agricultural content.</p>
+    </div>
+</div>
+
 {% csrf_token %}
+
+<script>
+// Simple listener tracking for the Radiojar player
+// This will be called when the Radiojar player starts/stops
+let isListening = false;
+let listenStartTime = null;
+let stationId = {% if bellefu_station %}{{ bellefu_station.id }}{% else %}null{% endif %};
+
+function onRadiojarPlay() {
+    if (!isListening && stationId) {
+        isListening = true;
+        listenStartTime = new Date();
+        incrementListeners(stationId);
+        console.log('Started listening to Bellefu Radio');
+    }
+}
+
+function onRadiojarPause() {
+    if (isListening && stationId) {
+        isListening = false;
+        decrementListeners(stationId);
+        
+        // Record listening session if user is logged in
+        if (listenStartTime) {
+            const durationMinutes = Math.round((new Date() - listenStartTime) / 60000);
+            if (durationMinutes > 0) {
+                recordListeningSession(stationId, durationMinutes);
+            }
+        }
+        
+        console.log('Stopped listening to Bellefu Radio');
+    }
+}
+
+// Clean up when user leaves the page
+window.addEventListener('beforeunload', function() {
+    if (isListening) {
+        onRadiojarPause();
+    }
+});
+</script>
+
 {% endblock %}

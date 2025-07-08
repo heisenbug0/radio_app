@@ -3,7 +3,12 @@
 {% block title %}Login - Bellefu Radio{% endblock %}
 
 {% block content %}
-<h1>Login</h1>
+<h1>Login to Your Account</h1>
+
+<div class="optional-feature">
+    <p><strong>Note:</strong> You don't need an account to listen to Bellefu Radio! Logging in is optional and gives you access to additional features like listening history tracking.</p>
+    <p><a href="{% url 'home' %}">← Go back to listen live without an account</a></p>
+</div>
 
 <form method="POST">
     {% csrf_token %}
@@ -35,7 +40,7 @@
     </div>
 </form>
 
-<p>Don't have an account? <a href="{% url 'register' %}">Register here</a></p>
+<p>Don't have an account? <a href="{% url 'register' %}">Create one here</a> (optional)</p>
 
 <h2>Demo Account</h2>
 <p>You can use the following demo account to test the features:</p>
@@ -49,5 +54,21 @@
         <td>admin123</td>
     </tr>
 </table>
+
+<h2>What You Get With an Account</h2>
+<div class="grid">
+    <div class="card">
+        <h3>📊 Listening History</h3>
+        <p>Track how much time you spend listening and see your listening patterns.</p>
+    </div>
+    <div class="card">
+        <h3>📈 Personal Statistics</h3>
+        <p>View your total listening time, favorite programs, and listening trends.</p>
+    </div>
+    <div class="card">
+        <h3>👤 Profile Management</h3>
+        <p>Customize your profile with your location and interests.</p>
+    </div>
+</div>
 
 {% endblock %}

@@ -378,6 +378,16 @@
             color: #72777d;
             font-size: 14px;
         }
+
+        /* Optional features notice */
+        .optional-feature {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -387,14 +397,13 @@
                 <a href="{% url 'home' %}" class="logo">🎵 Bellefu Radio</a>
                 <nav>
                     <ul>
-                        <li><a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' %}class="active"{% endif %}>Home</a></li>
+                        <li><a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' %}class="active"{% endif %}>Listen Live</a></li>
                         <li><a href="{% url 'events' %}" {% if request.resolver_match.url_name == 'events' %}class="active"{% endif %}>Programs</a></li>
                         {% if user.is_authenticated %}
-                            <li><a href="{% url 'dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}class="active"{% endif %}>Dashboard</a></li>
-                            <li><a href="{% url 'logout' %}">Logout ({{ user.username }})</a></li>
+                            <li><a href="{% url 'dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}class="active"{% endif %}>My Account</a></li>
+                            <li><a href="{% url 'logout' %}">Logout</a></li>
                         {% else %}
                             <li><a href="{% url 'login' %}" {% if request.resolver_match.url_name == 'login' %}class="active"{% endif %}>Login</a></li>
-                            <li><a href="{% url 'register' %}" {% if request.resolver_match.url_name == 'register' %}class="active"{% endif %}>Register</a></li>
                         {% endif %}
                     </ul>
                 </nav>
@@ -561,10 +570,10 @@
             return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
         }
 
-        // Record listening session
+        // Record listening session (only if user is logged in)
         async function recordListeningSession(stationId, durationMinutes) {
             try {
-                await fetch('/record-session/', {
+                const response = await fetch('/record-session/', {
                     method: 'POST',
                     headers: {
                         'X-CSRFToken': getCSRFToken(),
@@ -575,8 +584,42 @@
                         duration_minutes: durationMinutes
                     })
                 });
+                const data = await response.json();
+                if (data.status === 'success' && !data.recorded) {
+                    console.log('Listening session not recorded (user not logged in)');
+                }
             } catch (error) {
                 console.error('Error recording session:', error);
+            }
+        }
+
+        // Increment listener count when someone starts listening
+        async function incrementListeners(stationId) {
+            try {
+                await fetch(`/api/stations/${stationId}/increment_listeners/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken(),
+                        'Content-Type': 'application/json',
+                    },
+                });
+            } catch (error) {
+                console.error('Error incrementing listeners:', error);
+            }
+        }
+
+        // Decrement listener count when someone stops listening
+        async function decrementListeners(stationId) {
+            try {
+                await fetch(`/api/stations/${stationId}/decrement_listeners/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken(),
+                        'Content-Type': 'application/json',
+                    },
+                });
+            } catch (error) {
+                console.error('Error decrementing listeners:', error);
             }
         }
     </script>
