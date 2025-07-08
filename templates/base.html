@@ -347,6 +347,34 @@
             font-size: 14px;
             margin: 10px 0;
         }
+
+        /* Radiojar Chat Custom Styling */
+        #rjp-chat {
+            border: 1px solid #a2a9b1;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f8f9fa;
+            margin: 20px 0;
+        }
+
+        #rjp-chat iframe {
+            width: 100% !important;
+            border: none !important;
+            border-radius: 8px;
+        }
+
+        /* Responsive chat sizing */
+        @media (max-width: 768px) {
+            #rjp-chat {
+                margin: 15px 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #rjp-chat {
+                margin: 10px 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -426,6 +454,16 @@
         // Initialize Radiojar DJs Widget
         rjq('#rj-djs-list').radiojar('djs', {
             streamName: "v994btp2gd0uv"
+        });
+        
+        // Initialize Radiojar Chat Widget
+        rjq('#rjp-chat').radiojar('chatProvider', {
+            streamname: "v994btp2gd0uv",
+            width: 600,
+            height: 400,
+            frameborder: false,
+            scrolling: "auto",
+            cssfile: ""
         });
     </script>
 </body>
