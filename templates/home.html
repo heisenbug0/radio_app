@@ -15,6 +15,7 @@
     <div class="radiojar-placeholder">
         <p><strong>🎵 Radiojar Player Embed Code Goes Here</strong></p>
         <p>Replace this placeholder with your actual Radiojar player embed code from your dashboard</p>
+        <p><em>Example: &lt;iframe src="https://www.radiojar.com/embed/your-station-id"&gt;&lt;/iframe&gt;</em></p>
         {% if bellefu_station %}
         <div style="margin: 15px 0; padding: 15px; background: white; border-radius: 4px;">
             <p><strong>Station:</strong> {{ bellefu_station.name }}</p>
@@ -53,34 +54,130 @@
 </div>
 {% endif %}
 
-<!-- Radiojar Widgets Section -->
+<!-- Radiojar Widgets Grid -->
+<div class="grid">
+    <!-- Live Statistics Widget -->
+    <div class="card">
+        <h3>📊 Live Statistics</h3>
+        <div class="radiojar-placeholder">
+            <p><strong>📊 Radiojar Statistics Widget</strong></p>
+            <p>Shows real-time listener counts, peak listeners, and listening trends</p>
+            <p><em>Embed: Statistics widget from Radiojar dashboard</em></p>
+        </div>
+    </div>
+
+    <!-- Current Song/Program Widget -->
+    <div class="card">
+        <h3>🎵 Now Playing</h3>
+        <div class="radiojar-placeholder">
+            <p><strong>🎵 Radiojar Now Playing Widget</strong></p>
+            <p>Displays current song, artist, or program information</p>
+            <p><em>Embed: Now Playing widget from Radiojar dashboard</em></p>
+        </div>
+    </div>
+</div>
+
+<!-- Program Schedule Widget -->
 <h2>📅 Programs & Schedule</h2>
 <div class="card">
-    <h3>Live Programs & Schedule</h3>
-    <!-- Insert your Radiojar schedule widget embed code here -->
+    <h3>Live Programs & Upcoming Shows</h3>
     <div class="radiojar-placeholder">
-        <p><strong>📅 Radiojar Schedule Widget Goes Here</strong></p>
-        <p>Embed your Radiojar schedule widget to show current and upcoming programs</p>
+        <p><strong>📅 Radiojar Schedule Widget</strong></p>
+        <p>Shows current live programs and upcoming scheduled shows</p>
+        <p><em>Features: Live indicators, program descriptions, host information</em></p>
+        <p><em>Embed: Schedule widget from Radiojar dashboard</em></p>
     </div>
 </div>
 
-<h2>🎧 Recent Shows & Recordings</h2>
+<!-- Show Recordings & Archive -->
+<h2>🎧 Show Recordings & Archive</h2>
 <div class="card">
-    <h3>Show Archive & Recordings</h3>
-    <!-- Insert your Radiojar recordings widget embed code here -->
+    <h3>Recent Shows & On-Demand Content</h3>
     <div class="radiojar-placeholder">
-        <p><strong>🎧 Radiojar Recordings Widget Goes Here</strong></p>
-        <p>Embed your Radiojar recordings widget to show recent shows and allow playback</p>
+        <p><strong>🎧 Radiojar Recordings Widget</strong></p>
+        <p>Browse and play recorded shows, interviews, and special programs</p>
+        <p><em>Features: Playback controls, download options, episode descriptions</em></p>
+        <p><em>Embed: Recordings/Archive widget from Radiojar dashboard</em></p>
     </div>
 </div>
 
-<h2>📊 Live Statistics</h2>
+<!-- Song History Widget -->
+<h2>🎼 Recently Played</h2>
 <div class="card">
-    <h3>Listener Statistics</h3>
-    <!-- Insert your Radiojar statistics widget embed code here -->
+    <h3>Song History & Track List</h3>
     <div class="radiojar-placeholder">
-        <p><strong>📊 Radiojar Statistics Widget Goes Here</strong></p>
-        <p>Embed your Radiojar statistics widget to show real-time listener counts and analytics</p>
+        <p><strong>🎼 Radiojar Song History Widget</strong></p>
+        <p>Shows recently played songs, artists, and track information</p>
+        <p><em>Features: Track details, timestamps, artist links</em></p>
+        <p><em>Embed: Song History widget from Radiojar dashboard</em></p>
+    </div>
+</div>
+
+<!-- Chat/Social Integration -->
+<h2>💬 Live Chat & Social</h2>
+<div class="grid">
+    <div class="card">
+        <h3>💬 Live Chat</h3>
+        <div class="radiojar-placeholder">
+            <p><strong>💬 Radiojar Chat Widget</strong></p>
+            <p>Real-time chat with other listeners and show hosts</p>
+            <p><em>Embed: Chat widget from Radiojar dashboard</em></p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>📱 Social Feed</h3>
+        <div class="radiojar-placeholder">
+            <p><strong>📱 Radiojar Social Widget</strong></p>
+            <p>Social media integration and listener interactions</p>
+            <p><em>Embed: Social feed widget from Radiojar dashboard</em></p>
+        </div>
+    </div>
+</div>
+
+<!-- Request & Dedication System -->
+<h2>🎤 Listener Interaction</h2>
+<div class="grid">
+    <div class="card">
+        <h3>🎤 Song Requests</h3>
+        <div class="radiojar-placeholder">
+            <p><strong>🎤 Radiojar Request Widget</strong></p>
+            <p>Submit song requests and dedications to the DJ</p>
+            <p><em>Embed: Request form widget from Radiojar dashboard</em></p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>📞 Call-In Information</h3>
+        <div class="radiojar-placeholder">
+            <p><strong>📞 Radiojar Contact Widget</strong></p>
+            <p>Phone numbers and contact info for live shows</p>
+            <p><em>Embed: Contact/Call-in widget from Radiojar dashboard</em></p>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile App Promotion -->
+<h2>📱 Mobile Experience</h2>
+<div class="card">
+    <h3>📱 Radiojar Mobile App Integration</h3>
+    <div class="radiojar-placeholder">
+        <p><strong>📱 Radiojar Mobile App Widget</strong></p>
+        <p>Links to mobile apps and mobile-optimized listening experience</p>
+        <p><em>Features: App store links, mobile player, push notifications</em></p>
+        <p><em>Embed: Mobile app promotion widget from Radiojar dashboard</em></p>
+    </div>
+</div>
+
+<!-- Analytics Dashboard (Public View) -->
+<h2>📈 Station Analytics</h2>
+<div class="card">
+    <h3>📈 Public Analytics Dashboard</h3>
+    <div class="radiojar-placeholder">
+        <p><strong>📈 Radiojar Public Analytics Widget</strong></p>
+        <p>Public view of station performance and listener demographics</p>
+        <p><em>Features: Listener maps, peak times, popular shows</em></p>
+        <p><em>Embed: Public analytics widget from Radiojar dashboard</em></p>
     </div>
 </div>
 
@@ -107,25 +204,65 @@
 </div>
 {% endif %}
 
-<!-- How to Listen -->
-<h2>📻 How to Listen</h2>
+<!-- Radiojar Features Overview -->
+<h2>🚀 Powered by Radiojar</h2>
 <div class="grid">
     <div class="card">
-        <h3>🌐 Web Player</h3>
-        <p>Listen directly in your browser using the Radiojar player above. No downloads required!</p>
+        <h3>🎵 Professional Broadcasting</h3>
+        <p>High-quality streaming with automatic failover and global CDN delivery</p>
     </div>
     <div class="card">
-        <h3>📱 Mobile Friendly</h3>
-        <p>Our Radiojar player works perfectly on mobile devices. Just visit this page on your phone!</p>
+        <h3>📊 Real-time Analytics</h3>
+        <p>Live listener statistics, geographic data, and detailed performance metrics</p>
     </div>
     <div class="card">
-        <h3>🔄 Always Live</h3>
-        <p>We broadcast 24/7 with a mix of live programs and curated agricultural content.</p>
+        <h3>🎧 Show Recordings</h3>
+        <p>Automatic recording of live shows with on-demand playback and download options</p>
     </div>
     <div class="card">
-        <h3>📊 Real-time Data</h3>
-        <p>All program schedules, listener counts, and statistics are powered by Radiojar's real-time API.</p>
+        <h3>📅 Program Scheduling</h3>
+        <p>Advanced scheduling system with live program indicators and automated transitions</p>
     </div>
+    <div class="card">
+        <h3>💬 Listener Engagement</h3>
+        <p>Live chat, song requests, social media integration, and call-in management</p>
+    </div>
+    <div class="card">
+        <h3>📱 Mobile Optimized</h3>
+        <p>Responsive design with mobile apps and push notification support</p>
+    </div>
+</div>
+
+<!-- Setup Instructions for Admin -->
+<div style="background: #f0f8ff; border: 1px solid #b0d4f1; padding: 20px; margin: 30px 0; border-radius: 8px;">
+    <h3>🔧 Admin Setup Guide</h3>
+    <p><strong>To integrate your Radiojar widgets:</strong></p>
+    <ol style="margin: 15px 0; padding-left: 25px;">
+        <li><strong>Login to Radiojar Dashboard:</strong> Access your station management panel</li>
+        <li><strong>Navigate to Widgets/Embed:</strong> Find the widgets section in your dashboard</li>
+        <li><strong>Generate Embed Codes:</strong> Create embed codes for each widget type you want</li>
+        <li><strong>Replace Placeholders:</strong> Copy and paste the embed codes into the placeholder divs above</li>
+        <li><strong>Customize Appearance:</strong> Adjust widget settings to match your site design</li>
+        <li><strong>Test Functionality:</strong> Verify all widgets load and function correctly</li>
+    </ol>
+    
+    <h4>Available Radiojar Widgets:</h4>
+    <ul style="margin: 10px 0; padding-left: 25px;">
+        <li>🎵 <strong>Player Widget</strong> - Main streaming player with controls</li>
+        <li>📊 <strong>Statistics Widget</strong> - Real-time listener counts and analytics</li>
+        <li>📅 <strong>Schedule Widget</strong> - Program schedule with live indicators</li>
+        <li>🎧 <strong>Recordings Widget</strong> - Show archive and on-demand content</li>
+        <li>🎼 <strong>Song History Widget</strong> - Recently played tracks</li>
+        <li>🎵 <strong>Now Playing Widget</strong> - Current song/program info</li>
+        <li>💬 <strong>Chat Widget</strong> - Live listener chat</li>
+        <li>📱 <strong>Social Widget</strong> - Social media integration</li>
+        <li>🎤 <strong>Request Widget</strong> - Song request form</li>
+        <li>📞 <strong>Contact Widget</strong> - Call-in information</li>
+        <li>📱 <strong>Mobile App Widget</strong> - App promotion and links</li>
+        <li>📈 <strong>Public Analytics Widget</strong> - Public performance dashboard</li>
+    </ul>
+    
+    <p><strong>Note:</strong> Each widget can be customized for size, color scheme, and functionality to match your brand.</p>
 </div>
 
 {% endblock %}

@@ -5,10 +5,13 @@ A Django web application for Bellefu Radio - your premier agricultural radio sta
 ## 🚀 Features
 
 **Core Radio Experience (No Authentication Required):**
-- Listen to Bellefu Radio live stream via embedded Radiojar player
-- View current and upcoming radio programs/events
-- Real-time listener count updates via WebSockets
-- Live program status updates (live, upcoming, past)
+- Listen to Bellefu Radio live stream via Radiojar player widget
+- View current and upcoming programs via Radiojar schedule widget
+- Browse and play show recordings via Radiojar archive widget
+- Real-time listener statistics via Radiojar analytics widgets
+- Song history and now playing information
+- Live chat and social media integration
+- Song request and call-in functionality
 - Mobile-friendly responsive design
 - 24/7 streaming with agricultural content
 
@@ -19,10 +22,10 @@ A Django web application for Bellefu Radio - your premier agricultural radio sta
 - Personal dashboard with listening insights
 
 **Admin Features:**
-- Full program/event management
+- Radiojar dashboard integration for program management
 - Station information management
 - User management
-- Real-time WebSocket updates for events and listener counts
+- Widget customization and embed code management
 
 ## 🛠️ Installation & Setup
 
@@ -30,7 +33,7 @@ A Django web application for Bellefu Radio - your premier agricultural radio sta
 - Python 3.8+
 - pip
 - Virtual environment (recommended)
-- **Redis** (for WebSocket functionality)
+- **Radiojar Account** (for broadcasting and widgets)
 
 ### Quick Start
 
@@ -55,23 +58,7 @@ pip install -r requirements.txt
 
 4. **Install and Start Redis** (Required for WebSockets):
 
-**Windows:**
-- Download Redis from: https://github.com/microsoftarchive/redis/releases
-- Install and start Redis server
-- Or use Docker: `docker run -d -p 6379:6379 redis:alpine`
-
-**macOS:**
-```bash
-brew install redis
-brew services start redis
-```
-
-**Linux (Ubuntu/Debian):**
-```bash
-sudo apt update
-sudo apt install redis-server
-sudo systemctl start redis-server
-```
+**Note:** Redis is no longer required as we now use Radiojar's real-time widgets instead of WebSockets.
 
 5. **Environment Configuration**:
 Create a `.env` file in the project root:
@@ -107,77 +94,93 @@ Access the admin panel at `http://localhost:8000/admin/`
 
 ## 🎵 Setting Up Your Radiojar Stream
 
-### Important: Replace Placeholder with Real Stream
+### Important: Replace Placeholders with Real Radiojar Widgets
 
-1. **Get your Radiojar embed code** from your Radiojar dashboard
-2. **Edit `templates/home.html`** and replace the placeholder div with your actual Radiojar embed code
+1. **Login to your Radiojar dashboard**
+2. **Navigate to the Widgets/Embed section**
+3. **Generate embed codes** for all the widgets you want to use:
+   - Player Widget (main streaming player)
+   - Schedule Widget (program schedule)
+   - Recordings Widget (show archive)
+   - Statistics Widget (listener analytics)
+   - Now Playing Widget (current song/program)
+   - Song History Widget (recently played)
+   - Chat Widget (live chat)
+   - Request Widget (song requests)
+   - And more...
+4. **Edit `templates/home.html`** and replace each placeholder div with the corresponding Radiojar embed code
 3. **Update the stream URL** in the admin panel:
    - Go to `/admin/`
    - Edit the "Bellefu Radio" station
    - Update the `stream_url` field with your actual Radiojar stream URL
-4. **Test the player** to ensure it works correctly
+5. **Test all widgets** to ensure they load and function correctly
 
-The player will automatically integrate with the real-time listener tracking system.
+All widgets will automatically provide real-time updates and professional broadcasting features.
 
-## 🔧 WebSocket Configuration
+## 🎵 Available Radiojar Widgets
 
-### Redis Setup (Recommended for Production)
-The app is configured to use Redis for WebSocket channel layers. Make sure Redis is running on `localhost:6379`.
+### Core Widgets
+- **🎵 Player Widget** - Main streaming player with play/pause/volume controls
+- **📊 Statistics Widget** - Real-time listener counts and analytics
+- **📅 Schedule Widget** - Current and upcoming program schedule
+- **🎧 Recordings Widget** - Show archive with playback and download options
 
-### In-Memory Alternative (Development Only)
-If you can't install Redis, you can use the in-memory channel layer by uncommenting these lines in `settings.py`:
+### Content Widgets
+- **🎼 Song History Widget** - Recently played tracks with timestamps
+- **🎵 Now Playing Widget** - Current song/program information
+- **📱 Mobile App Widget** - Links to mobile apps and mobile experience
 
-```python
-# For development without Redis, use in-memory channel layer
-CHANNEL_LAYERS = {
-    'default': {
-        'backend': 'channels.layers.InMemoryChannelLayer'
-    }
-}
-```
+### Interactive Widgets
+- **💬 Chat Widget** - Live listener chat functionality
+- **📱 Social Widget** - Social media integration and feeds
+- **🎤 Request Widget** - Song request and dedication form
+- **📞 Contact Widget** - Call-in information for live shows
 
-**Note**: In-memory channels don't work with multiple server processes and should only be used for development.
+### Analytics Widgets
+- **📈 Public Analytics Widget** - Public performance dashboard
+- **🗺️ Listener Map Widget** - Geographic listener distribution
+- **📊 Peak Times Widget** - Popular listening times and trends
 
 ## 🧪 Testing the Application
 
-### 1. **Real-time Features Testing**
+### 1. **Radiojar Widget Testing**
 
-**WebSocket Connection Test**:
-1. Open browser developer tools (F12)
-2. Go to Console tab
-3. Visit any page - you should see:
-   - "Event WebSocket connected"
-   - "Station WebSocket connected"
+**Widget Loading Test**:
+1. Visit the home page
+2. Verify all Radiojar widgets load correctly
+3. Test player functionality (play/pause/volume)
+4. Check real-time updates in statistics widgets
 
-**Live Program Updates**:
-1. Open the Programs page (`/events/`)
-2. In admin panel, create a new event with current time
-3. The event should appear as "LIVE" instantly without page refresh
-4. When the event time passes, status updates automatically
+**Interactive Features Test**:
+1. Test live chat functionality (if enabled)
+2. Submit a song request through the request widget
+3. Verify social media integration works
+4. Check mobile responsiveness of all widgets
 
-**Real-time Listener Counts**:
-1. Open two browser windows/tabs
-2. In one tab, start playing the radio
-3. In the other tab, watch the listener count increase instantly
-4. Stop playing - count decreases immediately
+**Archive & Recordings Test**:
+1. Browse available show recordings
+2. Test playback functionality
+3. Verify download options (if enabled)
+4. Check episode descriptions and metadata
 
 ### 2. **User Features Testing**
 
 **Anonymous Usage**:
 - Listen to radio without creating account
-- View program schedules
-- See real-time updates
+- View program schedules via Radiojar widgets
+- Access show recordings and archives
+- Use interactive features (chat, requests)
 
 **Authenticated Usage**:
 - Create account (optional)
-- Track listening history
-- View personal statistics
+- Personalized experience
 - Manage profile
 
 ### 3. **Mobile Testing**
 - All features work on mobile devices
-- WebSocket connections work on mobile browsers
+- Radiojar widgets are mobile-responsive
 - Responsive design adapts to all screen sizes
+- Mobile app integration works correctly
 
 ## 🔧 Troubleshooting
 
@@ -194,71 +197,56 @@ python manage.py migrate
 python manage.py populate_sample_data
 ```
 
-**2. WebSocket Connection Failed**
-```
-Error: WebSocket connection failed
-```
-**Solution**: Make sure Redis is running:
-```bash
-# Check if Redis is running
-redis-cli ping
-# Should return "PONG"
-
-# If not running, start Redis:
-# Windows: Start Redis service
-# macOS: brew services start redis
-# Linux: sudo systemctl start redis-server
-```
-
-**3. Radiojar Player Not Working**
+**2. Radiojar Widgets Not Loading**
 **Solution**: 
-- Make sure you've replaced the placeholder with actual Radiojar embed code
+- Make sure you've replaced all placeholders with actual Radiojar embed codes
 - Update the stream_url in the admin panel
 - Check browser console for any JavaScript errors
+- Verify your Radiojar account is active and widgets are enabled
 
-**4. Missing Dependencies**
+**3. Missing Dependencies**
 ```
-ModuleNotFoundError: No module named 'channels'
+ModuleNotFoundError: No module named 'django'
 ```
 **Solution**: Install all required dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-## 📊 Real-time Features
-
-### WebSocket Endpoints
-- `ws://localhost:8000/ws/events/` - Live program updates
-- `ws://localhost:8000/ws/stations/` - Station listener count updates
+## 📊 Radiojar Integration Features
 
 ### Real-time Updates
-1. **Program Status Changes**: Live/upcoming/past status updates instantly
-2. **Listener Counts**: Real-time listener count updates across all pages
-3. **New Programs**: New programs appear immediately when created
-4. **Program Deletions**: Removed programs disappear instantly
+All real-time features are now handled by Radiojar widgets:
+- **Live Statistics**: Real-time listener counts and analytics
+- **Program Updates**: Current and upcoming show information
+- **Now Playing**: Current song/program information with automatic updates
+- **Chat Integration**: Live listener chat with real-time messaging
 
-### Automatic Features
-- **Auto-reconnection**: WebSocket connections automatically reconnect
-- **Error Handling**: Graceful fallback if WebSocket fails
-- **Cross-tab Updates**: Changes in one tab reflect in all open tabs
+### Professional Broadcasting Features
+1. **Show Recordings**: Automatic recording with archive access
+2. **Program Scheduling**: Advanced scheduling with live indicators
+3. **Listener Analytics**: Detailed statistics and geographic data
+4. **Mobile Integration**: Native mobile apps and responsive widgets
+
+### Interactive Features
+- **Live Chat**: Real-time listener communication
+- **Song Requests**: Listener request system with moderation
+- **Social Integration**: Social media feeds and sharing
+- **Call-in Management**: Phone integration for live shows
 
 ## 🚀 Production Deployment
 
-### WebSocket Requirements
-1. **Redis Server**: Required for production WebSocket functionality
-2. **ASGI Server**: Use Daphne or Uvicorn instead of WSGI
-3. **WebSocket Support**: Ensure your hosting supports WebSockets
+### Radiojar Requirements
+1. **Active Radiojar Account**: Professional broadcasting account
+2. **Widget Configuration**: All desired widgets enabled and configured
+3. **Stream Setup**: Live stream configured and tested
+4. **Mobile Apps**: Optional mobile app setup for enhanced experience
 
 ### Deployment Commands
 ```bash
-# Install production dependencies
-pip install daphne
-
-# Run with ASGI server
-daphne -p 8000 radio_project.asgi:application
-
-# Or with Uvicorn
-uvicorn radio_project.asgi:application --host 0.0.0.0 --port 8000
+# Standard Django deployment
+pip install gunicorn
+gunicorn radio_project.wsgi:application --bind 0.0.0.0:8000
 ```
 
 ### Environment Variables
@@ -266,64 +254,66 @@ uvicorn radio_project.asgi:application --host 0.0.0.0 --port 8000
 SECRET_KEY=your-production-secret-key
 DEBUG=False
 ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
-REDIS_URL=redis://your-redis-server:6379
 ```
 
 ## 📈 Performance Benefits
 
-### WebSocket Advantages
-- **90% Less Server Load**: No more polling every 30 seconds
-- **Instant Updates**: Real-time user experience
-- **Better UX**: No page refreshes or loading delays
-- **Scalable**: Handles many concurrent users efficiently
+### Radiojar Integration Advantages
+- **Professional Broadcasting**: Enterprise-grade streaming infrastructure
+- **Real-time Analytics**: Instant listener statistics and engagement metrics
+- **Automatic Recordings**: All shows automatically recorded and archived
+- **Global CDN**: Fast streaming worldwide with automatic failover
+- **Mobile Optimized**: Native mobile apps and responsive widgets
+- **Interactive Features**: Live chat, requests, and social integration
 
 ### Single Station Focus
 - **Simplified UI**: Clean, focused user experience
 - **Better Performance**: Optimized for single station streaming
 - **Easier Maintenance**: Less complex codebase
 - **Mobile Optimized**: Perfect for mobile radio listening
+- **Professional Features**: All broadcasting features handled by Radiojar
 
 ## 🔄 Development Workflow
 
-### Testing Real-time Features
-1. **Start Redis**: `redis-server` or service
-2. **Run Django**: `python manage.py runserver`
-3. **Open Multiple Tabs**: Test cross-tab updates
-4. **Monitor Console**: Check WebSocket connections
-5. **Test Admin Changes**: Create/modify programs and see instant updates
+### Testing Radiojar Integration
+1. **Setup Radiojar Account**: Create and configure your broadcasting account
+2. **Generate Widget Codes**: Create embed codes for all desired widgets
+3. **Replace Placeholders**: Update templates with actual embed codes
+4. **Run Django**: `python manage.py runserver`
+5. **Test All Widgets**: Verify functionality of player, schedule, recordings, etc.
 
-### Adding New Programs
-1. Go to admin panel (`/admin/`)
-2. Add new Event with appropriate timing
-3. Program appears instantly on frontend
-4. Status updates automatically based on time
+### Managing Content
+1. **Use Radiojar Dashboard**: All program management through Radiojar
+2. **Schedule Shows**: Use Radiojar's scheduling system
+3. **Monitor Analytics**: Track performance through Radiojar widgets
+4. **Manage Recordings**: Archive and organize show recordings
 
 ## 📚 Technical Architecture
 
-### WebSocket Implementation
-- **Django Channels**: Handles WebSocket connections
-- **Redis**: Channel layer for message passing
-- **ASGI**: Asynchronous server gateway interface
-- **Consumer Classes**: Handle WebSocket events
+### Radiojar Integration
+- **Widget-Based Architecture**: All radio features via Radiojar widgets
+- **Real-time API**: Live updates through Radiojar's infrastructure
+- **Professional Broadcasting**: Enterprise streaming and analytics
+- **Mobile Integration**: Native apps and responsive design
 
 ### Single Station Design
 - **Focused Experience**: All features centered around one radio station
 - **Simplified Models**: Removed unnecessary complexity
 - **Optional Authentication**: Users can listen without accounts
-- **Real-time Updates**: Instant program and listener count updates
+- **Professional Features**: Broadcasting handled by Radiojar platform
 
 ## 🆘 Support
 
 ### Getting Help
-1. **Check Console**: Look for WebSocket connection messages
-2. **Verify Redis**: Ensure Redis is running and accessible
-3. **Test Radiojar**: Verify your embed code works
-4. **Check Network**: Ensure WebSocket connections aren't blocked
+1. **Check Browser Console**: Look for JavaScript errors from widgets
+2. **Verify Radiojar Account**: Ensure your account is active and configured
+3. **Test Widget Codes**: Verify embed codes are correct and current
+4. **Check Network**: Ensure widgets can load from Radiojar's CDN
 
 ### Common Solutions
-- **Restart Redis**: `sudo systemctl restart redis-server`
+- **Update Widget Codes**: Regenerate embed codes from Radiojar dashboard
 - **Clear Browser Cache**: Hard refresh (Ctrl+F5)
-- **Check Firewall**: Ensure WebSocket ports aren't blocked
+- **Check Radiojar Status**: Verify Radiojar services are operational
 - **Update Dependencies**: `pip install -r requirements.txt --upgrade`
 
 ---
@@ -332,11 +322,13 @@ REDIS_URL=redis://your-redis-server:6379
 
 Bellefu Radio now features:
 - ✅ **Single station focus** for better user experience
-- ✅ **Real-time WebSocket updates** for programs and listener counts
+- ✅ **Professional Radiojar integration** with all broadcasting widgets
+- ✅ **Show recordings and archives** for on-demand listening
+- ✅ **Real-time analytics and statistics** via Radiojar widgets
+- ✅ **Interactive features** including chat, requests, and social integration
 - ✅ **Optional user authentication** - listen without accounts
-- ✅ **Radiojar integration** for professional streaming
 - ✅ **Mobile-optimized** responsive design
-- ✅ **Admin-friendly** program management
+- ✅ **Professional broadcasting** with enterprise-grade features
 - ✅ **Production-ready** with proper deployment instructions
 
-Start the server and begin broadcasting with Bellefu Radio!
+Start the server, configure your Radiojar widgets, and begin professional broadcasting with Bellefu Radio!
