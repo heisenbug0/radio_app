@@ -11,30 +11,16 @@
 <div class="radiojar-player">
     <h3>🔴 Live Radio Stream</h3>
     
-    <!-- TODO: Replace this placeholder with actual Radiojar embed code -->
+    <!-- Insert your Radiojar player embed code here -->
     <div class="radiojar-placeholder">
-        <p><strong>🎵 Radiojar Player will be embedded here</strong></p>
-        <p>Replace this section with the embed code from your Radiojar dashboard</p>
-        <p>Example: <code>&lt;iframe src="your-radiojar-embed-url"&gt;&lt;/iframe&gt;</code></p>
+        <p><strong>🎵 Radiojar Player Embed Code Goes Here</strong></p>
+        <p>Replace this placeholder with your actual Radiojar player embed code from your dashboard</p>
         {% if bellefu_station %}
         <div style="margin: 15px 0; padding: 15px; background: white; border-radius: 4px;">
             <p><strong>Station:</strong> {{ bellefu_station.name }}</p>
             <p><strong>Stream URL:</strong> <code>{{ bellefu_station.stream_url }}</code></p>
-            <p><strong>Current Listeners:</strong> <span class="listener-count" data-station-id="{{ bellefu_station.id }}">{{ bellefu_station.listeners_count }}</span></p>
         </div>
         {% endif %}
-    </div>
-    
-    <!-- Instructions for admin -->
-    <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; font-size: 14px;">
-        <strong>🔧 Admin Setup Instructions:</strong>
-        <ol style="text-align: left; margin: 10px 0;">
-            <li>Get your embed code from your Radiojar dashboard</li>
-            <li>Replace the placeholder div above with the actual embed code</li>
-            <li>Update the stream_url in the database with your Radiojar stream URL</li>
-            <li>Test the player to ensure it works correctly</li>
-        </ol>
-        <p><strong>Note:</strong> The player will automatically track listener counts and integrate with the real-time features.</p>
     </div>
 </div>
 
@@ -57,10 +43,6 @@
             <td><strong>Stream Quality:</strong></td>
             <td>{{ bellefu_station.get_quality_display }}</td>
         </tr>
-        <tr>
-            <td><strong>Current Listeners:</strong></td>
-            <td><strong><span class="listener-count" data-station-id="{{ bellefu_station.id }}">{{ bellefu_station.listeners_count }}</span></strong></td>
-        </tr>
         {% if bellefu_station.website_url %}
         <tr>
             <td><strong>Website:</strong></td>
@@ -71,90 +53,42 @@
 </div>
 {% endif %}
 
-<!-- Live Programs -->
-<h2>🔴 Live Now</h2>
-{% if live_events %}
-<table>
-    <thead>
-        <tr>
-            <th>Program</th>
-            <th class="hide-mobile">Host</th>
-            <th>Time</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for event in live_events %}
-        <tr style="background: #fee7e6;">
-            <td>
-                <strong>{{ event.title }}</strong>
-                {% if event.description %}
-                <br><small>{{ event.description|truncatewords:15 }}</small>
-                {% endif %}
-                <div class="hide-mobile" style="font-size: 12px; color: #666; margin-top: 4px;">
-                    Host: {{ event.host|default:"N/A" }} • {{ event.get_event_type_display }}
-                </div>
-            </td>
-            <td class="hide-mobile">{{ event.host|default:"N/A" }}</td>
-            <td>{{ event.start_time|date:"H:i" }} - {{ event.end_time|date:"H:i" }}</td>
-            <td class="event-status status-live" data-event-id="{{ event.id }}">
-                <span class="live-indicator"></span>LIVE
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p>No live programs at the moment. Check our <a href="{% url 'events' %}">program schedule</a> for upcoming shows.</p>
-{% endif %}
-
-<!-- Upcoming Programs -->
-<h2>📅 Coming Up Next</h2>
-{% if upcoming_events %}
-<div class="grid">
-    {% for event in upcoming_events %}
-    <div class="card">
-        <h3>{{ event.title }}</h3>
-        <p><strong>Host:</strong> {{ event.host|default:"N/A" }}</p>
-        <p><strong>Time:</strong> {{ event.start_time|date:"M d, Y H:i" }} - {{ event.end_time|date:"H:i" }}</p>
-        <p><strong>Type:</strong> {{ event.get_event_type_display }}</p>
-        {% if event.description %}
-        <p>{{ event.description|truncatewords:20 }}</p>
-        {% endif %}
-        {% if event.is_featured %}
-        <p><strong>⭐ Featured Program</strong></p>
-        {% endif %}
-        <p><small>Starts in {{ event.start_time|timesince }}</small></p>
+<!-- Radiojar Widgets Section -->
+<h2>📅 Programs & Schedule</h2>
+<div class="card">
+    <h3>Live Programs & Schedule</h3>
+    <!-- Insert your Radiojar schedule widget embed code here -->
+    <div class="radiojar-placeholder">
+        <p><strong>📅 Radiojar Schedule Widget Goes Here</strong></p>
+        <p>Embed your Radiojar schedule widget to show current and upcoming programs</p>
     </div>
-    {% endfor %}
 </div>
-<p><a href="{% url 'events' %}">View full program schedule →</a></p>
-{% else %}
-<p>No upcoming programs scheduled. Check back later for updates!</p>
-{% endif %}
 
-<!-- Station Statistics -->
+<h2>🎧 Recent Shows & Recordings</h2>
+<div class="card">
+    <h3>Show Archive & Recordings</h3>
+    <!-- Insert your Radiojar recordings widget embed code here -->
+    <div class="radiojar-placeholder">
+        <p><strong>🎧 Radiojar Recordings Widget Goes Here</strong></p>
+        <p>Embed your Radiojar recordings widget to show recent shows and allow playback</p>
+    </div>
+</div>
+
 <h2>📊 Live Statistics</h2>
-<table>
-    <tr>
-        <th>Current Listeners:</th>
-        <td><strong id="total-listeners">{{ stats.total_listeners }}</strong></td>
-    </tr>
-    <tr>
-        <th>Live Programs:</th>
-        <td>{{ stats.live_events }}</td>
-    </tr>
-    <tr>
-        <th>Upcoming Programs:</th>
-        <td>{{ stats.upcoming_events }}</td>
-    </tr>
-</table>
+<div class="card">
+    <h3>Listener Statistics</h3>
+    <!-- Insert your Radiojar statistics widget embed code here -->
+    <div class="radiojar-placeholder">
+        <p><strong>📊 Radiojar Statistics Widget Goes Here</strong></p>
+        <p>Embed your Radiojar statistics widget to show real-time listener counts and analytics</p>
+    </div>
+</div>
 
 <!-- Optional User Features -->
+{% if not user.is_authenticated %}
 <div class="optional-feature">
-    <h3>📈 Track Your Listening (Optional)</h3>
-    <p>Want to track your listening history and get personalized recommendations? Create a free account!</p>
-    {% if not user.is_authenticated %}
+    <h3>📈 Create Your Account (Optional)</h3>
+    <p>Want to personalize your experience? Create a free account to manage your profile and preferences!</p>
     <p style="margin-top: 10px;">
         <a href="{% url 'register' %}" style="display: inline-block; padding: 8px 16px; background: #000; color: white; text-decoration: none; border-radius: 4px; margin-right: 10px;">Create Free Account</a>
         <a href="{% url 'login' %}" style="display: inline-block; padding: 8px 16px; border: 1px solid #000; color: #000; text-decoration: none; border-radius: 4px;">Login</a>
@@ -162,71 +96,36 @@
     <p style="margin-top: 10px; font-size: 12px; color: #666;">
         <strong>Note:</strong> Account creation is completely optional. You can listen to the radio without signing up!
     </p>
-    {% else %}
+</div>
+{% else %}
+<div class="optional-feature">
+    <h3>👋 Welcome back, {{ user.get_full_name|default:user.username }}!</h3>
+    <p>Manage your account settings and preferences in your dashboard.</p>
     <p style="margin-top: 10px;">
         <a href="{% url 'dashboard' %}" style="display: inline-block; padding: 8px 16px; background: #000; color: white; text-decoration: none; border-radius: 4px;">View Your Dashboard</a>
     </p>
-    {% endif %}
 </div>
+{% endif %}
 
 <!-- How to Listen -->
 <h2>📻 How to Listen</h2>
 <div class="grid">
     <div class="card">
         <h3>🌐 Web Player</h3>
-        <p>Listen directly in your browser using the player above. No downloads required!</p>
+        <p>Listen directly in your browser using the Radiojar player above. No downloads required!</p>
     </div>
     <div class="card">
         <h3>📱 Mobile Friendly</h3>
-        <p>Our web player works perfectly on mobile devices. Just visit this page on your phone!</p>
+        <p>Our Radiojar player works perfectly on mobile devices. Just visit this page on your phone!</p>
     </div>
     <div class="card">
         <h3>🔄 Always Live</h3>
         <p>We broadcast 24/7 with a mix of live programs and curated agricultural content.</p>
     </div>
+    <div class="card">
+        <h3>📊 Real-time Data</h3>
+        <p>All program schedules, listener counts, and statistics are powered by Radiojar's real-time API.</p>
+    </div>
 </div>
-
-{% csrf_token %}
-
-<script>
-// Simple listener tracking for the Radiojar player
-// This will be called when the Radiojar player starts/stops
-let isListening = false;
-let listenStartTime = null;
-let stationId = {% if bellefu_station %}{{ bellefu_station.id }}{% else %}null{% endif %};
-
-function onRadiojarPlay() {
-    if (!isListening && stationId) {
-        isListening = true;
-        listenStartTime = new Date();
-        incrementListeners(stationId);
-        console.log('Started listening to Bellefu Radio');
-    }
-}
-
-function onRadiojarPause() {
-    if (isListening && stationId) {
-        isListening = false;
-        decrementListeners(stationId);
-        
-        // Record listening session if user is logged in
-        if (listenStartTime) {
-            const durationMinutes = Math.round((new Date() - listenStartTime) / 60000);
-            if (durationMinutes > 0) {
-                recordListeningSession(stationId, durationMinutes);
-            }
-        }
-        
-        console.log('Stopped listening to Bellefu Radio');
-    }
-}
-
-// Clean up when user leaves the page
-window.addEventListener('beforeunload', function() {
-    if (isListening) {
-        onRadiojarPause();
-    }
-});
-</script>
 
 {% endblock %}

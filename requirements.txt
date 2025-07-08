@@ -1,14 +1,9 @@
-daphne
 Django
 djangorestframework
 django-cors-headers
 django-filter
 Pillow
 python-decouple
-channels
-channels-redis
-redis
-asgiref
 gunicorn
 psycopg2-binary
 dj-database-url

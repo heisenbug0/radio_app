@@ -7,57 +7,6 @@
 
 <p>Welcome back, <strong>{{ user.get_full_name|default:user.username }}</strong>!</p>
 
-<!-- Quick Stats -->
-<h2>Your Listening Statistics</h2>
-<table>
-    <tr>
-        <th>Total Listening Sessions:</th>
-        <td>{{ listening_stats.total_sessions }}</td>
-    </tr>
-    <tr>
-        <th>Total Listening Time:</th>
-        <td>{{ listening_stats.total_hours }} hours ({{ listening_stats.total_minutes }} minutes)</td>
-    </tr>
-    <tr>
-        <th>Member Since:</th>
-        <td>{{ user.date_joined|date:"M d, Y" }}</td>
-    </tr>
-</table>
-
-<!-- Recent Listening History -->
-<h2>Recent Listening History</h2>
-{% if listening_history %}
-<table>
-    <thead>
-        <tr>
-            <th>Program/Session</th>
-            <th class="hide-mobile">Date & Time</th>
-            <th>Duration</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for session in listening_history %}
-        <tr>
-            <td>
-                <strong>{{ session.station.name }}</strong>
-                <br><small>{{ session.station.description|truncatewords:10 }}</small>
-                <div class="hide-mobile" style="font-size: 12px; color: #666; margin-top: 4px;">
-                    {{ session.started_at|date:"M d, Y H:i" }}
-                </div>
-            </td>
-            <td class="hide-mobile">{{ session.started_at|date:"M d, Y H:i" }}</td>
-            <td>{{ session.duration_minutes }} minutes</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
-<p><a href="{% url 'listening_history' %}">View full listening history →</a></p>
-{% else %}
-<p>No listening history yet. Start listening to Bellefu Radio to track your sessions!</p>
-<p><a href="{% url 'home' %}">Go to Home Page →</a></p>
-{% endif %}
-
 <!-- Profile Management -->
 <h2>Profile Settings</h2>
 <form method="POST" action="{% url 'update_profile' %}" style="max-width: 600px;">
@@ -89,6 +38,40 @@
     </div>
 </form>
 
+<!-- Account Information -->
+<h2>Account Information</h2>
+<table>
+    <tr>
+        <th>Username:</th>
+        <td>{{ user.username }}</td>
+    </tr>
+    <tr>
+        <th>Email:</th>
+        <td>{{ user.email|default:"Not provided" }}</td>
+    </tr>
+    <tr>
+        <th>Member Since:</th>
+        <td>{{ user.date_joined|date:"M d, Y" }}</td>
+    </tr>
+    <tr>
+        <th>Location:</th>
+        <td>{{ profile.location|default:"Not provided" }}</td>
+    </tr>
+</table>
+
+<!-- Radiojar Integration Notice -->
+<div class="card">
+    <h3>📊 Your Listening Data</h3>
+    <p>Your listening history and statistics are now managed through Radiojar's analytics system. This provides more accurate and detailed insights into your listening habits.</p>
+    <p><strong>Benefits of Radiojar Integration:</strong></p>
+    <ul style="margin: 10px 0; padding-left: 20px;">
+        <li>Real-time listening statistics</li>
+        <li>Detailed program analytics</li>
+        <li>Cross-platform listening history</li>
+        <li>Enhanced user experience</li>
+    </ul>
+</div>
+
 <!-- Quick Links -->
 <h2>Quick Links</h2>
 <div class="grid">
@@ -98,16 +81,10 @@
         <p><a href="{% url 'home' %}">Go to Home Page →</a></p>
     </div>
     <div class="card">
-        <h3>Program Schedule</h3>
-        <p>View upcoming programs and events</p>
-        <p><a href="{% url 'events' %}">View Programs →</a></p>
-    </div>
-    <div class="card">
-        <h3>Listening History</h3>
-        <p>Review your complete listening history</p>
-        <p><a href="{% url 'listening_history' %}">View History →</a></p>
+        <h3>Account Settings</h3>
+        <p>Update your profile information and preferences</p>
+        <p><em>Profile settings are available above</em></p>
     </div>
 </div>
 
-{% csrf_token %}
 {% endblock %}

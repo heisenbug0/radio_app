@@ -10,7 +10,6 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,*.onrender.com').split(',')
 
 INSTALLED_APPS = [
-    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -19,7 +18,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
-    'channels',
     'radio_app',
 ]
 
@@ -54,7 +52,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'radio_project.wsgi.application'
-ASGI_APPLICATION = 'radio_project.asgi.application'
 
 # Database configuration for Render (PostgreSQL)
 DATABASES = {
@@ -122,25 +119,6 @@ CORS_ALLOWED_ORIGINS = [
 # Allow all origins in production (you can restrict this later)
 if not DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
-
-# Channel layers configuration
-# Use Redis in production, in-memory for development
-if config('REDIS_URL', default=None):
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels_redis.core.RedisChannelLayer',
-            'CONFIG': {
-                "hosts": [config('REDIS_URL')],
-            },
-        },
-    }
-else:
-    # Fallback to in-memory for development
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels.layers.InMemoryChannelLayer'
-        }
-    }
 
 # Security settings for production
 if not DEBUG:

@@ -1,1 +1,1 @@
-web: daphne radio_project.asgi:application -p $PORT -b 0.0.0.0
+web: gunicorn radio_project.wsgi:application -p $PORT -b 0.0.0.0
