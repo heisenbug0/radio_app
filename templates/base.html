@@ -11,6 +11,9 @@
     <!-- Radiojar Schedule Stylesheet -->
     <link rel="stylesheet" href="//www.radiojar.com/wrappers/api-plugins/v1/css/schedule.css">
     
+    <!-- Radiojar DJs List Stylesheet -->
+    <link rel="stylesheet" href="//www.radiojar.com/wrappers/api-plugins/v1/css/djs-list.css">
+    
     <style>
         /* Clean, modern CSS */
         * {
@@ -417,6 +420,11 @@
         
         // Initialize Radiojar Schedule Widget
         rjq('#rj-schedule').radiojar('schedule', {
+            streamName: "v994btp2gd0uv"
+        });
+        
+        // Initialize Radiojar DJs Widget
+        rjq('#rj-djs-list').radiojar('djs', {
             streamName: "v994btp2gd0uv"
         });
     </script>

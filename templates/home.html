@@ -180,6 +180,24 @@
     </div>
 </div>
 
+<!-- DJs & Hosts -->
+<h2>🎤 Our DJs & Hosts</h2>
+<div class="card">
+    <h3>Meet the Voices of Bellefu Radio</h3>
+    
+    <!-- Radiojar DJs Widget -->
+    <div id="rj-djs-list"></div>
+    <script id="lists-dj-item" type="text/html">
+        <li class="rj-dj-item">
+            <div class="content">
+                <img class="item-thumb" src="//www.radiojar.com/content/users/<%=dj.id%>/image/" />
+                <h4 class="item-nickname"><%= dj.basic_info.first_name %> <%= dj.basic_info.last_name %></h4>
+                <h5 class="item-name"><%= dj.dj_info.nickname %></h5>
+            </div>
+        </li>
+    </script>
+</div>
+
 <!-- Show Recordings & Archive -->
 <h2>🎧 Show Recordings & Archive</h2>
 <div class="card">
