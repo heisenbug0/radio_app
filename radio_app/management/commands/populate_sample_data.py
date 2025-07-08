@@ -33,7 +33,7 @@ class Command(BaseCommand):
         station_data = {
             'name': 'Bellefu Radio',
             'description': 'Your premier agricultural radio station broadcasting from Nigeria. Featuring farming news, weather updates, market prices, and educational content for farmers and agricultural communities.',
-            'stream_url': 'https://your-radiojar-stream-url-here.com/stream',  # Replace with actual Radiojar URL
+            'stream_url': 'https://stream.radiojar.com/v994btp2gd0uv',
             'website_url': 'https://bellefuradio.com',
             'country': 'Nigeria',
             'language': 'English',

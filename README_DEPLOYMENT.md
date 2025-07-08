@@ -107,7 +107,7 @@ Add these environment variables in the Render dashboard:
 ### Example Radiojar Embed Code
 Replace the placeholder in `templates/home.html` with something like:
 ```html
-<iframe src="https://www.radiojar.com/embed/your-station-id" 
+<iframe src="https://stream.radiojar.com/v994btp2gd0uv" 
         width="100%" 
         height="150" 
         frameborder="0" 

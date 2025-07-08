@@ -112,7 +112,7 @@ Access the admin panel at `http://localhost:8000/admin/`
 3. **Update the stream URL** in the admin panel:
    - Go to `/admin/`
    - Edit the "Bellefu Radio" station
-   - Update the `stream_url` field with your actual Radiojar stream URL
+   - Update the `stream_url` field with: https://stream.radiojar.com/v994btp2gd0uv
 5. **Test all widgets** to ensure they load and function correctly
 
 All widgets will automatically provide real-time updates and professional broadcasting features.
