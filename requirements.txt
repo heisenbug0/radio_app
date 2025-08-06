@@ -3,7 +3,6 @@ pinecone
 pandas
 numpy
 scikit-learn
-pytesseract
 Pillow
 opencv-python
 tensorflow
@@ -14,3 +13,5 @@ beautifulsoup4
 selenium
 webdriver-manager
 python-dotenv
+google-cloud-vision
+easyocr

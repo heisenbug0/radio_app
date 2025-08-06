@@ -1,182 +1,103 @@
-import pytesseract
-from PIL import Image
-import cv2
-import numpy as np
 import os
+from PIL import Image
+import io
 import re
 
 class OCRService:
     def __init__(self):
-        # Configure Tesseract path if needed
+        # Initialize Google Cloud Vision client
         try:
-            # For Linux, Tesseract is usually in PATH
-            pytesseract.get_tesseract_version()
+            from google.cloud import vision
+            self.client = vision.ImageAnnotatorClient()
+            self.use_google_vision = True
+            print("Google Cloud Vision API initialized successfully")
         except Exception as e:
-            print(f"Warning: Tesseract not found in PATH. Error: {e}")
-            # You may need to set the path manually on some systems
-            # pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
-    
-    def preprocess_image(self, image):
-        """Preprocess image for better OCR results"""
-        # Convert to numpy array if it's a PIL Image
-        if isinstance(image, Image.Image):
-            image = np.array(image)
+            print(f"Warning: Google Cloud Vision not available: {e}")
+            print("Please set GOOGLE_APPLICATION_CREDENTIALS environment variable")
+            self.use_google_vision = False
+            self.client = None
         
-        # Convert to grayscale
-        if len(image.shape) == 3:
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        else:
-            gray = image
-        
-        # Apply noise reduction
-        denoised = cv2.medianBlur(gray, 3)
-        
-        # Apply thresholding to get binary image
-        _, binary = cv2.threshold(denoised, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        
-        # Apply morphological operations to clean up the image
-        kernel = np.ones((1, 1), np.uint8)
-        cleaned = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
-        
-        return cleaned
-    
-    def preprocess_for_handwriting(self, image):
-        """Special preprocessing for handwriting recognition"""
-        # Convert to numpy array if it's a PIL Image
-        if isinstance(image, Image.Image):
-            image = np.array(image)
-        
-        # Convert to grayscale
-        if len(image.shape) == 3:
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        else:
-            gray = image
-        
-        # Apply Gaussian blur to reduce noise
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        
-        # Apply adaptive thresholding for better handwriting
-        adaptive_thresh = cv2.adaptiveThreshold(
-            blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
-        )
-        
-        # Apply morphological operations
-        kernel = np.ones((2, 2), np.uint8)
-        processed = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel)
-        
-        return processed
-    
-    def preprocess_for_low_contrast(self, image):
-        """Preprocessing for low contrast images"""
-        # Convert to numpy array if it's a PIL Image
-        if isinstance(image, Image.Image):
-            image = np.array(image)
-        
-        # Convert to grayscale
-        if len(image.shape) == 3:
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        else:
-            gray = image
-        
-        # Apply histogram equalization to improve contrast
-        equalized = cv2.equalizeHist(gray)
-        
-        # Apply bilateral filter to reduce noise while preserving edges
-        filtered = cv2.bilateralFilter(equalized, 9, 75, 75)
-        
-        # Apply Otsu thresholding
-        _, binary = cv2.threshold(filtered, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        
-        return binary
-    
-    def preprocess_for_small_text(self, image):
-        """Preprocessing for small text"""
-        # Convert to numpy array if it's a PIL Image
-        if isinstance(image, Image.Image):
-            image = np.array(image)
-        
-        # Convert to grayscale
-        if len(image.shape) == 3:
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        else:
-            gray = image
-        
-        # Scale up the image for better OCR
-        height, width = gray.shape
-        scale_factor = 2
-        scaled = cv2.resize(gray, (width * scale_factor, height * scale_factor), interpolation=cv2.INTER_CUBIC)
-        
-        # Apply sharpening filter
-        kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
-        sharpened = cv2.filter2D(scaled, -1, kernel)
-        
-        # Apply thresholding
-        _, binary = cv2.threshold(sharpened, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        
-        return binary
+        # Initialize EasyOCR as fallback
+        try:
+            import easyocr
+            self.reader = easyocr.Reader(['en'])
+            self.use_easyocr = True
+            print("EasyOCR fallback initialized successfully")
+        except Exception as e:
+            print(f"Warning: EasyOCR not available: {e}")
+            self.use_easyocr = False
+            self.reader = None
     
     def extract_text(self, image_path=None, image_data=None):
-        """Extract text from image using OCR with multiple attempts"""
+        """Extract text from image using Google Cloud Vision API with EasyOCR fallback"""
+        # Try Google Cloud Vision first
+        if self.use_google_vision:
+            result = self._extract_with_google_vision(image_path, image_data)
+            if result['success']:
+                return result
+        
+        # Fallback to EasyOCR
+        if self.use_easyocr:
+            result = self._extract_with_easyocr(image_path, image_data)
+            if result['success']:
+                return result
+        
+        # No OCR available
+        return {
+            'success': False,
+            'error': 'No OCR service available. Please set up Google Cloud Vision API or install EasyOCR.',
+            'extracted_text': '',
+            'raw_text': ''
+        }
+    
+    def _extract_with_google_vision(self, image_path=None, image_data=None):
+        """Extract text using Google Cloud Vision API"""
         try:
+            # Load image
             if image_path:
-                # Load image from file path
-                image = Image.open(image_path)
+                with open(image_path, 'rb') as image_file:
+                    content = image_file.read()
             elif image_data:
-                # Load image from file data
-                image = Image.open(image_data)
+                content = image_data.read()
             else:
                 raise ValueError("Either image_path or image_data must be provided")
             
-            # Try multiple preprocessing methods and OCR configurations
-            results = []
+            # Create image object
+            from google.cloud import vision
+            image = vision.Image(content=content)
             
-            # Method 1: Standard preprocessing
-            processed_image = self.preprocess_image(image)
-            text1 = pytesseract.image_to_string(processed_image, config='--psm 6')
-            results.append(text1)
+            # Perform text detection
+            response = self.client.text_detection(image=image)
             
-            # Method 2: Handwriting-optimized preprocessing
-            processed_handwriting = self.preprocess_for_handwriting(image)
-            text2 = pytesseract.image_to_string(processed_handwriting, config='--psm 6')
-            results.append(text2)
+            if response.error.message:
+                return {
+                    'success': False,
+                    'error': response.error.message,
+                    'extracted_text': '',
+                    'raw_text': ''
+                }
             
-            # Method 3: Try with different PSM modes for handwriting
-            text3 = pytesseract.image_to_string(processed_handwriting, config='--psm 8')
-            results.append(text3)
+            # Extract text from response
+            texts = response.text_annotations
             
-            # Method 4: Try with original image
-            text4 = pytesseract.image_to_string(image, config='--psm 6')
-            results.append(text4)
+            if not texts:
+                return {
+                    'success': True,
+                    'extracted_text': '',
+                    'raw_text': ''
+                }
             
-            # Method 5: Try with different threshold
-            _, binary_alt = cv2.threshold(processed_handwriting, 127, 255, cv2.THRESH_BINARY)
-            text5 = pytesseract.image_to_string(binary_alt, config='--psm 6')
-            results.append(text5)
+            # Get the full text (first element contains all text)
+            full_text = texts[0].description
+            raw_text = full_text
             
-            # Method 6: Low contrast preprocessing
-            processed_low_contrast = self.preprocess_for_low_contrast(image)
-            text6 = pytesseract.image_to_string(processed_low_contrast, config='--psm 6')
-            results.append(text6)
-            
-            # Method 7: Small text preprocessing
-            processed_small_text = self.preprocess_for_small_text(image)
-            text7 = pytesseract.image_to_string(processed_small_text, config='--psm 6')
-            results.append(text7)
-            
-            # Method 8: Try with different PSM modes for small text
-            text8 = pytesseract.image_to_string(processed_small_text, config='--psm 8')
-            results.append(text8)
-            
-            # Choose the best result based on length and quality
-            best_text = self.select_best_result(results)
-            
-            # Clean the extracted text
-            cleaned_text = self.clean_extracted_text(best_text)
+            # Clean and normalize the extracted text
+            cleaned_text = self.clean_extracted_text(full_text)
             
             return {
                 'success': True,
                 'extracted_text': cleaned_text,
-                'raw_text': best_text
+                'raw_text': raw_text
             }
             
         except Exception as e:
@@ -187,67 +108,49 @@ class OCRService:
                 'raw_text': ''
             }
     
-    def select_best_result(self, results):
-        """Select the best OCR result from multiple attempts"""
-        if not results:
-            return ""
-        
-        # Filter out empty results
-        valid_results = [r for r in results if r and r.strip()]
-        
-        if not valid_results:
-            return ""
-        
-        # Score each result based on length and readability
-        scored_results = []
-        for text in valid_results:
-            score = 0
-            cleaned = self.clean_extracted_text(text)
+    def _extract_with_easyocr(self, image_path=None, image_data=None):
+        """Extract text using EasyOCR as fallback"""
+        try:
+            # Load image
+            if image_path:
+                image = Image.open(image_path)
+            elif image_data:
+                image = Image.open(image_data)
+            else:
+                raise ValueError("Either image_path or image_data must be provided")
             
-            # Prefer longer results (but not too long)
-            if 3 <= len(cleaned) <= 100:
-                score += len(cleaned) * 2
-            elif len(cleaned) > 100:
-                # Penalize very long results
-                score -= (len(cleaned) - 100) * 0.5
+            # Convert to RGB if necessary
+            if image.mode != 'RGB':
+                image = image.convert('RGB')
             
-            # Prefer results with more alphanumeric characters
-            alnum_ratio = sum(1 for c in cleaned if c.isalnum()) / max(len(cleaned), 1)
-            score += alnum_ratio * 100
+            # Perform OCR
+            results = self.reader.readtext(image)
             
-            # Prefer results with more words (likely to be actual text)
-            word_count = len(cleaned.split())
-            if 1 <= word_count <= 10:
-                score += word_count * 5
+            # Extract text from results
+            texts = []
+            for (bbox, text, confidence) in results:
+                if confidence > 0.5:  # Only include high-confidence results
+                    texts.append(text)
             
-            # Penalize results with too many special characters
-            special_chars = sum(1 for c in cleaned if not c.isalnum() and not c.isspace())
-            score -= special_chars * 2
+            full_text = ' '.join(texts)
+            raw_text = full_text
             
-            # Bonus for common words that might indicate a product query
-            common_words = ['headphones', 'mouse', 'keyboard', 'laptop', 'phone', 'camera', 'book', 'pen', 'paper', 'desk', 'chair', 'table', 'light', 'fan', 'speaker', 'monitor', 'printer', 'scanner', 'wireless', 'bluetooth', 'usb', 'hdmi', 'cable', 'battery', 'charger']
-            for word in common_words:
-                if word in cleaned.lower():
-                    score += 20
+            # Clean and normalize the extracted text
+            cleaned_text = self.clean_extracted_text(full_text)
             
-            # Penalize results that are mostly numbers or single characters
-            if len(cleaned) > 0:
-                digit_ratio = sum(1 for c in cleaned if c.isdigit()) / len(cleaned)
-                if digit_ratio > 0.7:
-                    score -= 50
-                
-                single_char_ratio = sum(1 for c in cleaned if len(c) == 1) / len(cleaned)
-                if single_char_ratio > 0.8:
-                    score -= 30
+            return {
+                'success': True,
+                'extracted_text': cleaned_text,
+                'raw_text': raw_text
+            }
             
-            scored_results.append((score, cleaned))
-        
-        # Return the result with the highest score
-        if scored_results:
-            scored_results.sort(key=lambda x: x[0], reverse=True)
-            return scored_results[0][1]
-        
-        return valid_results[0] if valid_results else ""
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e),
+                'extracted_text': '',
+                'raw_text': ''
+            }
     
     def clean_extracted_text(self, text):
         """Clean and normalize extracted text"""
@@ -263,7 +166,7 @@ class OCRService:
         # Convert to lowercase for consistency
         cleaned = cleaned.lower()
         
-        # Common OCR corrections for handwriting
+        # Common OCR corrections for modern OCR
         corrections = {
             '0': 'o',  # Common OCR mistake
             '1': 'l',  # Common OCR mistake
