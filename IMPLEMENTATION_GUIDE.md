@@ -4,7 +4,7 @@ This guide provides step-by-step instructions to implement all tasks from the RE
 
 ## Current Issues Fixed
 
-1. **Pinecone API Error**: Updated to support both old and new Pinecone APIs
+1. **Pinecone API Error**: Updated to use the latest Pinecone API (v7.3.0+) following official documentation
 2. **Aggregation Error**: Fixed data type issues in pandas groupby operations
 3. **Missing Environment Variables**: Added proper error handling for missing Pinecone API key
 4. **Service Initialization**: Made services more robust with graceful error handling
@@ -26,9 +26,9 @@ This guide provides step-by-step instructions to implement all tasks from the RE
 - **Status**: ✅ Implemented
 - **File**: `services/data_preparation.py`
 - **Features**:
-  - Pinecone integration with fallback to local storage
-  - Supports both old and new Pinecone APIs
-  - Automatic index creation
+  - Pinecone integration with latest API (v7.3.0+)
+  - Fallback to local storage when Pinecone unavailable
+  - Automatic index creation and management
 
 #### Task 3: Similarity Metrics Selection
 - **Status**: ✅ Implemented
@@ -180,7 +180,7 @@ python app.py
 
 ### Pinecone Issues
 - **Problem**: "module 'pinecone' has no attribute 'init'"
-- **Solution**: Updated code to support both old and new Pinecone APIs
+- **Solution**: Updated code to use latest Pinecone API (v7.3.0+) following official documentation
 - **Fallback**: Local storage when Pinecone is unavailable
 
 ### Aggregation Issues

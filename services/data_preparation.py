@@ -17,46 +17,31 @@ class DataPreparationService:
         self.initialize_pinecone()
     
     def initialize_pinecone(self):
-        """Initialize Pinecone vector database"""
+        """Initialize Pinecone vector database using latest API"""
         try:
             api_key = os.getenv('PINECONE_API_KEY')
-            environment = os.getenv('PINECONE_ENVIRONMENT', 'gcp-starter')
             
             if api_key:
-                # Try to import and use the new Pinecone API
-                try:
-                    import pinecone
-                    from pinecone import Pinecone
-                    
-                    # Initialize with new API
-                    pc = Pinecone(api_key=api_key)
-                    index_name = "product-recommendations"
-                    
-                    # Check if index exists, if not create it
-                    if index_name not in [index.name for index in pc.list_indexes()]:
-                        pc.create_index(
-                            name=index_name,
-                            dimension=1000,
-                            metric="cosine"
-                        )
-                    
-                    self.pinecone_index = pc.Index(index_name)
-                    print("Pinecone initialized successfully with new API")
-                except ImportError:
-                    # Fallback to old API
-                    import pinecone
-                    pinecone.init(api_key=api_key, environment=environment)
-                    index_name = "product-recommendations"
-                    
-                    if index_name not in pinecone.list_indexes():
-                        pinecone.create_index(
-                            name=index_name,
-                            dimension=1000,
-                            metric="cosine"
-                        )
-                    
-                    self.pinecone_index = pinecone.Index(index_name)
-                    print("Pinecone initialized successfully with legacy API")
+                # Use the latest Pinecone API (v7.3.0+)
+                from pinecone import Pinecone
+                
+                # Initialize Pinecone client
+                pc = Pinecone(api_key=api_key)
+                index_name = "product-recommendations"
+                
+                # Check if index exists, if not create it
+                existing_indexes = [index.name for index in pc.list_indexes()]
+                if index_name not in existing_indexes:
+                    pc.create_index(
+                        name=index_name,
+                        dimension=1000,
+                        metric="cosine"
+                    )
+                    print(f"Created new Pinecone index: {index_name}")
+                
+                # Connect to the index
+                self.pinecone_index = pc.Index(index_name)
+                print("Pinecone initialized successfully with latest API")
             else:
                 print("Warning: PINECONE_API_KEY not found. Using local storage only.")
         except Exception as e:
@@ -114,7 +99,7 @@ class DataPreparationService:
         return self.product_vectors
     
     def upload_to_pinecone(self):
-        """Upload product vectors to Pinecone"""
+        """Upload product vectors to Pinecone using latest API"""
         if not self.pinecone_index:
             print("Pinecone not available. Skipping upload.")
             return
@@ -132,16 +117,11 @@ class DataPreparationService:
             }
             vectors_to_upsert.append((str(idx), vector, metadata))
         
-        # Upload in batches
+        # Upload in batches using latest API format
         batch_size = 100
         for i in range(0, len(vectors_to_upsert), batch_size):
             batch = vectors_to_upsert[i:i + batch_size]
-            try:
-                # Try new API format first
-                self.pinecone_index.upsert(vectors=batch)
-            except TypeError:
-                # Fallback to old API format
-                self.pinecone_index.upsert(vectors=batch)
+            self.pinecone_index.upsert(vectors=batch)
         
         print(f"Uploaded {len(vectors_to_upsert)} vectors to Pinecone")
     
@@ -160,7 +140,7 @@ class DataPreparationService:
         query_vector = self.vectorizer.transform([query]).toarray()[0]
         
         if self.pinecone_index:
-            # Search in Pinecone
+            # Search in Pinecone using latest API
             try:
                 results = self.pinecone_index.query(
                     vector=query_vector.tolist(),
