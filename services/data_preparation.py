@@ -177,10 +177,10 @@ class DataPreparationService:
             row = self.products_df.iloc[idx]
             products.append({
                 'stock_code': row['StockCode'],
-                    'description': row['Description'],
-                    'unit_price': float(row['UnitPrice']),
-                    'quantity': int(row['Quantity']),
-                    'similarity_score': float(similarities[idx])
-                })
-            
-            return products
+                'description': row['Description'],
+                'unit_price': float(row['UnitPrice']),
+                'quantity': int(row['Quantity']),
+                'similarity_score': float(similarities[idx])
+            })
+        
+        return products
