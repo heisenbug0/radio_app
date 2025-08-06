@@ -149,15 +149,13 @@ class AppService:
                     }
                 
                 extracted_text = ocr_result['extracted_text']
-                ocr_attempts = ocr_result.get('all_attempts', [])
                 
                 # If no text was extracted, provide helpful feedback
                 if not extracted_text or len(extracted_text.strip()) < 2:
                     return {
                         "products": [],
                         "response": "No readable text was found in the image. Please ensure the text is clear, well-lit, and not too small. Try uploading a higher quality image.",
-                        "extracted_text": "",
-                        "ocr_attempts": ocr_attempts
+                        "extracted_text": ""
                     }
                 
                 # Validate extracted text
@@ -167,14 +165,12 @@ class AppService:
                     return {
                         "products": [],
                         "response": f"Extracted text validation failed: {validation_message}. Extracted text: '{extracted_text}'. Please try a clearer image.",
-                        "extracted_text": extracted_text,
-                        "ocr_attempts": ocr_attempts
+                        "extracted_text": extracted_text
                     }
                 
                 # Process the extracted text as a normal query
                 query_result = self.process_text_query(extracted_text)
                 query_result["extracted_text"] = extracted_text
-                query_result["ocr_attempts"] = ocr_attempts
                 
                 # Add OCR-specific response information
                 if query_result["products"]:
@@ -193,8 +189,7 @@ class AppService:
             return {
                 "products": [],
                 "response": f"An error occurred while processing the image: {str(e)}. Please try uploading a different image.",
-                "extracted_text": "",
-                "ocr_attempts": []
+                "extracted_text": ""
             }
     
     def process_image_product_search(self, image_file):

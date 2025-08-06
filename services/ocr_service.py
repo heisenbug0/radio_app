@@ -176,8 +176,7 @@ class OCRService:
             return {
                 'success': True,
                 'extracted_text': cleaned_text,
-                'raw_text': best_text,
-                'all_attempts': results
+                'raw_text': best_text
             }
             
         except Exception as e:

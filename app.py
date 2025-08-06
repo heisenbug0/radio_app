@@ -147,65 +147,7 @@ def sample_response():
     """
     return render_template('sample_response.html')
 
-@app.route('/debug-ocr', methods=['POST'])
-def debug_ocr():
-    """
-    Debug endpoint to test OCR functionality and show all attempts.
-    Input: Form data containing 'image_data' (file upload).
-    Output: JSON with detailed OCR results for debugging.
-    """
-    try:
-        if 'image_data' not in request.files:
-            return jsonify({
-                "success": False,
-                "error": "No image file provided."
-            }), 400
-        
-        image_file = request.files['image_data']
-        if image_file.filename == '':
-            return jsonify({
-                "success": False,
-                "error": "No image file selected."
-            }), 400
-        
-        # Validate file type
-        allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
-        if not ('.' in image_file.filename and 
-                image_file.filename.rsplit('.', 1)[1].lower() in allowed_extensions):
-            return jsonify({
-                "success": False,
-                "error": "Invalid file type. Please upload an image file."
-            }), 400
-        
-        # Save uploaded image to temporary file
-        import tempfile
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
-            image_file.save(temp_file.name)
-            temp_path = temp_file.name
-        
-        try:
-            # Extract text using OCR with all attempts
-            ocr_result = app_service.ocr_service.extract_text(image_path=temp_path)
-            
-            return jsonify({
-                "success": ocr_result['success'],
-                "extracted_text": ocr_result.get('extracted_text', ''),
-                "raw_text": ocr_result.get('raw_text', ''),
-                "all_attempts": ocr_result.get('all_attempts', []),
-                "error": ocr_result.get('error', ''),
-                "validation": app_service.ocr_service.validate_query(ocr_result.get('extracted_text', ''))
-            })
-            
-        finally:
-            # Clean up temporary file
-            if os.path.exists(temp_path):
-                os.unlink(temp_path)
-        
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": f"An error occurred: {str(e)}"
-        }), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
