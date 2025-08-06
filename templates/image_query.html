@@ -13,31 +13,34 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f8f9fa;
             min-height: 100vh;
             padding: 20px;
+            color: #212529;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
         
         .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: #212529;
             color: white;
             padding: 30px;
             text-align: center;
+            position: relative;
         }
         
         .header h1 {
             font-size: 2.5em;
             margin-bottom: 10px;
             font-weight: 300;
+            letter-spacing: -0.5px;
         }
         
         .header p {
@@ -49,18 +52,20 @@
             position: absolute;
             top: 20px;
             left: 20px;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
             color: white;
-            border: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
             padding: 10px 20px;
-            border-radius: 25px;
+            border-radius: 6px;
             cursor: pointer;
             text-decoration: none;
-            transition: background 0.3s ease;
+            transition: all 0.3s ease;
+            font-size: 14px;
         }
         
         .back-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
         }
         
         .content {
@@ -70,14 +75,15 @@
         .upload-section {
             background: #f8f9fa;
             padding: 30px;
-            border-radius: 15px;
+            border-radius: 8px;
             margin-bottom: 30px;
             text-align: center;
+            border: 1px solid #e9ecef;
         }
         
         .upload-area {
-            border: 3px dashed #4facfe;
-            border-radius: 15px;
+            border: 3px dashed #6c757d;
+            border-radius: 8px;
             padding: 40px;
             margin-bottom: 20px;
             cursor: pointer;
@@ -85,30 +91,30 @@
         }
         
         .upload-area:hover {
-            border-color: #00f2fe;
-            background: rgba(79, 172, 254, 0.05);
+            border-color: #212529;
+            background: rgba(33, 37, 41, 0.05);
         }
         
         .upload-area.dragover {
-            border-color: #00f2fe;
-            background: rgba(79, 172, 254, 0.1);
+            border-color: #212529;
+            background: rgba(33, 37, 41, 0.1);
         }
         
         .upload-icon {
             font-size: 3em;
-            color: #4facfe;
+            color: #6c757d;
             margin-bottom: 15px;
         }
         
         .upload-text {
             font-size: 1.2em;
-            color: #666;
+            color: #212529;
             margin-bottom: 10px;
         }
         
         .upload-hint {
             font-size: 0.9em;
-            color: #999;
+            color: #6c757d;
         }
         
         .file-input {
@@ -116,18 +122,20 @@
         }
         
         .submit-btn {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: #212529;
             color: white;
             border: none;
             padding: 15px 30px;
-            border-radius: 25px;
+            border-radius: 6px;
             font-size: 16px;
             cursor: pointer;
-            transition: transform 0.3s ease;
+            transition: all 0.3s ease;
+            font-weight: 500;
         }
         
         .submit-btn:hover {
-            transform: translateY(-2px);
+            background: #343a40;
+            transform: translateY(-1px);
         }
         
         .submit-btn:disabled {
@@ -143,9 +151,10 @@
         .image-preview {
             max-width: 300px;
             max-height: 300px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             display: none;
+            border: 1px solid #e9ecef;
         }
         
         .results {
@@ -153,37 +162,39 @@
         }
         
         .ocr-section {
-            background: #e3f2fd;
+            background: #f8f9fa;
             padding: 20px;
-            border-radius: 10px;
+            border-radius: 8px;
             margin-bottom: 20px;
-            border-left: 4px solid #2196f3;
+            border-left: 4px solid #212529;
+            border: 1px solid #e9ecef;
         }
         
         .ocr-title {
             font-weight: 600;
-            color: #1976d2;
+            color: #212529;
             margin-bottom: 10px;
         }
         
         .ocr-text {
             font-size: 1.1em;
-            color: #1565c0;
+            color: #212529;
             line-height: 1.6;
             font-style: italic;
         }
         
         .response-section {
-            background: #e8f5e8;
+            background: #f8f9fa;
             padding: 20px;
-            border-radius: 10px;
+            border-radius: 8px;
             margin-bottom: 20px;
-            border-left: 4px solid #28a745;
+            border-left: 4px solid #212529;
+            border: 1px solid #e9ecef;
         }
         
         .response-text {
             font-size: 1.1em;
-            color: #155724;
+            color: #212529;
             line-height: 1.6;
         }
         
