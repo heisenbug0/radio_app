@@ -213,6 +213,40 @@
             margin-bottom: 20px;
         }
         
+        .success {
+            color: #28a745;
+            margin-top: 10px;
+        }
+        
+        .debug-section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .debug-section h4 {
+            margin-top: 0;
+            color: #495057;
+        }
+        
+        .attempt-item {
+            background: white;
+            border: 1px solid #ced4da;
+            border-radius: 3px;
+            padding: 10px;
+            margin: 5px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .attempt-number {
+            font-weight: bold;
+            color: #007bff;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 width: 95%;
@@ -278,6 +312,12 @@
                 <tbody id="productsTableBody">
                 </tbody>
             </table>
+            
+            <div id="debugSection" class="debug-section">
+                <h4>OCR Debug Information</h4>
+                <p>Below are all the OCR attempts made to extract text from your image:</p>
+                <div id="debugContent"></div>
+            </div>
         </div>
     </div>
     
@@ -386,6 +426,25 @@
                 const row = document.createElement('tr');
                 row.innerHTML = '<td colspan="6" style="text-align: center; color: #666;">No products found</td>';
                 tbody.appendChild(row);
+            }
+            
+            // Show debug information if available
+            if (result.ocr_attempts && result.ocr_attempts.length > 0) {
+                const debugSection = document.getElementById('debugSection');
+                const debugContent = document.getElementById('debugContent');
+                debugContent.innerHTML = '';
+                
+                result.ocr_attempts.forEach((attempt, index) => {
+                    const attemptDiv = document.createElement('div');
+                    attemptDiv.className = 'attempt-item';
+                    attemptDiv.innerHTML = `
+                        <div class="attempt-number">Attempt ${index + 1}:</div>
+                        <div>${attempt || '(empty)'}</div>
+                    `;
+                    debugContent.appendChild(attemptDiv);
+                });
+                
+                debugSection.style.display = 'block';
             }
             
             document.getElementById('results').style.display = 'block';
