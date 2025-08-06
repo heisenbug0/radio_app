@@ -17,13 +17,21 @@ class AppService:
         try:
             # Initialize data preparation
             print("Initializing data preparation service...")
-            self.data_service.clean_dataset("data/dataset.csv")
-            self.data_service.create_product_vectors()
-            self.data_service.upload_to_pinecone()
+            
+            # Check if dataset exists
+            dataset_path = "data/dataset.csv"
+            if os.path.exists(dataset_path):
+                self.data_service.clean_dataset(dataset_path)
+                self.data_service.create_product_vectors()
+                self.data_service.upload_to_pinecone()
+                print("Data preparation service initialized successfully")
+            else:
+                print("Warning: Dataset file not found. Data preparation service will not be available.")
             
             print("Services initialized successfully")
         except Exception as e:
             print(f"Warning: Service initialization failed: {e}")
+            print("Application will continue with limited functionality.")
     
     def process_text_query(self, query):
         """Process natural language text query and return product recommendations"""

@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import pinecone
 import os
 from dotenv import load_dotenv
 import re
@@ -24,17 +23,40 @@ class DataPreparationService:
             environment = os.getenv('PINECONE_ENVIRONMENT', 'gcp-starter')
             
             if api_key:
-                pinecone.init(api_key=api_key, environment=environment)
-                index_name = "product-recommendations"
-                
-                if index_name not in pinecone.list_indexes():
-                    pinecone.create_index(
-                        name=index_name,
-                        dimension=1000,
-                        metric="cosine"
-                    )
-                
-                self.pinecone_index = pinecone.Index(index_name)
+                # Try to import and use the new Pinecone API
+                try:
+                    import pinecone
+                    from pinecone import Pinecone
+                    
+                    # Initialize with new API
+                    pc = Pinecone(api_key=api_key)
+                    index_name = "product-recommendations"
+                    
+                    # Check if index exists, if not create it
+                    if index_name not in [index.name for index in pc.list_indexes()]:
+                        pc.create_index(
+                            name=index_name,
+                            dimension=1000,
+                            metric="cosine"
+                        )
+                    
+                    self.pinecone_index = pc.Index(index_name)
+                    print("Pinecone initialized successfully with new API")
+                except ImportError:
+                    # Fallback to old API
+                    import pinecone
+                    pinecone.init(api_key=api_key, environment=environment)
+                    index_name = "product-recommendations"
+                    
+                    if index_name not in pinecone.list_indexes():
+                        pinecone.create_index(
+                            name=index_name,
+                            dimension=1000,
+                            metric="cosine"
+                        )
+                    
+                    self.pinecone_index = pinecone.Index(index_name)
+                    print("Pinecone initialized successfully with legacy API")
             else:
                 print("Warning: PINECONE_API_KEY not found. Using local storage only.")
         except Exception as e:
@@ -64,6 +86,10 @@ class DataPreparationService:
         
         # Remove rows with empty descriptions
         df = df[df['Description'].str.len() > 0]
+        
+        # Ensure numeric columns are properly typed
+        df['UnitPrice'] = pd.to_numeric(df['UnitPrice'], errors='coerce').fillna(0.0)
+        df['Quantity'] = pd.to_numeric(df['Quantity'], errors='coerce').fillna(0)
         
         # Create unique product entries
         self.products_df = df.groupby(['StockCode', 'Description']).agg({
@@ -110,7 +136,12 @@ class DataPreparationService:
         batch_size = 100
         for i in range(0, len(vectors_to_upsert), batch_size):
             batch = vectors_to_upsert[i:i + batch_size]
-            self.pinecone_index.upsert(vectors=batch)
+            try:
+                # Try new API format first
+                self.pinecone_index.upsert(vectors=batch)
+            except TypeError:
+                # Fallback to old API format
+                self.pinecone_index.upsert(vectors=batch)
         
         print(f"Uploaded {len(vectors_to_upsert)} vectors to Pinecone")
     
@@ -130,33 +161,42 @@ class DataPreparationService:
         
         if self.pinecone_index:
             # Search in Pinecone
-            results = self.pinecone_index.query(
-                vector=query_vector.tolist(),
-                top_k=top_k,
-                include_metadata=True
-            )
-            
-            products = []
-            for match in results.matches:
-                products.append({
-                    'stock_code': match.metadata['stock_code'],
-                    'description': match.metadata['description'],
-                    'unit_price': match.metadata['unit_price'],
-                    'quantity': match.metadata['quantity'],
-                    'similarity_score': match.score
-                })
-            
-            return products
+            try:
+                results = self.pinecone_index.query(
+                    vector=query_vector.tolist(),
+                    top_k=top_k,
+                    include_metadata=True
+                )
+                
+                products = []
+                for match in results.matches:
+                    products.append({
+                        'stock_code': match.metadata['stock_code'],
+                        'description': match.metadata['description'],
+                        'unit_price': match.metadata['unit_price'],
+                        'quantity': match.metadata['quantity'],
+                        'similarity_score': match.score
+                    })
+                
+                return products
+            except Exception as e:
+                print(f"Pinecone search failed: {e}. Falling back to local search.")
+                # Fallback to local search
+                return self._local_search(query_vector, top_k)
         else:
             # Fallback to local search
-            similarities = cosine_similarity([query_vector], self.product_vectors)[0]
-            top_indices = np.argsort(similarities)[-top_k:][::-1]
-            
-            products = []
-            for idx in top_indices:
-                row = self.products_df.iloc[idx]
-                products.append({
-                    'stock_code': row['StockCode'],
+            return self._local_search(query_vector, top_k)
+    
+    def _local_search(self, query_vector, top_k=5):
+        """Local search using cosine similarity"""
+        similarities = cosine_similarity([query_vector], self.product_vectors)[0]
+        top_indices = np.argsort(similarities)[-top_k:][::-1]
+        
+        products = []
+        for idx in top_indices:
+            row = self.products_df.iloc[idx]
+            products.append({
+                'stock_code': row['StockCode'],
                     'description': row['Description'],
                     'unit_price': float(row['UnitPrice']),
                     'quantity': int(row['Quantity']),
