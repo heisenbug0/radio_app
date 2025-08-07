@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.keras import layers, models
+from tensorflow.keras import layers, models, applications
 import numpy as np
 import pandas as pd
 import os
@@ -8,19 +8,21 @@ import cv2
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import classification_report, confusion_matrix
 
 class CNNModelService:
     def __init__(self):
         self.model = None
         self.label_encoder = LabelEncoder()
         self.class_names = []
-        self.image_size = (224, 224)
-        self.batch_size = 32
-        self.epochs = 50
+        self.image_size = (299, 299)  # Larger images for better accuracy
+        self.batch_size = 16  # Smaller batch size for better generalization
+        self.epochs = 200  # More epochs for convergence
         
     def load_and_preprocess_data(self, data_dir, csv_file_path):
-        """Load and preprocess image data for training"""
-        print("Loading and preprocessing data...")
+        """Load and preprocess image data with advanced techniques"""
+        print("Loading and preprocessing data with advanced techniques...")
         
         # Read the CSV file to get product classes
         df = pd.read_csv(csv_file_path)
@@ -55,10 +57,12 @@ class CNNModelService:
         y = self.label_encoder.transform(labels)
         
         print(f"Loaded {len(images)} images for {len(self.class_names)} classes")
+        print(f"Average images per class: {len(images) / len(self.class_names):.1f}")
+        
         return X, y
     
     def load_and_preprocess_image(self, image_path):
-        """Load and preprocess a single image"""
+        """Load and preprocess a single image with advanced techniques"""
         try:
             # Load image
             image = cv2.imread(image_path)
@@ -68,10 +72,13 @@ class CNNModelService:
             # Convert BGR to RGB
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             
+            # Advanced preprocessing
+            image = self.advanced_preprocessing(image)
+            
             # Resize image
             image = cv2.resize(image, self.image_size)
             
-            # Normalize pixel values
+            # Normalize pixel values (ImageNet normalization for transfer learning)
             image = image.astype(np.float32) / 255.0
             
             return image
@@ -80,62 +87,68 @@ class CNNModelService:
             print(f"Error preprocessing image {image_path}: {e}")
             return None
     
+    def advanced_preprocessing(self, image):
+        """Advanced image preprocessing techniques"""
+        # Remove noise
+        image = cv2.fastNlMeansDenoisingColored(image, None, 10, 10, 7, 21)
+        
+        # Enhance contrast using CLAHE
+        lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        lab[:,:,0] = clahe.apply(lab[:,:,0])
+        image = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+        
+        # Sharpen image
+        kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+        image = cv2.filter2D(image, -1, kernel)
+        
+        return image
+    
     def create_cnn_model(self, num_classes):
-        """Create a CNN model from scratch with data augmentation"""
-        # Data augmentation for training
-        data_augmentation = tf.keras.Sequential([
-            layers.RandomFlip("horizontal"),
-            layers.RandomRotation(0.1),
-            layers.RandomZoom(0.1),
-            layers.RandomBrightness(0.1),
-            layers.RandomContrast(0.1),
-        ])
+        """Create a high-accuracy transfer learning model using EfficientNetB3"""
+        # Use EfficientNetB3 for better accuracy
+        base_model = applications.EfficientNetB3(
+            weights='imagenet',
+            include_top=False,
+            input_shape=(*self.image_size, 3)
+        )
+        
+        # Freeze the base model initially
+        base_model.trainable = False
         
         model = models.Sequential([
-            # Data augmentation layer
-            layers.Input(shape=(*self.image_size, 3)),
-            data_augmentation,
+            # Base model
+            base_model,
             
-            # First Convolutional Block
-            layers.Conv2D(32, (3, 3), activation='relu'),
+            # Global Average Pooling
+            layers.GlobalAveragePooling2D(),
+            
+            # Batch Normalization
             layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            layers.Dropout(0.25),
             
-            # Second Convolutional Block
-            layers.Conv2D(64, (3, 3), activation='relu'),
+            # Dense layers with regularization
+            layers.Dense(1024, activation='relu'),
             layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            layers.Dropout(0.25),
+            layers.Dropout(0.5),
             
-            # Third Convolutional Block
-            layers.Conv2D(128, (3, 3), activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            layers.Dropout(0.25),
-            
-            # Fourth Convolutional Block
-            layers.Conv2D(256, (3, 3), activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            layers.Dropout(0.25),
-            
-            # Flatten and Dense Layers
-            layers.Flatten(),
             layers.Dense(512, activation='relu'),
             layers.BatchNormalization(),
-            layers.Dropout(0.5),
+            layers.Dropout(0.3),
+            
             layers.Dense(256, activation='relu'),
             layers.BatchNormalization(),
-            layers.Dropout(0.5),
+            layers.Dropout(0.2),
+            
+            # Output layer
             layers.Dense(num_classes, activation='softmax')
         ])
         
-        return model
+        return model, base_model
     
     def train_model(self, data_dir, csv_file_path):
-        """Train the CNN model"""
-        print("Starting CNN model training...")
+        """Train the high-accuracy CNN model"""
+        print("Starting High-Accuracy CNN model training...")
+        print("Target: 90%+ accuracy")
         
         # Load and preprocess data
         X, y = self.load_and_preprocess_data(data_dir, csv_file_path)
@@ -147,43 +160,27 @@ class CNNModelService:
         print(f"Total samples: {total_samples}")
         print(f"Number of classes: {num_classes}")
         
-        # Determine validation split size
-        if total_samples < num_classes * 3:  # Very small dataset
-            # Use a smaller validation split or no stratification
-            if total_samples >= 20:
-                test_size = 0.1  # 10% for validation
-                stratify = None
-            else:
-                test_size = 0.15  # 15% for validation
-                stratify = None
-        else:
-            # Normal case - use 20% validation with stratification
-            test_size = 0.2
-            stratify = y
+        # Use stratified split for better representation
+        test_size = 0.2
+        stratify = y
         
         print(f"Using validation split: {test_size:.1%}")
         print(f"Stratified splitting: {stratify is not None}")
         
         # Split data into train and validation sets
-        try:
-            X_train, X_val, y_train, y_val = train_test_split(
-                X, y, test_size=test_size, random_state=42, stratify=stratify
-            )
-        except ValueError as e:
-            print(f"Stratified split failed: {e}")
-            print("Falling back to non-stratified split...")
-            X_train, X_val, y_train, y_val = train_test_split(
-                X, y, test_size=test_size, random_state=42, stratify=None
-            )
+        X_train, X_val, y_train, y_val = train_test_split(
+            X, y, test_size=test_size, random_state=42, stratify=stratify
+        )
         
         print(f"Training samples: {len(X_train)}")
         print(f"Validation samples: {len(X_val)}")
         
-        # Create and compile model
-        self.model = self.create_cnn_model(len(self.class_names))
+        # Create transfer learning model
+        self.model, base_model = self.create_cnn_model(len(self.class_names))
         
+        # Compile model
         self.model.compile(
-            optimizer='adam',
+            optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
             loss='sparse_categorical_crossentropy',
             metrics=['accuracy']
         )
@@ -191,36 +188,56 @@ class CNNModelService:
         # Print model summary
         self.model.summary()
         
-        # Adjust training parameters for small dataset
-        if total_samples < 50:
-            print("Small dataset detected - adjusting training parameters...")
-            epochs = 100  # More epochs for small dataset
-            patience = 20  # More patience
-        else:
-            epochs = self.epochs
-            patience = 10
-        
-        # Define callbacks
+        # Define callbacks for better training
         callbacks = [
             tf.keras.callbacks.EarlyStopping(
-                monitor='val_loss',
-                patience=patience,
-                restore_best_weights=True
+                monitor='val_accuracy',
+                patience=30,
+                restore_best_weights=True,
+                verbose=1
             ),
             tf.keras.callbacks.ReduceLROnPlateau(
                 monitor='val_loss',
                 factor=0.5,
-                patience=patience // 2,
-                min_lr=1e-7
+                patience=15,
+                min_lr=1e-7,
+                verbose=1
+            ),
+            tf.keras.callbacks.ModelCheckpoint(
+                'models/best_model.h5',
+                monitor='val_accuracy',
+                save_best_only=True,
+                verbose=1
             )
         ]
         
-        # Train the model
-        history = self.model.fit(
+        # Phase 1: Train with frozen base model
+        print("\n=== Phase 1: Training with frozen base model ===")
+        history1 = self.model.fit(
             X_train, y_train,
             validation_data=(X_val, y_val),
-            epochs=epochs,
-            batch_size=min(self.batch_size, len(X_train) // 2),  # Adjust batch size for small dataset
+            epochs=50,
+            batch_size=self.batch_size,
+            callbacks=callbacks,
+            verbose=1
+        )
+        
+        # Phase 2: Fine-tune the base model
+        print("\n=== Phase 2: Fine-tuning base model ===")
+        base_model.trainable = True
+        
+        # Use a lower learning rate for fine-tuning
+        self.model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
+            loss='sparse_categorical_crossentropy',
+            metrics=['accuracy']
+        )
+        
+        history2 = self.model.fit(
+            X_train, y_train,
+            validation_data=(X_val, y_val),
+            epochs=100,
+            batch_size=self.batch_size,
             callbacks=callbacks,
             verbose=1
         )
@@ -228,10 +245,91 @@ class CNNModelService:
         # Save the model
         self.save_model()
         
-        # Plot training history
-        self.plot_training_history(history)
+        # Evaluate and plot results
+        self.evaluate_model(X_val, y_val)
+        self.plot_training_history(history1, history2)
         
-        return history
+        return history2
+    
+    def evaluate_model(self, X_val, y_val):
+        """Evaluate model performance"""
+        print("\n=== Model Evaluation ===")
+        
+        # Predict on validation set
+        y_pred = self.model.predict(X_val)
+        y_pred_classes = np.argmax(y_pred, axis=1)
+        
+        # Calculate accuracy
+        accuracy = np.mean(y_pred_classes == y_val)
+        print(f"Validation Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)")
+        
+        # Top-3 accuracy
+        top_3_accuracy = self.top_k_accuracy(y_pred, y_val, k=3)
+        print(f"Top-3 Accuracy: {top_3_accuracy:.4f} ({top_3_accuracy*100:.2f}%)")
+        
+        # Classification report
+        print("\nClassification Report:")
+        print(classification_report(y_val, y_pred_classes, target_names=self.class_names))
+        
+        # Confusion matrix
+        self.plot_confusion_matrix(y_val, y_pred_classes)
+        
+        return accuracy
+    
+    def top_k_accuracy(self, y_pred, y_true, k=3):
+        """Calculate top-k accuracy"""
+        top_k_indices = np.argsort(y_pred, axis=1)[:, -k:]
+        correct = 0
+        for i, true_label in enumerate(y_true):
+            if true_label in top_k_indices[i]:
+                correct += 1
+        return correct / len(y_true)
+    
+    def plot_confusion_matrix(self, y_true, y_pred):
+        """Plot confusion matrix"""
+        cm = confusion_matrix(y_true, y_pred)
+        plt.figure(figsize=(12, 10))
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                   xticklabels=self.class_names, 
+                   yticklabels=self.class_names)
+        plt.title('Confusion Matrix')
+        plt.xlabel('Predicted')
+        plt.ylabel('True')
+        plt.xticks(rotation=45)
+        plt.yticks(rotation=0)
+        plt.tight_layout()
+        plt.savefig('models/confusion_matrix.png', dpi=300, bbox_inches='tight')
+        plt.show()
+    
+    def plot_training_history(self, history1, history2):
+        """Plot training history"""
+        fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+        
+        # Phase 1
+        axes[0, 0].plot(history1.history['accuracy'], label='Train')
+        axes[0, 0].plot(history1.history['val_accuracy'], label='Validation')
+        axes[0, 0].set_title('Phase 1: Accuracy')
+        axes[0, 0].legend()
+        
+        axes[0, 1].plot(history1.history['loss'], label='Train')
+        axes[0, 1].plot(history1.history['val_loss'], label='Validation')
+        axes[0, 1].set_title('Phase 1: Loss')
+        axes[0, 1].legend()
+        
+        # Phase 2
+        axes[1, 0].plot(history2.history['accuracy'], label='Train')
+        axes[1, 0].plot(history2.history['val_accuracy'], label='Validation')
+        axes[1, 0].set_title('Phase 2: Accuracy')
+        axes[1, 0].legend()
+        
+        axes[1, 1].plot(history2.history['loss'], label='Train')
+        axes[1, 1].plot(history2.history['val_loss'], label='Validation')
+        axes[1, 1].set_title('Phase 2: Loss')
+        axes[1, 1].legend()
+        
+        plt.tight_layout()
+        plt.savefig('models/training_history.png', dpi=300, bbox_inches='tight')
+        plt.show()
     
     def save_model(self):
         """Save the trained model"""
@@ -251,7 +349,7 @@ class CNNModelService:
             for class_name in self.class_names:
                 f.write(f"{class_name}\n")
         
-        print(f"Model saved to {model_dir}")
+        print(f"Model saved to {model_dir}/")
     
     def load_model(self):
         """Load the trained model"""
@@ -269,10 +367,10 @@ class CNNModelService:
         with open(os.path.join(model_dir, "class_names.txt"), 'r') as f:
             self.class_names = [line.strip() for line in f.readlines()]
         
-        print(f"Model loaded from {model_dir}")
+        print("Model loaded successfully")
     
     def predict_product(self, image_path):
-        """Predict product class from image"""
+        """Predict product from image"""
         if self.model is None:
             self.load_model()
         
@@ -281,41 +379,28 @@ class CNNModelService:
         if image is None:
             return None
         
-        # Make prediction
-        image_batch = np.expand_dims(image, axis=0)
-        predictions = self.model.predict(image_batch)
+        # Reshape for prediction
+        image = np.expand_dims(image, axis=0)
         
-        # Get predicted class
-        predicted_class_idx = np.argmax(predictions[0])
-        predicted_class = self.label_encoder.inverse_transform([predicted_class_idx])[0]
-        confidence = float(predictions[0][predicted_class_idx])
+        # Predict
+        predictions = self.model.predict(image)
+        predicted_class = np.argmax(predictions[0])
+        confidence = predictions[0][predicted_class]
+        
+        # Get top 3 predictions
+        top_3_indices = np.argsort(predictions[0])[-3:][::-1]
+        top_3_predictions = []
+        
+        for idx in top_3_indices:
+            class_name = self.class_names[idx]
+            confidence_score = predictions[0][idx]
+            top_3_predictions.append({
+                'class': class_name,
+                'confidence': confidence_score
+            })
         
         return {
-            'predicted_class': predicted_class,
+            'predicted_class': self.class_names[predicted_class],
             'confidence': confidence,
-            'all_predictions': predictions[0].tolist()
+            'top_3_predictions': top_3_predictions
         }
-    
-    def plot_training_history(self, history):
-        """Plot training history"""
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
-        
-        # Plot accuracy
-        ax1.plot(history.history['accuracy'], label='Training Accuracy')
-        ax1.plot(history.history['val_accuracy'], label='Validation Accuracy')
-        ax1.set_title('Model Accuracy')
-        ax1.set_xlabel('Epoch')
-        ax1.set_ylabel('Accuracy')
-        ax1.legend()
-        
-        # Plot loss
-        ax2.plot(history.history['loss'], label='Training Loss')
-        ax2.plot(history.history['val_loss'], label='Validation Loss')
-        ax2.set_title('Model Loss')
-        ax2.set_xlabel('Epoch')
-        ax2.set_ylabel('Loss')
-        ax2.legend()
-        
-        plt.tight_layout()
-        plt.savefig('training_history.png')
-        plt.close()
