@@ -10,7 +10,7 @@ load_dotenv()
 
 class DataPreparationService:
     def __init__(self):
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        self.model = SentenceTransformer('all-mpnet-base-v2')
         self.products_df = None
         self.product_vectors = None
         self.pinecone_index = None
@@ -27,7 +27,7 @@ class DataPreparationService:
                 if index_name not in existing_indexes:
                     pc.create_index(
                         name=index_name,
-                        dimension=384,  # all-MiniLM-L6-v2 output dim
+                        dimension=768,  # all-mpnet-base-v2 output dim
                         metric="cosine"
                     )
                     print(f"Created new Pinecone index: {index_name}")
@@ -59,7 +59,7 @@ class DataPreparationService:
         return self.products_df
     
     def create_product_vectors(self):
-        print("Creating product embeddings with sentence-transformers...")
+        print("Creating product embeddings with all-mpnet-base-v2...")
         product_texts = self.products_df['Description'].tolist()
         self.product_vectors = self.model.encode(product_texts, show_progress_bar=True, convert_to_numpy=True)
         print(f"Created embeddings with shape: {self.product_vectors.shape}")
@@ -90,7 +90,7 @@ class DataPreparationService:
         return {
             "primary_metric": "cosine_similarity",
             "reasoning": "Cosine similarity is ideal for semantic product matching as it measures the cosine of the angle between two vectors, making it invariant to vector magnitude and focusing on direction similarity.",
-            "vectorization": "sentence-transformers (all-MiniLM-L6-v2)",
+            "vectorization": "sentence-transformers (all-mpnet-base-v2)",
             "dimensions": self.product_vectors.shape[1] if self.product_vectors is not None else 0
         }
     
