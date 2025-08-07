@@ -22,8 +22,12 @@ def main():
             print("  python run_web_scraping.py")
             return
         
-        # Check for optimized dataset first, then fallback options
+        # Check for short names dataset first, then fallback options
         dataset_options = [
+            "data/CNN_Model_Train_Data_short_names.csv",
+            "data/CNN_Model_Train_Data_very_short.csv",
+            "data/CNN_Model_Train_Data_short.csv",
+            "data/CNN_Model_Train_Data_best_searchable.csv",
             "data/CNN_Model_Train_Data_serpapi_optimized.csv",
             "data/CNN_Model_Train_Data_balanced_125.csv",
             "data/CNN_Model_Train_Data_quality_83.csv",
