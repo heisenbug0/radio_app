@@ -27,9 +27,14 @@
 - **Visual Analysis**: Training plots, performance charts
 - **Detailed Reporting**: Per-class precision/recall
 
+### **6. Data Cleaning Fix**
+- **Problem**: Stock code merging error due to special characters (ö22384^)
+- **Solution**: Clean stock codes by removing special characters
+- **Impact**: Proper product name loading and matching
+
 ## **Files Modified:**
 
-1. **`services/web_scraping.py`** - Fixed to use product names
+1. **`services/web_scraping.py`** - Fixed to use product names + data cleaning
 2. **`services/cnn_model.py`** - Complete overhaul for 90%+ accuracy
 3. **`train_cnn_model.py`** - Enhanced training script
 4. **`requirements.txt`** - Added seaborn for visualization
@@ -56,9 +61,9 @@ python train_cnn_model.py
 ```
 
 ## **Success Criteria:**
-- ✅ Validation accuracy > 90%
-- ✅ All classes performing well
-- ✅ Clear confusion matrix diagonal
-- ✅ Top-3 accuracy > 95%
+- ✅ **Validation accuracy > 90%**
+- ✅ **All classes performing well**
+- ✅ **Clear confusion matrix diagonal**
+- ✅ **Top-3 accuracy > 95%**
 
 **🎯 90%+ accuracy is now achievable with these improvements!**
