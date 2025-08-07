@@ -16,3 +16,4 @@ python-dotenv
 google-cloud-vision
 easyocr
 sentence-transformers
+google-search-results
