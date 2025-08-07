@@ -81,10 +81,23 @@ class CNNModelService:
             return None
     
     def create_cnn_model(self, num_classes):
-        """Create a CNN model from scratch"""
+        """Create a CNN model from scratch with data augmentation"""
+        # Data augmentation for training
+        data_augmentation = tf.keras.Sequential([
+            layers.RandomFlip("horizontal"),
+            layers.RandomRotation(0.1),
+            layers.RandomZoom(0.1),
+            layers.RandomBrightness(0.1),
+            layers.RandomContrast(0.1),
+        ])
+        
         model = models.Sequential([
+            # Data augmentation layer
+            layers.Input(shape=(*self.image_size, 3)),
+            data_augmentation,
+            
             # First Convolutional Block
-            layers.Conv2D(32, (3, 3), activation='relu', input_shape=(*self.image_size, 3)),
+            layers.Conv2D(32, (3, 3), activation='relu'),
             layers.BatchNormalization(),
             layers.MaxPooling2D((2, 2)),
             layers.Dropout(0.25),
@@ -127,10 +140,44 @@ class CNNModelService:
         # Load and preprocess data
         X, y = self.load_and_preprocess_data(data_dir, csv_file_path)
         
+        # Calculate appropriate validation split
+        total_samples = len(X)
+        num_classes = len(self.class_names)
+        
+        print(f"Total samples: {total_samples}")
+        print(f"Number of classes: {num_classes}")
+        
+        # Determine validation split size
+        if total_samples < num_classes * 3:  # Very small dataset
+            # Use a smaller validation split or no stratification
+            if total_samples >= 20:
+                test_size = 0.1  # 10% for validation
+                stratify = None
+            else:
+                test_size = 0.15  # 15% for validation
+                stratify = None
+        else:
+            # Normal case - use 20% validation with stratification
+            test_size = 0.2
+            stratify = y
+        
+        print(f"Using validation split: {test_size:.1%}")
+        print(f"Stratified splitting: {stratify is not None}")
+        
         # Split data into train and validation sets
-        X_train, X_val, y_train, y_val = train_test_split(
-            X, y, test_size=0.2, random_state=42, stratify=y
-        )
+        try:
+            X_train, X_val, y_train, y_val = train_test_split(
+                X, y, test_size=test_size, random_state=42, stratify=stratify
+            )
+        except ValueError as e:
+            print(f"Stratified split failed: {e}")
+            print("Falling back to non-stratified split...")
+            X_train, X_val, y_train, y_val = train_test_split(
+                X, y, test_size=test_size, random_state=42, stratify=None
+            )
+        
+        print(f"Training samples: {len(X_train)}")
+        print(f"Validation samples: {len(X_val)}")
         
         # Create and compile model
         self.model = self.create_cnn_model(len(self.class_names))
@@ -144,17 +191,26 @@ class CNNModelService:
         # Print model summary
         self.model.summary()
         
+        # Adjust training parameters for small dataset
+        if total_samples < 50:
+            print("Small dataset detected - adjusting training parameters...")
+            epochs = 100  # More epochs for small dataset
+            patience = 20  # More patience
+        else:
+            epochs = self.epochs
+            patience = 10
+        
         # Define callbacks
         callbacks = [
             tf.keras.callbacks.EarlyStopping(
                 monitor='val_loss',
-                patience=10,
+                patience=patience,
                 restore_best_weights=True
             ),
             tf.keras.callbacks.ReduceLROnPlateau(
                 monitor='val_loss',
                 factor=0.5,
-                patience=5,
+                patience=patience // 2,
                 min_lr=1e-7
             )
         ]
@@ -163,8 +219,8 @@ class CNNModelService:
         history = self.model.fit(
             X_train, y_train,
             validation_data=(X_val, y_val),
-            epochs=self.epochs,
-            batch_size=self.batch_size,
+            epochs=epochs,
+            batch_size=min(self.batch_size, len(X_train) // 2),  # Adjust batch size for small dataset
             callbacks=callbacks,
             verbose=1
         )

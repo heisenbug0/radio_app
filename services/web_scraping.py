@@ -16,7 +16,7 @@ class WebScrapingService:
         if not os.path.exists(self.download_dir):
             os.makedirs(self.download_dir)
     
-    def scrape_product_images(self, csv_file_path, images_per_product=5):
+    def scrape_product_images(self, csv_file_path, images_per_product=15):
         """Scrape product images using SerpAPI Google Image Search"""
         if not self.api_key:
             print("Error: SERPAPI_KEY not found in environment variables")
@@ -24,6 +24,7 @@ class WebScrapingService:
             return pd.DataFrame()
         
         print(f"Starting image scraping for {images_per_product} images per product...")
+        print("Note: This will use more API calls but will give better training results!")
         
         # Read product stock codes
         df = pd.read_csv(csv_file_path)
@@ -58,6 +59,7 @@ class WebScrapingService:
         print(f"\nScraping completed!")
         print(f"Successfully processed {successful_products}/{len(stock_codes)} products")
         print(f"Total images downloaded: {total_images}")
+        print(f"Average images per product: {total_images/len(stock_codes):.1f}")
         
         # Save results
         results_df = pd.DataFrame(self.results)
@@ -70,24 +72,31 @@ class WebScrapingService:
     
     def _search_product_images_robust(self, stock_code, num_images):
         """Search for product images with multiple query variations"""
-        # Try different search query variations
+        # Try different search query variations for better coverage
         search_variations = [
             f"product {stock_code}",
             f"item {stock_code}",
             f"part {stock_code}",
             f"component {stock_code}",
             f"electronic {stock_code}",
-            f"hardware {stock_code}"
+            f"hardware {stock_code}",
+            f"device {stock_code}",
+            f"equipment {stock_code}",
+            f"tool {stock_code}",
+            f"accessory {stock_code}",
+            f"supply {stock_code}",
+            f"material {stock_code}"
         ]
         
         all_images = []
         
         for query in search_variations:
             try:
-                images = self._search_product_images(query, num_images // 2)
+                # Get more images per query to have better selection
+                images = self._search_product_images(query, min(num_images // 3, 10))
                 all_images.extend(images)
                 
-                if len(all_images) >= num_images:
+                if len(all_images) >= num_images * 2:  # Get extra for filtering
                     break
                     
             except Exception as e:
@@ -102,7 +111,21 @@ class WebScrapingService:
                 unique_images.append(img)
                 seen_urls.add(img['url'])
         
-        return unique_images[:num_images]
+        # Filter out low-quality images (very small or very large)
+        filtered_images = []
+        for img in unique_images:
+            url = img['url'].lower()
+            # Skip very small images or thumbnails
+            if any(skip in url for skip in ['thumb', 'icon', 'small', 'mini']):
+                continue
+            # Skip very large images that might be banners
+            if any(skip in url for skip in ['banner', 'header', 'background']):
+                continue
+            filtered_images.append(img)
+        
+        print(f"    Found {len(unique_images)} unique images, filtered to {len(filtered_images)}")
+        
+        return filtered_images[:num_images]
     
     def _search_product_images(self, search_query, num_images):
         """Search for product images using SerpAPI"""
