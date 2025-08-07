@@ -37,7 +37,27 @@ class WebScrapingService:
                 # Load the main dataset to get product names
                 main_df = pd.read_csv('data/dataset.csv', encoding='latin-1')
                 
-                # Convert stock codes to string for proper merging
+                # Clean stock codes in both dataframes
+                def clean_stock_code(code):
+                    """Clean stock code by removing special characters"""
+                    if pd.isna(code):
+                        return None
+                    # Convert to string and remove special characters
+                    code_str = str(code)
+                    # Remove special characters like ö, ^, etc.
+                    import re
+                    cleaned = re.sub(r'[^0-9]', '', code_str)
+                    return cleaned if cleaned else None
+                
+                # Clean stock codes in both dataframes
+                df['StockCode'] = df['StockCode'].apply(clean_stock_code)
+                main_df['StockCode'] = main_df['StockCode'].apply(clean_stock_code)
+                
+                # Remove rows with None stock codes
+                df = df.dropna(subset=['StockCode'])
+                main_df = main_df.dropna(subset=['StockCode'])
+                
+                # Convert to string for merging
                 df['StockCode'] = df['StockCode'].astype(str)
                 main_df['StockCode'] = main_df['StockCode'].astype(str)
                 
