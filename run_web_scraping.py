@@ -24,14 +24,31 @@ def main():
     scraper = WebScrapingService()
     
     try:
-        # Path to the CSV file with product stock codes
-        csv_file_path = "data/CNN_Model_Train_Data.csv"
+        # Use the recommended dataset with 500 products
+        csv_file_path = "data/CNN_Model_Train_Data_recommended.csv"
+        
+        # Fallback to original if recommended doesn't exist
+        if not os.path.exists(csv_file_path):
+            print(f"Recommended dataset not found, checking for original...")
+            csv_file_path = "data/CNN_Model_Train_Data.csv"
         
         if not os.path.exists(csv_file_path):
-            print(f"Error: CSV file not found at {csv_file_path}")
+            print(f"Error: No dataset file found!")
+            print("Please run: python create_comprehensive_dataset.py")
             return
         
-        print(f"Found CSV file with product data: {csv_file_path}")
+        print(f"Found dataset file: {csv_file_path}")
+        
+        # Count products in the dataset
+        import pandas as pd
+        df = pd.read_csv(csv_file_path)
+        num_products = len(df)
+        print(f"Dataset contains {num_products} products")
+        
+        if num_products < 50:
+            print("\n⚠️  Warning: Small dataset detected!")
+            print("For optimal CNN training, consider using a larger dataset:")
+            print("  python create_comprehensive_dataset.py")
         
         # Scrape images for each product (15 images per product for optimal training)
         print("\nStarting enhanced image scraping...")
@@ -48,8 +65,11 @@ def main():
             # Show summary by product
             product_counts = results['stock_code'].value_counts()
             print(f"\nImages per product:")
-            for product, count in product_counts.items():
+            for product, count in product_counts.head(20).items():
                 print(f"  {product}: {count} images")
+            
+            if len(product_counts) > 20:
+                print(f"  ... and {len(product_counts) - 20} more products")
             
             # Calculate statistics
             total_products = len(product_counts)
