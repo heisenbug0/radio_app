@@ -5,6 +5,7 @@ import time
 from serpapi import GoogleSearch
 import urllib.parse
 import random
+import re # Added for _clean_product_name
 
 class WebScrapingService:
     def __init__(self):
@@ -26,19 +27,37 @@ class WebScrapingService:
         print(f"Starting image scraping for {images_per_product} images per product...")
         print("Note: This will use more API calls but will give better training results!")
         
-        # Read product stock codes
+        # Read product data with names
         df = pd.read_csv(csv_file_path)
-        stock_codes = df['StockCode'].tolist()
+        
+        # If we only have stock codes, we need to get product names from the main dataset
+        if 'StockCode' in df.columns and len(df.columns) == 1:
+            print("Stock codes only found. Loading product names from main dataset...")
+            try:
+                # Load the main dataset to get product names
+                main_df = pd.read_csv('data/dataset.csv', encoding='latin-1')
+                # Get unique product names for each stock code
+                product_names = main_df.groupby('StockCode')['Description'].first().reset_index()
+                df = df.merge(product_names, on='StockCode', how='left')
+                print(f"Loaded product names for {len(df)} products")
+            except Exception as e:
+                print(f"Error loading product names: {e}")
+                print("Falling back to stock code search (less accurate)")
+                return self._scrape_with_stock_codes(df, images_per_product)
         
         total_images = 0
         successful_products = 0
         
-        for i, stock_code in enumerate(stock_codes, 1):
-            print(f"\nProcessing product {i}/{len(stock_codes)}: {stock_code}")
+        for i, row in df.iterrows():
+            stock_code = row['StockCode']
+            product_name = row.get('Description', f'product {stock_code}')
+            
+            print(f"\nProcessing product {i+1}/{len(df)}: {stock_code}")
+            print(f"Product: {product_name}")
             
             try:
-                # Search for product images with multiple query variations
-                images = self._search_product_images_robust(stock_code, images_per_product)
+                # Search for product images using the actual product name
+                images = self._search_product_images_robust(product_name, stock_code, images_per_product)
                 
                 if images:
                     # Download images
@@ -57,9 +76,9 @@ class WebScrapingService:
             time.sleep(random.uniform(1, 2))
         
         print(f"\nScraping completed!")
-        print(f"Successfully processed {successful_products}/{len(stock_codes)} products")
+        print(f"Successfully processed {successful_products}/{len(df)} products")
         print(f"Total images downloaded: {total_images}")
-        print(f"Average images per product: {total_images/len(stock_codes):.1f}")
+        print(f"Average images per product: {total_images/len(df):.1f}")
         
         # Save results
         results_df = pd.DataFrame(self.results)
@@ -70,8 +89,111 @@ class WebScrapingService:
         
         return results_df
     
-    def _search_product_images_robust(self, stock_code, num_images):
-        """Search for product images with multiple query variations"""
+    def _scrape_with_stock_codes(self, df, images_per_product):
+        """Fallback method using stock codes (less accurate)"""
+        print("⚠️  Using stock code search - results may not match products!")
+        
+        total_images = 0
+        successful_products = 0
+        
+        for i, row in df.iterrows():
+            stock_code = row['StockCode']
+            print(f"\nProcessing product {i+1}/{len(df)}: {stock_code}")
+            
+            try:
+                # Search for product images with multiple query variations
+                images = self._search_product_images_robust_stock_code(stock_code, images_per_product)
+                
+                if images:
+                    # Download images
+                    downloaded_count = self._download_images_robust(stock_code, images)
+                    total_images += downloaded_count
+                    successful_products += 1
+                    
+                    print(f"  Downloaded {downloaded_count} images for {stock_code}")
+                else:
+                    print(f"  No images found for {stock_code}")
+                    
+            except Exception as e:
+                print(f"  Error processing {stock_code}: {e}")
+            
+            # Rate limiting - be respectful to the API
+            time.sleep(random.uniform(1, 2))
+        
+        print(f"\nScraping completed!")
+        print(f"Successfully processed {successful_products}/{len(df)} products")
+        print(f"Total images downloaded: {total_images}")
+        print(f"Average images per product: {total_images/len(df):.1f}")
+        
+        # Save results
+        results_df = pd.DataFrame(self.results)
+        if not results_df.empty:
+            results_path = os.path.join(self.download_dir, 'scraping_results.csv')
+            results_df.to_csv(results_path, index=False)
+            print(f"Results saved to: {results_path}")
+        
+        return results_df
+    
+    def _search_product_images_robust(self, product_name, stock_code, num_images):
+        """Search for product images using actual product names for accuracy"""
+        # Clean the product name for better search results
+        clean_name = self._clean_product_name(product_name)
+        
+        # Try different search query variations for better coverage
+        search_variations = [
+            clean_name,
+            f"{clean_name} product",
+            f"{clean_name} item",
+            f"{clean_name} image",
+            f"{clean_name} photo",
+            f"{clean_name} picture",
+            f"{clean_name} retail",
+            f"{clean_name} store",
+            f"{clean_name} shopping",
+            f"{clean_name} online"
+        ]
+        
+        all_images = []
+        
+        for query in search_variations:
+            try:
+                # Get more images per query to have better selection
+                images = self._search_product_images(query, min(num_images // 3, 10))
+                all_images.extend(images)
+                
+                if len(all_images) >= num_images * 2:  # Get extra for filtering
+                    break
+                    
+            except Exception as e:
+                print(f"    Search failed for query '{query}': {e}")
+                continue
+        
+        # Remove duplicates based on URL
+        unique_images = []
+        seen_urls = set()
+        for img in all_images:
+            if img['url'] not in seen_urls:
+                unique_images.append(img)
+                seen_urls.add(img['url'])
+        
+        # Filter out low-quality images (very small or very large)
+        filtered_images = []
+        for img in unique_images:
+            url = img['url'].lower()
+            # Skip very small images or thumbnails
+            if any(skip in url for skip in ['thumb', 'icon', 'small', 'mini']):
+                continue
+            # Skip very large images that might be banners
+            if any(skip in url for skip in ['banner', 'header', 'background']):
+                continue
+            filtered_images.append(img)
+        
+        print(f"    Found {len(unique_images)} unique images, filtered to {len(filtered_images)}")
+        
+        return filtered_images[:num_images]
+    
+    def _search_product_images_robust_stock_code(self, stock_code, num_images):
+        """Fallback search using stock codes (less accurate)"""
         # Try different search query variations for better coverage
         search_variations = [
             f"product {stock_code}",
@@ -276,6 +398,29 @@ class WebScrapingService:
                 return False
         
         return False
+    
+    def _clean_product_name(self, product_name):
+        """Clean product name for better search results"""
+        if not product_name or pd.isna(product_name):
+            return ""
+        
+        # Remove special characters and extra spaces
+        clean_name = str(product_name).strip()
+        clean_name = re.sub(r'[^\w\s-]', ' ', clean_name)  # Keep only alphanumeric, spaces, and hyphens
+        clean_name = re.sub(r'\s+', ' ', clean_name)  # Replace multiple spaces with single space
+        
+        # Remove common prefixes/suffixes that don't help search
+        remove_words = ['the', 'a', 'an', 'new', 'brand', 'original', 'genuine', 'authentic']
+        words = clean_name.lower().split()
+        words = [word for word in words if word not in remove_words and len(word) > 1]
+        
+        clean_name = ' '.join(words)
+        
+        # Limit length to avoid overly long queries
+        if len(clean_name) > 50:
+            clean_name = ' '.join(clean_name.split()[:8])
+        
+        return clean_name.strip()
     
     def cleanup(self):
         """Clean up resources"""
