@@ -89,26 +89,23 @@ class WebScrapingService:
         return sorted_apis[0][0], sorted_apis[0][1]
     
     def search_images_pixabay(self, query, count=10):
-        """Search images using Pixabay API"""
+        """Search images using Pixabay API (official docs: https://pixabay.com/api/docs/)"""
         try:
             params = {
-                'key': self.api_options['pixabay']['key'],
+                'key': self.api_options['pixabay']['key'],  # API key as query param
                 'q': query,
                 'image_type': 'photo',
                 'per_page': min(count, 200),  # Pixabay limit
                 'safesearch': 'true'
             }
-            
             response = requests.get(
                 'https://pixabay.com/api/',
                 params=params,
                 timeout=10
             )
-            
             if response.status_code == 200:
                 data = response.json()
                 images = []
-                
                 for item in data.get('hits', []):
                     images.append({
                         'url': item.get('webformatURL', ''),
@@ -116,40 +113,35 @@ class WebScrapingService:
                         'width': item.get('webformatWidth', 0),
                         'height': item.get('webformatHeight', 0)
                     })
-                
                 return images
             else:
                 print(f"    Pixabay API error: {response.status_code}")
                 return []
-                
         except Exception as e:
             print(f"    Pixabay search error: {e}")
             return []
-    
+
     def search_images_unsplash(self, query, count=10):
-        """Search images using Unsplash API"""
+        """Search images using Unsplash API (official docs: https://unsplash.com/documentation#search-photos)"""
         try:
+            # Unsplash uses an Access Key (not OAuth) as 'Authorization: Client-ID <ACCESS_KEY>'
             headers = {
                 'Authorization': f'Client-ID {self.api_options["unsplash"]["key"]}'
             }
-            
             params = {
                 'query': query,
                 'per_page': min(count, 30),  # Unsplash limit
                 'orientation': 'landscape'
             }
-            
             response = requests.get(
                 'https://api.unsplash.com/search/photos',
                 headers=headers,
                 params=params,
                 timeout=10
             )
-            
             if response.status_code == 200:
                 data = response.json()
                 images = []
-                
                 for item in data.get('results', []):
                     images.append({
                         'url': item.get('urls', {}).get('regular', ''),
@@ -157,12 +149,10 @@ class WebScrapingService:
                         'width': item.get('width', 0),
                         'height': item.get('height', 0)
                     })
-                
                 return images
             else:
                 print(f"    Unsplash API error: {response.status_code}")
                 return []
-                
         except Exception as e:
             print(f"    Unsplash search error: {e}")
             return []
