@@ -135,86 +135,137 @@ class WebScrapingService:
         
         return results_df
     
-    def _search_product_images_robust(self, product_name, stock_code, num_images):
-        """Search for product images using actual product names for accuracy"""
-        # Clean the product name for better search results
-        clean_name = self._clean_product_name(product_name)
+    def _clean_product_name(self, product_name):
+        """Clean and optimize product name for better search results"""
+        if not product_name or pd.isna(product_name):
+            return None
         
-        # Try different search query variations for better coverage
-        search_variations = [
-            clean_name,
-            f"{clean_name} product",
-            f"{clean_name} item",
-            f"{clean_name} image",
-            f"{clean_name} photo",
-            f"{clean_name} picture",
-            f"{clean_name} retail",
-            f"{clean_name} store",
-            f"{clean_name} shopping",
-            f"{clean_name} online"
+        # Convert to string and clean
+        name = str(product_name).strip()
+        
+        # Remove common prefixes that don't help search
+        prefixes_to_remove = [
+            'SET OF ', 'SET ', 'PACK OF ', 'PACK ', 'BOX OF ', 'BOX ',
+            'LARGE ', 'SMALL ', 'MEDIUM ', 'MINI ', 'BIG ',
+            '$', '£', '€', '¥'
         ]
+        
+        for prefix in prefixes_to_remove:
+            if name.upper().startswith(prefix):
+                name = name[len(prefix):].strip()
+        
+        # Remove special characters and extra spaces
+        import re
+        name = re.sub(r'[^\w\s]', ' ', name)
+        name = re.sub(r'\s+', ' ', name).strip()
+        
+        # Extract key words (avoid generic terms)
+        words = name.split()
+        key_words = []
+        
+        # Common words to avoid (too generic)
+        generic_words = {
+            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+            'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during',
+            'before', 'after', 'above', 'below', 'between', 'among', 'within',
+            'set', 'pack', 'box', 'large', 'small', 'medium', 'mini', 'big',
+            'design', 'style', 'color', 'colour', 'size', 'type', 'kind', 'sort'
+        }
+        
+        for word in words:
+            word_lower = word.lower()
+            if (word_lower not in generic_words and 
+                len(word) > 2 and 
+                not word.isdigit()):
+                key_words.append(word)
+        
+        # If we have key words, use them; otherwise use original (cleaned)
+        if key_words:
+            optimized_name = ' '.join(key_words[:4])  # Limit to 4 key words
+        else:
+            # Fallback: use first few words of cleaned name
+            words = name.split()
+            optimized_name = ' '.join(words[:3])  # Limit to 3 words
+        
+        # Ensure we have something meaningful
+        if len(optimized_name) < 3:
+            optimized_name = name[:50]  # Use first 50 chars of original
+        
+        return optimized_name
+
+    def _search_product_images_robust(self, product_name, stock_code, max_images=15):
+        """Search for product images with multiple query variations"""
+        if not self.api_key:
+            print("Error: SERPAPI_KEY not found")
+            return []
+        
+        # Clean and optimize the product name for search
+        optimized_name = self._clean_product_name(product_name)
+        print(f"    Optimized search term: '{optimized_name}'")
+        
+        # Create multiple search variations for better results
+        search_variations = [
+            optimized_name,
+            f"{optimized_name} product",
+            f"{optimized_name} item",
+            f"{optimized_name} image",
+            f"{optimized_name} photo",
+            f"{optimized_name} retail",
+            f"{optimized_name} store",
+            f"{optimized_name} online",
+            f"{optimized_name} shopping",
+            f"{optimized_name} buy"
+        ]
+        
+        # Limit variations based on max_images to avoid wasting API calls
+        if max_images <= 5:
+            search_variations = search_variations[:3]  # Use fewer variations for small requests
+        elif max_images <= 10:
+            search_variations = search_variations[:5]  # Use medium variations
         
         all_images = []
         
-        for query in search_variations:
+        for i, search_query in enumerate(search_variations):
             try:
-                # Get more images per query to have better selection
-                images = self._search_product_images(query, min(num_images // 3, 10))
-                all_images.extend(images)
+                print(f"    Trying search variation {i+1}/{len(search_variations)}: '{search_query}'")
                 
-                if len(all_images) >= num_images * 2:  # Get extra for filtering
-                    break
+                # Calculate how many images to request for this variation
+                images_per_variation = max(1, max_images // len(search_variations))
+                
+                # Search for images
+                search_results = self._search_images(search_query, images_per_variation)
+                
+                if search_results:
+                    all_images.extend(search_results)
+                    print(f"      Found {len(search_results)} images")
                     
+                    # If we have enough images, stop searching
+                    if len(all_images) >= max_images:
+                        break
+                else:
+                    print(f"      No images found")
+                
+                # Rate limiting between searches
+                time.sleep(random.uniform(0.5, 1.0))
+                
             except Exception as e:
-                print(f"    Search failed for query '{query}': {e}")
+                print(f"    Search error for '{search_query}': {e}")
                 continue
         
-        # Remove duplicates based on URL
+        # Remove duplicates and limit to max_images
         unique_images = []
         seen_urls = set()
+        
         for img in all_images:
             if img['url'] not in seen_urls:
                 unique_images.append(img)
                 seen_urls.add(img['url'])
+                
+                if len(unique_images) >= max_images:
+                    break
         
-        # Filter out low-quality images (very small or very large)
-        filtered_images = []
-        for img in unique_images:
-            url = img['url'].lower()
-            # Skip very small images or thumbnails
-            if any(skip in url for skip in ['thumb', 'icon', 'small', 'mini']):
-                continue
-            # Skip very large images that might be banners
-            if any(skip in url for skip in ['banner', 'header', 'background']):
-                continue
-            filtered_images.append(img)
-        
-        print(f"    Found {len(unique_images)} unique images, filtered to {len(filtered_images)}")
-        
-        return filtered_images[:num_images]
-    
-    def _clean_product_name(self, product_name):
-        """Clean product name for better search results"""
-        if not product_name or pd.isna(product_name):
-            return ""
-        
-        # Remove special characters and extra spaces
-        clean_name = str(product_name).strip()
-        clean_name = re.sub(r'[^\w\s-]', ' ', clean_name)  # Keep only alphanumeric, spaces, and hyphens
-        clean_name = re.sub(r'\s+', ' ', clean_name)  # Replace multiple spaces with single space
-        
-        # Remove common prefixes/suffixes that don't help search
-        remove_words = ['the', 'a', 'an', 'new', 'brand', 'original', 'genuine', 'authentic']
-        words = clean_name.lower().split()
-        words = [word for word in words if word not in remove_words and len(word) > 1]
-        
-        clean_name = ' '.join(words)
-        
-        # Limit length to avoid overly long queries
-        if len(clean_name) > 50:
-            clean_name = ' '.join(clean_name.split()[:8])
-        
-        return clean_name.strip()
+        print(f"    Found {len(unique_images)} unique images, filtered to {len(unique_images)}")
+        return unique_images
     
     def _search_product_images(self, search_query, num_images):
         """Search for product images using SerpAPI"""
