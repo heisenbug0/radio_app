@@ -19,3 +19,4 @@ google-cloud-vision
 easyocr
 sentence-transformers==2.2.2
 huggingface-hub==0.19.3
+google-search-results
