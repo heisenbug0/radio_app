@@ -62,9 +62,6 @@ class AppService:
             
             # Generate natural language response
             if products:
-                response = f"I found {len(products)} products matching your query '{query}'. "
-                response += "Here are the top recommendations:"
-                
                 # Format products for response
                 formatted_products = []
                 for i, product in enumerate(products, 1):
@@ -80,7 +77,7 @@ class AppService:
                 
                 return {
                     "products": formatted_products,
-                    "response": response
+                    "response": "Results:"
                 }
             else:
                 # Try with simplified query if no results found
@@ -88,8 +85,6 @@ class AppService:
                 if simplified_query != query:
                     products = self.data_service.search_products(simplified_query, top_k=5)
                     if products:
-                        response = f"No exact matches found for '{query}', but I found similar products for '{simplified_query}':"
-                        
                         formatted_products = []
                         for i, product in enumerate(products, 1):
                             formatted_product = {
@@ -104,12 +99,12 @@ class AppService:
                         
                         return {
                             "products": formatted_products,
-                            "response": response
+                            "response": "Results:"
                         }
                 
                 return {
                     "products": [],
-                    "response": f"I couldn't find any products matching your query '{query}'. Please try different keywords or be more specific."
+                    "response": "No products found."
                 }
                 
         except Exception as e:
@@ -174,9 +169,9 @@ class AppService:
                 
                 # Add OCR-specific response information
                 if query_result["products"]:
-                    query_result["response"] = f"Successfully extracted text: '{extracted_text}'. " + query_result["response"]
+                    query_result["response"] = "Results:"
                 else:
-                    query_result["response"] = f"Successfully extracted text: '{extracted_text}', but no products found matching this query. Please try different keywords."
+                    query_result["response"] = "No products found."
                 
                 return query_result
                 
@@ -217,15 +212,7 @@ class AppService:
                 # Search for similar products using the predicted class
                 products = self.data_service.search_products(predicted_class, top_k=5)
                 
-                # Generate response
-                if confidence > 0.7:
-                    response = f"I identified this product as '{predicted_class}' with {confidence:.1%} confidence. "
-                else:
-                    response = f"I tentatively identified this product as '{predicted_class}' with {confidence:.1%} confidence. "
-                
                 if products:
-                    response += f"Here are similar products:"
-                    
                     # Format products for response
                     formatted_products = []
                     for i, product in enumerate(products, 1):
@@ -241,14 +228,14 @@ class AppService:
                     
                     return {
                         "products": formatted_products,
-                        "response": response,
+                        "response": "Results:",
                         "predicted_class": predicted_class,
                         "confidence": round(confidence, 3)
                     }
                 else:
                     return {
                         "products": [],
-                        "response": response + " However, I couldn't find similar products in our database.",
+                        "response": "No products found.",
                         "predicted_class": predicted_class,
                         "confidence": round(confidence, 3)
                     }
