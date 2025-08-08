@@ -9,7 +9,9 @@ import re # Added for _clean_product_name
 
 class WebScrapingService:
     def __init__(self):
-        self.api_key = os.getenv('SERPAPI_KEY')
+        # Initialize different API options
+        self.api_options = self._initialize_apis()
+        self.api_key = os.getenv('SERPAPI_KEY')  # Keep for backward compatibility
         self.download_dir = "data/scraped_images"
         self.results = []
         
@@ -17,12 +19,309 @@ class WebScrapingService:
         if not os.path.exists(self.download_dir):
             os.makedirs(self.download_dir)
     
+    def _initialize_apis(self):
+        """Initialize different API options with their free limits"""
+        apis = {}
+        
+        # Option 1: SerpAPI (original)
+        serpapi_key = os.getenv('SERPAPI_KEY')
+        if serpapi_key:
+            apis['serpapi'] = {
+                'name': 'SerpAPI',
+                'key': serpapi_key,
+                'free_requests': 250,
+                'priority': 1
+            }
+        
+        # Option 2: Pixabay API (5000 free requests/hour)
+        pixabay_key = os.getenv('PIXABAY_API_KEY')
+        if pixabay_key:
+            apis['pixabay'] = {
+                'name': 'Pixabay',
+                'key': pixabay_key,
+                'free_requests': 5000,
+                'priority': 2
+            }
+        
+        # Option 3: Unsplash API (5000 free requests/hour)
+        unsplash_key = os.getenv('UNSPLASH_API_KEY')
+        if unsplash_key:
+            apis['unsplash'] = {
+                'name': 'Unsplash',
+                'key': unsplash_key,
+                'free_requests': 5000,
+                'priority': 3
+            }
+        
+        # Option 4: Bing Image Search API (1000 free requests/month)
+        bing_key = os.getenv('BING_SEARCH_KEY')
+        if bing_key:
+            apis['bing'] = {
+                'name': 'Bing Image Search',
+                'key': bing_key,
+                'free_requests': 1000,
+                'priority': 4
+            }
+        
+        # Option 5: Google Custom Search API (100 free requests/day)
+        google_key = os.getenv('GOOGLE_API_KEY')
+        google_cx = os.getenv('GOOGLE_CX')
+        if google_key and google_cx:
+            apis['google'] = {
+                'name': 'Google Custom Search',
+                'key': google_key,
+                'cx': google_cx,
+                'free_requests': 100,
+                'priority': 5
+            }
+        
+        return apis
+    
+    def get_best_api(self):
+        """Get the best available API based on free requests"""
+        if not self.api_options:
+            return None
+        
+        # Sort by free requests (highest first)
+        sorted_apis = sorted(self.api_options.items(), 
+                           key=lambda x: x[1]['free_requests'], reverse=True)
+        
+        return sorted_apis[0][0], sorted_apis[0][1]
+    
+    def search_images_pixabay(self, query, count=10):
+        """Search images using Pixabay API"""
+        try:
+            params = {
+                'key': self.api_options['pixabay']['key'],
+                'q': query,
+                'image_type': 'photo',
+                'per_page': min(count, 200),  # Pixabay limit
+                'safesearch': 'true'
+            }
+            
+            response = requests.get(
+                'https://pixabay.com/api/',
+                params=params,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                images = []
+                
+                for item in data.get('hits', []):
+                    images.append({
+                        'url': item.get('webformatURL', ''),
+                        'title': item.get('tags', ''),
+                        'width': item.get('webformatWidth', 0),
+                        'height': item.get('webformatHeight', 0)
+                    })
+                
+                return images
+            else:
+                print(f"    Pixabay API error: {response.status_code}")
+                return []
+                
+        except Exception as e:
+            print(f"    Pixabay search error: {e}")
+            return []
+    
+    def search_images_unsplash(self, query, count=10):
+        """Search images using Unsplash API"""
+        try:
+            headers = {
+                'Authorization': f'Client-ID {self.api_options["unsplash"]["key"]}'
+            }
+            
+            params = {
+                'query': query,
+                'per_page': min(count, 30),  # Unsplash limit
+                'orientation': 'landscape'
+            }
+            
+            response = requests.get(
+                'https://api.unsplash.com/search/photos',
+                headers=headers,
+                params=params,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                images = []
+                
+                for item in data.get('results', []):
+                    images.append({
+                        'url': item.get('urls', {}).get('regular', ''),
+                        'title': item.get('description', ''),
+                        'width': item.get('width', 0),
+                        'height': item.get('height', 0)
+                    })
+                
+                return images
+            else:
+                print(f"    Unsplash API error: {response.status_code}")
+                return []
+                
+        except Exception as e:
+            print(f"    Unsplash search error: {e}")
+            return []
+    
+    def search_images_bing(self, query, count=10):
+        """Search images using Bing Image Search API"""
+        try:
+            headers = {
+                'Ocp-Apim-Subscription-Key': self.api_options['bing']['key']
+            }
+            
+            params = {
+                'q': query,
+                'count': min(count, 150),  # Bing limit
+                'imageType': 'photo',
+                'safeSearch': 'strict'
+            }
+            
+            response = requests.get(
+                'https://api.bing.microsoft.com/v7.0/images/search',
+                headers=headers,
+                params=params,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                images = []
+                
+                for item in data.get('value', []):
+                    images.append({
+                        'url': item.get('contentUrl', ''),
+                        'title': item.get('name', ''),
+                        'width': item.get('width', 0),
+                        'height': item.get('height', 0)
+                    })
+                
+                return images
+            else:
+                print(f"    Bing API error: {response.status_code}")
+                return []
+                
+        except Exception as e:
+            print(f"    Bing search error: {e}")
+            return []
+    
+    def search_images_google(self, query, count=10):
+        """Search images using Google Custom Search API"""
+        try:
+            params = {
+                'key': self.api_options['google']['key'],
+                'cx': self.api_options['google']['cx'],
+                'q': query,
+                'searchType': 'image',
+                'num': min(count, 10),  # Google limit
+                'safe': 'active'
+            }
+            
+            response = requests.get(
+                'https://www.googleapis.com/customsearch/v1',
+                params=params,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                images = []
+                
+                for item in data.get('items', []):
+                    images.append({
+                        'url': item.get('link', ''),
+                        'title': item.get('title', ''),
+                        'width': item.get('image', {}).get('width', 0),
+                        'height': item.get('image', {}).get('height', 0)
+                    })
+                
+                return images
+            else:
+                print(f"    Google API error: {response.status_code}")
+                return []
+                
+        except Exception as e:
+            print(f"    Google search error: {e}")
+            return []
+    
+    def _search_images(self, query, count=10):
+        """Search images using the best available API"""
+        api_name, api_config = self.get_best_api()
+        
+        if not api_name:
+            print("    No API available")
+            return []
+        
+        print(f"    Using {api_config['name']} (free requests: {api_config['free_requests']})")
+        
+        if api_name == 'serpapi':
+            return self._search_product_images_serpapi(query, count)
+        elif api_name == 'pixabay':
+            return self.search_images_pixabay(query, count)
+        elif api_name == 'unsplash':
+            return self.search_images_unsplash(query, count)
+        elif api_name == 'bing':
+            return self.search_images_bing(query, count)
+        elif api_name == 'google':
+            return self.search_images_google(query, count)
+        else:
+            print(f"    Unknown API: {api_name}")
+            return []
+    
+    def _search_product_images_serpapi(self, search_query, num_images):
+        """Search for product images using SerpAPI (original method)"""
+        try:
+            search = GoogleSearch({
+                "q": search_query,
+                "tbm": "isch",
+                "api_key": self.api_key,
+                "num": num_images,
+                "safe": "active",
+                "img_type": "photo",
+                "img_size": "medium",
+                "gl": "us",
+                "hl": "en"
+            })
+            
+            results = search.get_dict()
+            images = []
+            
+            if "images_results" in results:
+                for img in results["images_results"]:
+                    if "original" in img:
+                        images.append({
+                            'url': img["original"],
+                            'title': img.get("title", ""),
+                            'width': img.get("width", 0),
+                            'height': img.get("height", 0)
+                        })
+            
+            return images
+            
+        except Exception as e:
+            print(f"    SerpAPI search error: {e}")
+            return []
+    
     def scrape_product_images(self, csv_file_path, images_per_product=15):
-        """Scrape product images using SerpAPI Google Image Search"""
-        if not self.api_key:
-            print("Error: SERPAPI_KEY not found in environment variables")
-            print("Please set SERPAPI_KEY in your .env file")
+        """Scrape product images using the best available API"""
+        best_api = self.get_best_api()
+        
+        if not best_api:
+            print("Error: No API available")
+            print("Please set up one of these APIs:")
+            print("  - SERPAPI_KEY (250 free requests)")
+            print("  - PIXABAY_API_KEY (5000 free requests/hour)")
+            print("  - UNSPLASH_API_KEY (5000 free requests/hour)")
+            print("  - BING_SEARCH_KEY (1000 free requests/month)")
+            print("  - GOOGLE_API_KEY + GOOGLE_CX (100 free requests/day)")
             return pd.DataFrame()
+        
+        api_name, api_config = best_api
+        print(f"Using {api_config['name']} with {api_config['free_requests']} free requests")
         
         print(f"Starting image scraping for {images_per_product} images per product...")
         print("Note: This will use more API calls but will give better training results!")
@@ -135,86 +434,137 @@ class WebScrapingService:
         
         return results_df
     
-    def _search_product_images_robust(self, product_name, stock_code, num_images):
-        """Search for product images using actual product names for accuracy"""
-        # Clean the product name for better search results
-        clean_name = self._clean_product_name(product_name)
+    def _clean_product_name(self, product_name):
+        """Clean and optimize product name for better search results"""
+        if not product_name or pd.isna(product_name):
+            return None
         
-        # Try different search query variations for better coverage
-        search_variations = [
-            clean_name,
-            f"{clean_name} product",
-            f"{clean_name} item",
-            f"{clean_name} image",
-            f"{clean_name} photo",
-            f"{clean_name} picture",
-            f"{clean_name} retail",
-            f"{clean_name} store",
-            f"{clean_name} shopping",
-            f"{clean_name} online"
+        # Convert to string and clean
+        name = str(product_name).strip()
+        
+        # Remove common prefixes that don't help search
+        prefixes_to_remove = [
+            'SET OF ', 'SET ', 'PACK OF ', 'PACK ', 'BOX OF ', 'BOX ',
+            'LARGE ', 'SMALL ', 'MEDIUM ', 'MINI ', 'BIG ',
+            '$', '£', '€', '¥'
         ]
+        
+        for prefix in prefixes_to_remove:
+            if name.upper().startswith(prefix):
+                name = name[len(prefix):].strip()
+        
+        # Remove special characters and extra spaces
+        import re
+        name = re.sub(r'[^\w\s]', ' ', name)
+        name = re.sub(r'\s+', ' ', name).strip()
+        
+        # Extract key words (avoid generic terms)
+        words = name.split()
+        key_words = []
+        
+        # Common words to avoid (too generic)
+        generic_words = {
+            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+            'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during',
+            'before', 'after', 'above', 'below', 'between', 'among', 'within',
+            'set', 'pack', 'box', 'large', 'small', 'medium', 'mini', 'big',
+            'design', 'style', 'color', 'colour', 'size', 'type', 'kind', 'sort'
+        }
+        
+        for word in words:
+            word_lower = word.lower()
+            if (word_lower not in generic_words and 
+                len(word) > 2 and 
+                not word.isdigit()):
+                key_words.append(word)
+        
+        # If we have key words, use them; otherwise use original (cleaned)
+        if key_words:
+            optimized_name = ' '.join(key_words[:4])  # Limit to 4 key words
+        else:
+            # Fallback: use first few words of cleaned name
+            words = name.split()
+            optimized_name = ' '.join(words[:3])  # Limit to 3 words
+        
+        # Ensure we have something meaningful
+        if len(optimized_name) < 3:
+            optimized_name = name[:50]  # Use first 50 chars of original
+        
+        return optimized_name
+
+    def _search_product_images_robust(self, product_name, stock_code, max_images=15):
+        """Search for product images with multiple query variations"""
+        if not self.api_key:
+            print("Error: SERPAPI_KEY not found")
+            return []
+        
+        # Clean and optimize the product name for search
+        optimized_name = self._clean_product_name(product_name)
+        print(f"    Optimized search term: '{optimized_name}'")
+        
+        # Create multiple search variations for better results
+        search_variations = [
+            optimized_name,
+            f"{optimized_name} product",
+            f"{optimized_name} item",
+            f"{optimized_name} image",
+            f"{optimized_name} photo",
+            f"{optimized_name} retail",
+            f"{optimized_name} store",
+            f"{optimized_name} online",
+            f"{optimized_name} shopping",
+            f"{optimized_name} buy"
+        ]
+        
+        # Limit variations based on max_images to avoid wasting API calls
+        if max_images <= 5:
+            search_variations = search_variations[:3]  # Use fewer variations for small requests
+        elif max_images <= 10:
+            search_variations = search_variations[:5]  # Use medium variations
         
         all_images = []
         
-        for query in search_variations:
+        for i, search_query in enumerate(search_variations):
             try:
-                # Get more images per query to have better selection
-                images = self._search_product_images(query, min(num_images // 3, 10))
-                all_images.extend(images)
+                print(f"    Trying search variation {i+1}/{len(search_variations)}: '{search_query}'")
                 
-                if len(all_images) >= num_images * 2:  # Get extra for filtering
-                    break
+                # Calculate how many images to request for this variation
+                images_per_variation = max(1, max_images // len(search_variations))
+                
+                # Search for images
+                search_results = self._search_images(search_query, images_per_variation)
+                
+                if search_results:
+                    all_images.extend(search_results)
+                    print(f"      Found {len(search_results)} images")
                     
+                    # If we have enough images, stop searching
+                    if len(all_images) >= max_images:
+                        break
+                else:
+                    print(f"      No images found")
+                
+                # Rate limiting between searches
+                time.sleep(random.uniform(0.5, 1.0))
+                
             except Exception as e:
-                print(f"    Search failed for query '{query}': {e}")
+                print(f"    Search error for '{search_query}': {e}")
                 continue
         
-        # Remove duplicates based on URL
+        # Remove duplicates and limit to max_images
         unique_images = []
         seen_urls = set()
+        
         for img in all_images:
             if img['url'] not in seen_urls:
                 unique_images.append(img)
                 seen_urls.add(img['url'])
+                
+                if len(unique_images) >= max_images:
+                    break
         
-        # Filter out low-quality images (very small or very large)
-        filtered_images = []
-        for img in unique_images:
-            url = img['url'].lower()
-            # Skip very small images or thumbnails
-            if any(skip in url for skip in ['thumb', 'icon', 'small', 'mini']):
-                continue
-            # Skip very large images that might be banners
-            if any(skip in url for skip in ['banner', 'header', 'background']):
-                continue
-            filtered_images.append(img)
-        
-        print(f"    Found {len(unique_images)} unique images, filtered to {len(filtered_images)}")
-        
-        return filtered_images[:num_images]
-    
-    def _clean_product_name(self, product_name):
-        """Clean product name for better search results"""
-        if not product_name or pd.isna(product_name):
-            return ""
-        
-        # Remove special characters and extra spaces
-        clean_name = str(product_name).strip()
-        clean_name = re.sub(r'[^\w\s-]', ' ', clean_name)  # Keep only alphanumeric, spaces, and hyphens
-        clean_name = re.sub(r'\s+', ' ', clean_name)  # Replace multiple spaces with single space
-        
-        # Remove common prefixes/suffixes that don't help search
-        remove_words = ['the', 'a', 'an', 'new', 'brand', 'original', 'genuine', 'authentic']
-        words = clean_name.lower().split()
-        words = [word for word in words if word not in remove_words and len(word) > 1]
-        
-        clean_name = ' '.join(words)
-        
-        # Limit length to avoid overly long queries
-        if len(clean_name) > 50:
-            clean_name = ' '.join(clean_name.split()[:8])
-        
-        return clean_name.strip()
+        print(f"    Found {len(unique_images)} unique images, filtered to {len(unique_images)}")
+        return unique_images
     
     def _search_product_images(self, search_query, num_images):
         """Search for product images using SerpAPI"""

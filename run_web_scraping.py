@@ -28,11 +28,15 @@ def main():
     scraper = WebScrapingService()
     
     try:
-        # Use the SerpAPI optimized dataset (100 products)
-        csv_file_path = "data/CNN_Model_Train_Data_serpapi_optimized.csv"
+        # Use the short names dataset (100 products with short, searchable names)
+        csv_file_path = "data/CNN_Model_Train_Data_short_names.csv"
         
-        # Fallback options if optimized dataset doesn't exist
+        # Fallback options if short names dataset doesn't exist
         fallback_options = [
+            "data/CNN_Model_Train_Data_very_short.csv",
+            "data/CNN_Model_Train_Data_short.csv",
+            "data/CNN_Model_Train_Data_best_searchable.csv",
+            "data/CNN_Model_Train_Data_serpapi_optimized.csv",
             "data/CNN_Model_Train_Data_balanced_125.csv",
             "data/CNN_Model_Train_Data_quality_83.csv", 
             "data/CNN_Model_Train_Data_premium_50.csv",
@@ -41,7 +45,7 @@ def main():
         ]
         
         if not os.path.exists(csv_file_path):
-            print(f"Optimized dataset not found, checking alternatives...")
+            print(f"Short names dataset not found, checking alternatives...")
             for fallback in fallback_options:
                 if os.path.exists(fallback):
                     csv_file_path = fallback
