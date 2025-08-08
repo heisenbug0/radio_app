@@ -5,3 +5,4 @@ venv_311
 venv
 data_preparation.*
 all-mpnet-base-v2
+data/scraped_images
