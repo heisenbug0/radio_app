@@ -24,34 +24,10 @@ def main():
     scraper = WebScrapingService()
     
     try:
-        # Use the short names dataset (100 products with short, searchable names)
-        csv_file_path = "data/CNN_Model_Train_Data_short_names.csv"
-        
-        # Fallback options if short names dataset doesn't exist
-        fallback_options = [
-            "data/CNN_Model_Train_Data_very_short.csv",
-            "data/CNN_Model_Train_Data_short.csv",
-            "data/CNN_Model_Train_Data_best_searchable.csv",
-            "data/CNN_Model_Train_Data_serpapi_optimized.csv",
-            "data/CNN_Model_Train_Data_balanced_125.csv",
-            "data/CNN_Model_Train_Data_quality_83.csv", 
-            "data/CNN_Model_Train_Data_premium_50.csv",
-            "data/CNN_Model_Train_Data_recommended.csv",
-            "data/CNN_Model_Train_Data.csv"
-        ]
-        
+        # Use the recommended 500-product dataset
+        csv_file_path = "data/CNN_Model_Train_Data_recommended.csv"
         if not os.path.exists(csv_file_path):
-            print(f"Short names dataset not found, checking alternatives...")
-            for fallback in fallback_options:
-                if os.path.exists(fallback):
-                    csv_file_path = fallback
-                    print(f"Using fallback: {csv_file_path}")
-                    break
-        
-        if not os.path.exists(csv_file_path):
-            print(f"Error: No dataset file found!")
-            print("Please create an optimized dataset:")
-            print("  python create_optimized_dataset.py")
+            print(f"Error: 500-product recommended dataset not found! Please generate it with create_comprehensive_dataset.py.")
             return
         
         print(f"Found dataset file: {csv_file_path}")

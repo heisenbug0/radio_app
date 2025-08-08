@@ -78,16 +78,17 @@ class WebScrapingService:
         return apis
     
     def get_best_api(self):
-        """Get the best available API based on free requests"""
-        if not self.api_options:
-            return None
-        
-        # Sort by free requests (highest first)
-        sorted_apis = sorted(self.api_options.items(), 
-                           key=lambda x: x[1]['free_requests'], reverse=True)
-        
-        return sorted_apis[0][0], sorted_apis[0][1]
-    
+        """Get only the Pixabay API config, or None if not available"""
+        pixabay_key = os.getenv('PIXABAY_API_KEY')
+        if pixabay_key:
+            return 'pixabay', {
+                'name': 'Pixabay',
+                'key': pixabay_key,
+                'free_requests': 5000,
+                'priority': 1
+            }
+        return None
+
     def search_images_pixabay(self, query, count=10):
         """Search images using Pixabay API (official docs: https://pixabay.com/api/docs/)"""
         try:
@@ -239,28 +240,12 @@ class WebScrapingService:
             return []
     
     def _search_images(self, query, count=10):
-        """Search images using the best available API"""
-        api_name, api_config = self.get_best_api()
-        
-        if not api_name:
-            print("    No API available")
+        """Search images using only Pixabay API"""
+        api = self.get_best_api()
+        if not api:
+            print("    No Pixabay API key found. Set PIXABAY_API_KEY.")
             return []
-        
-        print(f"    Using {api_config['name']} (free requests: {api_config['free_requests']})")
-        
-        if api_name == 'serpapi':
-            return self._search_product_images_serpapi(query, count)
-        elif api_name == 'pixabay':
-            return self.search_images_pixabay(query, count)
-        elif api_name == 'unsplash':
-            return self.search_images_unsplash(query, count)
-        elif api_name == 'bing':
-            return self.search_images_bing(query, count)
-        elif api_name == 'google':
-            return self.search_images_google(query, count)
-        else:
-            print(f"    Unknown API: {api_name}")
-            return []
+        return self.search_images_pixabay(query, count)
     
     def _search_product_images_serpapi(self, search_query, num_images):
         """Search for product images using SerpAPI (original method)"""
@@ -301,17 +286,11 @@ class WebScrapingService:
         best_api = self.get_best_api()
         
         if not best_api:
-            print("Error: No API available")
-            print("Please set up one of these APIs:")
-            print("  - SERPAPI_KEY (250 free requests)")
-            print("  - PIXABAY_API_KEY (5000 free requests/hour)")
-            print("  - UNSPLASH_API_KEY (5000 free requests/hour)")
-            print("  - BING_SEARCH_KEY (1000 free requests/month)")
-            print("  - GOOGLE_API_KEY + GOOGLE_CX (100 free requests/day)")
+            print("Error: No Pixabay API key found. Set PIXABAY_API_KEY.")
             return pd.DataFrame()
         
         api_name, api_config = best_api
-        print(f"Using {api_config['name']} with {api_config['free_requests']} free requests")
+        print(f"Using Pixabay with {api_config['free_requests']} free requests")
         
         print(f"Starting image scraping for {images_per_product} images per product...")
         print("Note: This will use more API calls but will give better training results!")
