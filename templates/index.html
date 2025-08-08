@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project </title>
+    <title>Product Search System</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,7 +13,7 @@
         }
         
         .container {
-            width: 80%;
+            width: 90%;
             margin: 20px auto;
             background: #fff;
             padding: 20px;
@@ -33,49 +33,143 @@
             font-size: 16px;
         }
         
-        .nav-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
-        }
-        
-        .nav-card {
-            background: #fff;
+        .section {
+            background: #f9f9f9;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 8px;
             border: 1px solid #ddd;
-            padding: 20px;
-            text-decoration: none;
+        }
+        
+        .section h2 {
             color: #333;
-            transition: box-shadow 0.3s ease;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
         }
         
-        .card-icon {
-            font-size: 2em;
-            margin-bottom: 10px;
+        .search-input {
+            width: 70%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .search-button {
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-left: 10px;
+        }
+        
+        .search-button:hover {
+            background: #0056b3;
+        }
+        
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 40px;
             text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+            margin: 20px 0;
         }
         
-        .card-title {
-            font-size: 1.2em;
+        .upload-area:hover {
+            border-color: #007bff;
+        }
+        
+        .upload-area.dragover {
+            border-color: #007bff;
+            background-color: #f0f8ff;
+        }
+        
+        .image-preview {
+            max-width: 300px;
+            max-height: 200px;
+            margin: 20px auto;
+            display: none;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .results-section {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .product-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .product-table th, .product-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        
+        .product-table th {
+            background-color: #f2f2f2;
             font-weight: bold;
-            margin-bottom: 10px;
-            text-align: center;
         }
         
-        .card-description {
-            font-size: 14px;
-            color: #666;
-            line-height: 1.4;
+        .loading {
+            display: none;
             text-align: center;
+            margin: 20px 0;
         }
         
-        .footer {
-            margin-top: 30px;
-            text-align: center;
-            color: #666;
-            font-size: 14px;
-            border-top: 1px solid #ddd;
-            padding-top: 20px;
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            color: #dc3545;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8d7da;
+            border-radius: 4px;
+        }
+        
+        .success {
+            color: #28a745;
+            margin-top: 10px;
+        }
+        
+        .extracted-text {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        
+        .confidence-info {
+            background: #d1ecf1;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            color: #0c5460;
         }
         
         @media (max-width: 768px) {
@@ -84,28 +178,379 @@
                 margin: 10px auto;
             }
             
-            .nav-grid {
-                grid-template-columns: 1fr;
+            .search-input {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            
+            .search-button {
+                width: 100%;
+                margin-left: 0;
+            }
+            
+            .upload-area {
+                padding: 20px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <h1>Product Search System</h1>
+        <p class="subtitle">Search for products using text queries, image text extraction, or product image recognition</p>
         
-        <div class="nav-grid">
-            <a href="/text-query" class="nav-card">
-                <div class="card-title">Text Query Interface</div>
-            </a>
+        <!-- Text Query Section -->
+        <div class="section">
+            <h2>Text Query Search</h2>
+            <p>Enter a natural language query to find products:</p>
+            <input type="text" id="textSearchInput" class="search-input" placeholder="e.g., 'wireless headphones', 'ergonomic mouse', 'laptop accessories'">
+            <button onclick="searchProducts()" class="search-button">Search</button>
             
-            <a href="/image-query" class="nav-card">
-                <div class="card-title">Image Query Interface</div>
-            </a>
+            <div class="loading" id="textLoading">
+                <div class="spinner"></div>
+                <p>Searching for products...</p>
+            </div>
             
-            <a href="/product-image" class="nav-card">
-                <div class="card-title">Product Image Upload</div>
+            <div class="results-section" id="textResultsSection">
+                <h4 id="textResponseText"></h4>
+                <table class="product-table" id="textProductTable">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Stock Code</th>
+                            <th>Description</th>
+                            <th>Unit Price</th>
+                            <th>Quantity</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="textProductTableBody">
+                    </tbody>
+                </table>
+            </div>
         </div>
-    
+        
+        <!-- Image Text Query Section -->
+        <div class="section">
+            <h2>Image Text Search</h2>
+            <p>Upload an image with handwritten or printed text to search for products:</p>
+            <div class="upload-area" id="imageUploadArea">
+                <p>Click to upload or drag and drop an image</p>
+                <p style="font-size: 12px; color: #666;">Supports: JPG, PNG, GIF, BMP</p>
+            </div>
+            <input type="file" id="imageFile" accept="image/*" style="display: none;">
+            <img id="imagePreview" class="image-preview">
+            <button id="imageSubmitBtn" class="search-button" style="display: none;" onclick="processImageText()">Extract Text & Search</button>
+            
+            <div class="loading" id="imageLoading">
+                <div class="spinner"></div>
+                <p>Processing image...</p>
+            </div>
+            
+            <div class="results-section" id="imageResultsSection">
+                <div class="extracted-text">
+                    <strong>Extracted Text:</strong> <span id="extractedText"></span>
+                </div>
+                <h4 id="imageResponseText"></h4>
+                <table class="product-table" id="imageProductTable">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Stock Code</th>
+                            <th>Description</th>
+                            <th>Unit Price</th>
+                            <th>Quantity</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="imageProductTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Product Image Recognition Section -->
+        <div class="section">
+            <h2>Product Image Recognition</h2>
+            <p>Upload a product image to identify and find similar products:</p>
+            <div class="upload-area" id="productUploadArea">
+                <p>Click to upload or drag and drop a product image</p>
+                <p style="font-size: 12px; color: #666;">Supports: JPG, PNG, GIF, BMP</p>
+            </div>
+            <input type="file" id="productImageFile" accept="image/*" style="display: none;">
+            <img id="productImagePreview" class="image-preview">
+            <button id="productSubmitBtn" class="search-button" style="display: none;" onclick="processProductImage()">Identify Product</button>
+            
+            <div class="loading" id="productLoading">
+                <div class="spinner"></div>
+                <p>Analyzing product image...</p>
+            </div>
+            
+            <div class="results-section" id="productResultsSection">
+                <div class="confidence-info" id="confidenceInfo"></div>
+                <h4 id="productResponseText"></h4>
+                <table class="product-table" id="productProductTable">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Stock Code</th>
+                            <th>Description</th>
+                            <th>Unit Price</th>
+                            <th>Quantity</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productProductTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
+
+    <script>
+        // Text Query Functions
+        function searchProducts() {
+            const query = document.getElementById('textSearchInput').value.trim();
+            if (!query) {
+                alert('Please enter a search query');
+                return;
+            }
+            
+            document.getElementById('textLoading').style.display = 'block';
+            document.getElementById('textResultsSection').style.display = 'none';
+            
+            const formData = new FormData();
+            formData.append('query', query);
+            
+            fetch('/product-recommendation', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('textLoading').style.display = 'none';
+                
+                if (data.products && data.products.length > 0) {
+                    displayTextResults(data);
+                } else {
+                    document.getElementById('textResponseText').innerHTML = data.response || 'No products found';
+                    document.getElementById('textResponseText').className = 'error';
+                    document.getElementById('textResultsSection').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                document.getElementById('textLoading').style.display = 'none';
+                document.getElementById('textResponseText').innerHTML = 'Error: ' + error.message;
+                document.getElementById('textResponseText').className = 'error';
+                document.getElementById('textResultsSection').style.display = 'block';
+            });
+        }
+        
+        function displayTextResults(data) {
+            const tableBody = document.getElementById('textProductTableBody');
+            tableBody.innerHTML = '';
+            
+            data.products.forEach(product => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = product.rank || '-';
+                row.insertCell(1).textContent = product.stock_code || '-';
+                row.insertCell(2).textContent = product.description || '-';
+                row.insertCell(3).textContent = product.unit_price || '-';
+                row.insertCell(4).textContent = product.quantity || '-';
+                row.insertCell(5).textContent = product.similarity_score || '-';
+            });
+            
+            document.getElementById('textResponseText').innerHTML = data.response || 'Products found:';
+            document.getElementById('textResponseText').className = 'success';
+            document.getElementById('textResultsSection').style.display = 'block';
+        }
+        
+        // Image Text Query Functions
+        function processImageText() {
+            const file = document.getElementById('imageFile').files[0];
+            if (!file) return;
+            
+            document.getElementById('imageLoading').style.display = 'block';
+            document.getElementById('imageResultsSection').style.display = 'none';
+            document.getElementById('imageSubmitBtn').disabled = true;
+            
+            const formData = new FormData();
+            formData.append('image_data', file);
+            
+            fetch('/ocr-query', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('imageLoading').style.display = 'none';
+                document.getElementById('imageSubmitBtn').disabled = false;
+                
+                if (data.products && data.products.length > 0) {
+                    displayImageResults(data);
+                } else {
+                    document.getElementById('extractedText').textContent = data.extracted_text || 'No text extracted';
+                    document.getElementById('imageResponseText').innerHTML = data.response || 'No products found';
+                    document.getElementById('imageResponseText').className = 'error';
+                    document.getElementById('imageResultsSection').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                document.getElementById('imageLoading').style.display = 'none';
+                document.getElementById('imageSubmitBtn').disabled = false;
+                document.getElementById('imageResponseText').innerHTML = 'Error: ' + error.message;
+                document.getElementById('imageResponseText').className = 'error';
+                document.getElementById('imageResultsSection').style.display = 'block';
+            });
+        }
+        
+        function displayImageResults(data) {
+            document.getElementById('extractedText').textContent = data.extracted_text || 'No text extracted';
+            document.getElementById('imageResponseText').innerHTML = data.response || 'Products found:';
+            document.getElementById('imageResponseText').className = 'success';
+            
+            const tableBody = document.getElementById('imageProductTableBody');
+            tableBody.innerHTML = '';
+            
+            if (data.products && data.products.length > 0) {
+                data.products.forEach(product => {
+                    const row = tableBody.insertRow();
+                    row.insertCell(0).textContent = product.rank || '-';
+                    row.insertCell(1).textContent = product.stock_code || '-';
+                    row.insertCell(2).textContent = product.description || '-';
+                    row.insertCell(3).textContent = product.unit_price || '-';
+                    row.insertCell(4).textContent = product.quantity || '-';
+                    row.insertCell(5).textContent = product.similarity_score || '-';
+                });
+            } else {
+                const row = tableBody.insertRow();
+                row.insertCell(0).colSpan = 6;
+                row.cells[0].textContent = 'No products found';
+                row.cells[0].style.textAlign = 'center';
+                row.cells[0].style.color = '#666';
+            }
+            
+            document.getElementById('imageResultsSection').style.display = 'block';
+        }
+        
+        // Product Image Recognition Functions
+        function processProductImage() {
+            const file = document.getElementById('productImageFile').files[0];
+            if (!file) return;
+            
+            document.getElementById('productLoading').style.display = 'block';
+            document.getElementById('productResultsSection').style.display = 'none';
+            document.getElementById('productSubmitBtn').disabled = true;
+            
+            const formData = new FormData();
+            formData.append('product_image', file);
+            
+            fetch('/image-product-search', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('productLoading').style.display = 'none';
+                document.getElementById('productSubmitBtn').disabled = false;
+                
+                displayProductResults(data);
+            })
+            .catch(error => {
+                document.getElementById('productLoading').style.display = 'none';
+                document.getElementById('productSubmitBtn').disabled = false;
+                document.getElementById('productResponseText').innerHTML = 'Error: ' + error.message;
+                document.getElementById('productResponseText').className = 'error';
+                document.getElementById('productResultsSection').style.display = 'block';
+            });
+        }
+        
+        function displayProductResults(data) {
+            if (data.predicted_class && data.confidence) {
+                document.getElementById('confidenceInfo').innerHTML = 
+                    `<strong>Identified Product:</strong> ${data.predicted_class}<br>
+                     <strong>Confidence:</strong> ${(data.confidence * 100).toFixed(1)}%`;
+            }
+            
+            document.getElementById('productResponseText').innerHTML = data.response || 'Products found:';
+            document.getElementById('productResponseText').className = data.products && data.products.length > 0 ? 'success' : 'error';
+            
+            const tableBody = document.getElementById('productProductTableBody');
+            tableBody.innerHTML = '';
+            
+            if (data.products && data.products.length > 0) {
+                data.products.forEach(product => {
+                    const row = tableBody.insertRow();
+                    row.insertCell(0).textContent = product.rank || '-';
+                    row.insertCell(1).textContent = product.stock_code || '-';
+                    row.insertCell(2).textContent = product.description || '-';
+                    row.insertCell(3).textContent = product.unit_price || '-';
+                    row.insertCell(4).textContent = product.quantity || '-';
+                    row.insertCell(5).textContent = product.similarity_score || '-';
+                });
+            } else {
+                const row = tableBody.insertRow();
+                row.insertCell(0).colSpan = 6;
+                row.cells[0].textContent = 'No similar products found';
+                row.cells[0].style.textAlign = 'center';
+                row.cells[0].style.color = '#666';
+            }
+            
+            document.getElementById('productResultsSection').style.display = 'block';
+        }
+        
+        // File Upload Handlers
+        function setupFileUpload(uploadAreaId, fileInputId, previewId, submitBtnId) {
+            const uploadArea = document.getElementById(uploadAreaId);
+            const fileInput = document.getElementById(fileInputId);
+            const preview = document.getElementById(previewId);
+            const submitBtn = document.getElementById(submitBtnId);
+            
+            uploadArea.addEventListener('click', () => fileInput.click());
+            
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                        submitBtn.style.display = 'inline-block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    fileInput.dispatchEvent(new Event('change'));
+                }
+            });
+        }
+        
+        // Initialize file uploads
+        setupFileUpload('imageUploadArea', 'imageFile', 'imagePreview', 'imageSubmitBtn');
+        setupFileUpload('productUploadArea', 'productImageFile', 'productImagePreview', 'productSubmitBtn');
+        
+        // Allow Enter key to trigger text search
+        document.getElementById('textSearchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchProducts();
+            }
+        });
+    </script>
 </body>
 </html>

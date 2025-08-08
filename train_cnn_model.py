@@ -1,63 +1,147 @@
 #!/usr/bin/env python3
 """
-CNN Model Training Script for Task 6
-Trains a CNN model from scratch using scraped product images
+CNN Model Training Script (Optimized for Limited Data)
 """
 
 import os
-import sys
 from services.cnn_model import CNNModelService
 
 def main():
-    print("Starting CNN Model Training (Task 6)")
-    print("=" * 50)
+    print("CNN Model Training (Optimized for Limited Data)")
+    print("=" * 60)
     
-    # Initialize CNN model service
+    # Initialize CNN service
     cnn_service = CNNModelService()
     
     try:
-        # Paths to data
+        # Check if data directory exists
         data_dir = "data/scraped_images"
-        csv_file_path = "data/CNN_Model_Train_Data.csv"
-        
-        # Check if required files exist
         if not os.path.exists(data_dir):
-            print(f"Error: Scraped images directory not found at {data_dir}")
-            print("Please run the web scraping script first: python run_web_scraping.py")
+            print(f"Error: Data directory not found at {data_dir}")
+            print("Please run web scraping first:")
+            print("  python run_web_scraping.py")
             return
         
-        if not os.path.exists(csv_file_path):
-            print(f"Error: CSV file not found at {csv_file_path}")
+        # Check for short names dataset first, then fallback options
+        dataset_options = [
+            "data/CNN_Model_Train_Data_short_names.csv",
+            "data/CNN_Model_Train_Data_very_short.csv",
+            "data/CNN_Model_Train_Data_short.csv",
+            "data/CNN_Model_Train_Data_best_searchable.csv",
+            "data/CNN_Model_Train_Data_serpapi_optimized.csv",
+            "data/CNN_Model_Train_Data_balanced_125.csv",
+            "data/CNN_Model_Train_Data_quality_83.csv",
+            "data/CNN_Model_Train_Data_premium_50.csv",
+            "data/CNN_Model_Train_Data_recommended.csv",
+            "data/CNN_Model_Train_Data.csv"
+        ]
+        
+        csv_file_path = None
+        for option in dataset_options:
+            if os.path.exists(option):
+                csv_file_path = option
+                break
+        
+        if not csv_file_path:
+            print(f"Error: No dataset file found!")
+            print("Please create an optimized dataset:")
+            print("  python create_optimized_dataset.py")
             return
         
-        print(f"Found scraped images directory: {data_dir}")
-        print(f"Found product data CSV: {csv_file_path}")
+        print(f"Found dataset file: {csv_file_path}")
         
-        # Check if there are enough images for training
-        image_files = [f for f in os.listdir(data_dir) if f.endswith(('.jpg', '.jpeg', '.png'))]
-        if len(image_files) < 10:
-            print(f"Warning: Only {len(image_files)} images found. Training may not be effective.")
-            print("Consider running web scraping to get more images.")
+        # Count images
+        image_count = 0
+        for filename in os.listdir(data_dir):
+            if filename.endswith(('.jpg', '.jpeg', '.png')):
+                image_count += 1
         
-        print(f"Found {len(image_files)} images for training")
+        print(f"Found {image_count} images for training")
+        
+        # Count products in dataset
+        import pandas as pd
+        df = pd.read_csv(csv_file_path)
+        num_products = len(df)
+        print(f"Dataset contains {num_products} products")
+        
+        # Calculate average images per product
+        avg_images_per_product = image_count / num_products if num_products > 0 else 0
+        
+        print(f"Average images per product: {avg_images_per_product:.1f}")
+        
+        # Provide guidance based on dataset size and image count
+        print(f"\n📊 Dataset Analysis:")
+        print(f"  Products: {num_products}")
+        print(f"  Total images: {image_count}")
+        print(f"  Images per product: {avg_images_per_product:.1f}")
+        
+        if num_products < 50:
+            print(f"\n⚠️  Small dataset detected ({num_products} products)")
+            print("For good CNN results with limited data:")
+            print("  - Use heavy data augmentation")
+            print("  - Train for more epochs")
+            print("  - Use transfer learning (already implemented)")
+            print("  - Consider ensemble methods")
+        elif num_products < 100:
+            print(f"\n⚠️  Medium dataset detected ({num_products} products)")
+            print("This should work well with our enhanced training approach.")
+        else:
+            print(f"\n✅ Good dataset size detected ({num_products} products)")
+        
+        if avg_images_per_product < 3:
+            print(f"\n⚠️  Low images per product ({avg_images_per_product:.1f})")
+            print("Strategies for limited images:")
+            print("  - Heavy data augmentation (already implemented)")
+            print("  - Transfer learning (already implemented)")
+            print("  - Longer training with early stopping")
+            print("  - Cross-validation techniques")
+        elif avg_images_per_product < 5:
+            print(f"\n⚠️  Medium images per product ({avg_images_per_product:.1f})")
+            print("This should work well with our training approach.")
+        else:
+            print(f"\n✅ Good images per product ({avg_images_per_product:.1f})")
+            print("This should provide excellent training data!")
+        
+        # Check total image count
+        if image_count < 200:
+            print(f"\n⚠️  Low total image count ({image_count} images)")
+            print("For optimal results, consider:")
+            print("  - Using data augmentation (already implemented)")
+            print("  - Training for more epochs")
+            print("  - Using transfer learning (already implemented)")
+        elif image_count < 500:
+            print(f"\n⚠️  Medium total image count ({image_count} images)")
+            print("This should work well with our enhanced training.")
+        else:
+            print(f"\n✅ Good total image count ({image_count} images)")
+            print("This should provide excellent training data!")
+        
+        print(f"\nStarting optimized model training...")
+        print("This will use transfer learning with EfficientNetB3")
+        print("Expected training time: 1-2 hours")
+        print("Target accuracy: 85%+ (with limited data)")
         
         # Train the model
-        print("\nStarting model training...")
         history = cnn_service.train_model(data_dir, csv_file_path)
         
-        print("\nModel training completed successfully!")
-        print("Model saved to: models/product_cnn_model.h5")
-        print("Training history plot saved to: training_history.png")
+        print("\n🎉 Optimized CNN training completed!")
+        print("Check the models/ directory for:")
+        print("  - high_accuracy_cnn_model.h5 (saved model)")
+        print("  - training_history.png (training plots)")
+        print("  - confusion_matrix.png (performance analysis)")
         
-        # Show final metrics
-        if history:
-            final_accuracy = history.history['accuracy'][-1]
-            final_val_accuracy = history.history['val_accuracy'][-1]
-            print(f"\nFinal Training Accuracy: {final_accuracy:.4f}")
-            print(f"Final Validation Accuracy: {final_val_accuracy:.4f}")
-    
+        # Provide next steps
+        print("\nNext steps:")
+        print("1. Test the model with new images")
+        print("2. Monitor validation accuracy (should be >85% with limited data)")
+        print("3. If accuracy is low, consider:")
+        print("   - Collecting more training data")
+        print("   - Using a different dataset size")
+        print("   - Adjusting data augmentation parameters")
+        print("   - Using ensemble methods")
+        
     except Exception as e:
-        print(f"Error during model training: {e}")
+        print(f"Error during training: {e}")
         import traceback
         traceback.print_exc()
 

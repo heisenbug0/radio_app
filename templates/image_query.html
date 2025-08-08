@@ -213,6 +213,13 @@
             margin-bottom: 20px;
         }
         
+        .success {
+            color: #28a745;
+            margin-top: 10px;
+        }
+        
+
+        
         @media (max-width: 768px) {
             .container {
                 width: 95%;
@@ -278,6 +285,8 @@
                 <tbody id="productsTableBody">
                 </tbody>
             </table>
+            
+
         </div>
     </div>
     
@@ -387,6 +396,8 @@
                 row.innerHTML = '<td colspan="6" style="text-align: center; color: #666;">No products found</td>';
                 tbody.appendChild(row);
             }
+            
+
             
             document.getElementById('results').style.display = 'block';
         }

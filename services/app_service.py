@@ -62,9 +62,6 @@ class AppService:
             
             # Generate natural language response
             if products:
-                response = f"I found {len(products)} products matching your query '{query}'. "
-                response += "Here are the top recommendations:"
-                
                 # Format products for response
                 formatted_products = []
                 for i, product in enumerate(products, 1):
@@ -80,12 +77,34 @@ class AppService:
                 
                 return {
                     "products": formatted_products,
-                    "response": response
+                    "response": "Results:"
                 }
             else:
+                # Try with simplified query if no results found
+                simplified_query = self.simplify_query(query)
+                if simplified_query != query:
+                    products = self.data_service.search_products(simplified_query, top_k=5)
+                    if products:
+                        formatted_products = []
+                        for i, product in enumerate(products, 1):
+                            formatted_product = {
+                                "rank": i,
+                                "stock_code": product['stock_code'],
+                                "description": product['description'],
+                                "unit_price": product['unit_price'],
+                                "quantity": product['quantity'],
+                                "similarity_score": round(product['similarity_score'], 3)
+                            }
+                            formatted_products.append(formatted_product)
+                        
+                        return {
+                            "products": formatted_products,
+                            "response": "Results:"
+                        }
+                
                 return {
                     "products": [],
-                    "response": f"I couldn't find any products matching your query '{query}'. Please try different keywords."
+                    "response": "No products found."
                 }
                 
         except Exception as e:
@@ -93,6 +112,16 @@ class AppService:
                 "products": [],
                 "response": f"An error occurred while processing your query: {str(e)}"
             }
+    
+    def simplify_query(self, query):
+        """Simplify query by removing common words and keeping key terms"""
+        # Remove common stop words
+        stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'her', 'its', 'our', 'their'}
+        
+        words = query.lower().split()
+        key_words = [word for word in words if word not in stop_words and len(word) > 2]
+        
+        return ' '.join(key_words) if key_words else query
     
     def process_ocr_query(self, image_file):
         """Process handwritten query from image using OCR"""
@@ -103,17 +132,26 @@ class AppService:
                 temp_path = temp_file.name
             
             try:
-                # Extract text using OCR
+                # Extract text using OCR with multiple attempts
                 ocr_result = self.ocr_service.extract_text(image_path=temp_path)
                 
                 if not ocr_result['success']:
                     return {
                         "products": [],
-                        "response": f"Failed to extract text from image: {ocr_result['error']}",
-                        "extracted_text": ""
+                        "response": f"Failed to extract text from image: {ocr_result['error']}. Please ensure the image is clear and contains readable text.",
+                        "extracted_text": "",
+                        "ocr_attempts": []
                     }
                 
                 extracted_text = ocr_result['extracted_text']
+                
+                # If no text was extracted, provide helpful feedback
+                if not extracted_text or len(extracted_text.strip()) < 2:
+                    return {
+                        "products": [],
+                        "response": "No readable text was found in the image. Please ensure the text is clear, well-lit, and not too small. Try uploading a higher quality image.",
+                        "extracted_text": ""
+                    }
                 
                 # Validate extracted text
                 is_valid, validation_message = self.ocr_service.validate_query(extracted_text)
@@ -121,13 +159,19 @@ class AppService:
                 if not is_valid:
                     return {
                         "products": [],
-                        "response": f"Extracted text validation failed: {validation_message}",
+                        "response": f"Extracted text validation failed: {validation_message}. Extracted text: '{extracted_text}'. Please try a clearer image.",
                         "extracted_text": extracted_text
                     }
                 
                 # Process the extracted text as a normal query
                 query_result = self.process_text_query(extracted_text)
                 query_result["extracted_text"] = extracted_text
+                
+                # Add OCR-specific response information
+                if query_result["products"]:
+                    query_result["response"] = "Results:"
+                else:
+                    query_result["response"] = "No products found."
                 
                 return query_result
                 
@@ -139,7 +183,7 @@ class AppService:
         except Exception as e:
             return {
                 "products": [],
-                "response": f"An error occurred while processing the image: {str(e)}",
+                "response": f"An error occurred while processing the image: {str(e)}. Please try uploading a different image.",
                 "extracted_text": ""
             }
     
@@ -168,15 +212,7 @@ class AppService:
                 # Search for similar products using the predicted class
                 products = self.data_service.search_products(predicted_class, top_k=5)
                 
-                # Generate response
-                if confidence > 0.7:
-                    response = f"I identified this product as '{predicted_class}' with {confidence:.1%} confidence. "
-                else:
-                    response = f"I tentatively identified this product as '{predicted_class}' with {confidence:.1%} confidence. "
-                
                 if products:
-                    response += f"Here are similar products:"
-                    
                     # Format products for response
                     formatted_products = []
                     for i, product in enumerate(products, 1):
@@ -192,14 +228,14 @@ class AppService:
                     
                     return {
                         "products": formatted_products,
-                        "response": response,
+                        "response": "Results:",
                         "predicted_class": predicted_class,
                         "confidence": round(confidence, 3)
                     }
                 else:
                     return {
                         "products": [],
-                        "response": response + " However, I couldn't find similar products in our database.",
+                        "response": "No products found.",
                         "predicted_class": predicted_class,
                         "confidence": round(confidence, 3)
                     }

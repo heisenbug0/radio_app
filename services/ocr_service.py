@@ -1,70 +1,147 @@
-import pytesseract
-from PIL import Image
-import cv2
-import numpy as np
 import os
+from PIL import Image
+import io
 import re
 
 class OCRService:
     def __init__(self):
-        # Configure Tesseract path if needed
+        # Initialize Google Cloud Vision client
         try:
-            # For Linux, Tesseract is usually in PATH
-            pytesseract.get_tesseract_version()
+            from google.cloud import vision
+            self.client = vision.ImageAnnotatorClient()
+            self.use_google_vision = True
+            print("Google Cloud Vision API initialized successfully")
         except Exception as e:
-            print(f"Warning: Tesseract not found in PATH. Error: {e}")
-            # You may need to set the path manually on some systems
-            # pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
-    
-    def preprocess_image(self, image):
-        """Preprocess image for better OCR results"""
-        # Convert to numpy array if it's a PIL Image
-        if isinstance(image, Image.Image):
-            image = np.array(image)
+            print(f"Warning: Google Cloud Vision not available: {e}")
+            print("Please set GOOGLE_APPLICATION_CREDENTIALS environment variable")
+            self.use_google_vision = False
+            self.client = None
         
-        # Convert to grayscale
-        if len(image.shape) == 3:
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        else:
-            gray = image
-        
-        # Apply noise reduction
-        denoised = cv2.medianBlur(gray, 3)
-        
-        # Apply thresholding to get binary image
-        _, binary = cv2.threshold(denoised, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        
-        # Apply morphological operations to clean up the image
-        kernel = np.ones((1, 1), np.uint8)
-        cleaned = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
-        
-        return cleaned
+        # Initialize EasyOCR as fallback
+        try:
+            import easyocr
+            self.reader = easyocr.Reader(['en'])
+            self.use_easyocr = True
+            print("EasyOCR fallback initialized successfully")
+        except Exception as e:
+            print(f"Warning: EasyOCR not available: {e}")
+            self.use_easyocr = False
+            self.reader = None
     
     def extract_text(self, image_path=None, image_data=None):
-        """Extract text from image using OCR"""
+        """Extract text from image using Google Cloud Vision API with EasyOCR fallback"""
+        # Try Google Cloud Vision first
+        if self.use_google_vision:
+            result = self._extract_with_google_vision(image_path, image_data)
+            if result['success']:
+                return result
+        
+        # Fallback to EasyOCR
+        if self.use_easyocr:
+            result = self._extract_with_easyocr(image_path, image_data)
+            if result['success']:
+                return result
+        
+        # No OCR available
+        return {
+            'success': False,
+            'error': 'No OCR service available. Please set up Google Cloud Vision API or install EasyOCR.',
+            'extracted_text': '',
+            'raw_text': ''
+        }
+    
+    def _extract_with_google_vision(self, image_path=None, image_data=None):
+        """Extract text using Google Cloud Vision API"""
         try:
+            # Load image
             if image_path:
-                # Load image from file path
-                image = Image.open(image_path)
+                with open(image_path, 'rb') as image_file:
+                    content = image_file.read()
             elif image_data:
-                # Load image from file data
-                image = Image.open(image_data)
+                content = image_data.read()
             else:
                 raise ValueError("Either image_path or image_data must be provided")
             
-            # Preprocess the image
-            processed_image = self.preprocess_image(image)
+            # Create image object
+            from google.cloud import vision
+            image = vision.Image(content=content)
             
-            # Extract text using Tesseract
-            text = pytesseract.image_to_string(processed_image)
+            # Perform text detection
+            response = self.client.text_detection(image=image)
             
-            # Clean the extracted text
-            cleaned_text = self.clean_extracted_text(text)
+            if response.error.message:
+                return {
+                    'success': False,
+                    'error': response.error.message,
+                    'extracted_text': '',
+                    'raw_text': ''
+                }
+            
+            # Extract text from response
+            texts = response.text_annotations
+            
+            if not texts:
+                return {
+                    'success': True,
+                    'extracted_text': '',
+                    'raw_text': ''
+                }
+            
+            # Get the full text (first element contains all text)
+            full_text = texts[0].description
+            raw_text = full_text
+            
+            # Clean and normalize the extracted text
+            cleaned_text = self.clean_extracted_text(full_text)
             
             return {
                 'success': True,
                 'extracted_text': cleaned_text,
-                'raw_text': text
+                'raw_text': raw_text
+            }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e),
+                'extracted_text': '',
+                'raw_text': ''
+            }
+    
+    def _extract_with_easyocr(self, image_path=None, image_data=None):
+        """Extract text using EasyOCR as fallback"""
+        try:
+            # Load image
+            if image_path:
+                image = Image.open(image_path)
+            elif image_data:
+                image = Image.open(image_data)
+            else:
+                raise ValueError("Either image_path or image_data must be provided")
+            
+            # Convert to RGB if necessary
+            if image.mode != 'RGB':
+                image = image.convert('RGB')
+            
+            # Perform OCR
+            results = self.reader.readtext(image)
+            
+            # Extract text from results
+            texts = []
+            for (bbox, text, confidence) in results:
+                if confidence > 0.5:  # Only include high-confidence results
+                    texts.append(text)
+            
+            full_text = ' '.join(texts)
+            raw_text = full_text
+            
+            # Clean and normalize the extracted text
+            cleaned_text = self.clean_extracted_text(full_text)
+            
+            return {
+                'success': True,
+                'extracted_text': cleaned_text,
+                'raw_text': raw_text
             }
             
         except Exception as e:
@@ -89,6 +166,19 @@ class OCRService:
         # Convert to lowercase for consistency
         cleaned = cleaned.lower()
         
+        # Common OCR corrections for modern OCR
+        corrections = {
+            '0': 'o',  # Common OCR mistake
+            '1': 'l',  # Common OCR mistake
+            '5': 's',  # Common OCR mistake
+            '8': 'b',  # Common OCR mistake
+            'rn': 'm',  # Common OCR mistake
+            'cl': 'd',  # Common OCR mistake
+        }
+        
+        for wrong, correct in corrections.items():
+            cleaned = cleaned.replace(wrong, correct)
+        
         return cleaned
     
     def validate_query(self, text):
@@ -102,7 +192,7 @@ class OCRService:
         
         # Check if text contains mostly readable characters
         readable_chars = sum(1 for c in text if c.isalnum() or c.isspace())
-        if readable_chars / len(text) < 0.5:
+        if readable_chars / len(text) < 0.3:  # Lowered threshold for handwriting
             return False, "Query contains too many non-readable characters"
         
         return True, "Valid query"

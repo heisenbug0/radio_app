@@ -7,23 +7,8 @@ app_service = AppService()
 
 @app.route('/')
 def index():
-    """Main page with links to all interfaces"""
+    """Main page with all functionality"""
     return render_template('index.html')
-
-@app.route('/text-query')
-def text_query():
-    """Text query interface page"""
-    return render_template('text_query.html')
-
-@app.route('/image-query')
-def image_query():
-    """Image query interface page"""
-    return render_template('image_query.html')
-
-@app.route('/product-image')
-def product_image():
-    """Product image upload interface page"""
-    return render_template('product_image.html')
 
 @app.route('/product-recommendation', methods=['POST'])
 def product_recommendation():
