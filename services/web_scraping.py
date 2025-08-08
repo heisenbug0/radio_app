@@ -2,16 +2,14 @@ import os
 import requests
 import pandas as pd
 import time
-from serpapi import GoogleSearch
-import urllib.parse
 import random
 import re # Added for _clean_product_name
+import math
 
 class WebScrapingService:
     def __init__(self):
-        # Initialize different API options
-        self.api_options = self._initialize_apis()
-        self.api_key = os.getenv('SERPAPI_KEY')  # Keep for backward compatibility
+        # Pixabay only API key
+        self.pixabay_key = os.getenv('PIXABAY_API_KEY')
         self.download_dir = "data/scraped_images"
         self.results = []
         self._product_seen = set()
@@ -20,84 +18,32 @@ class WebScrapingService:
         if not os.path.exists(self.download_dir):
             os.makedirs(self.download_dir)
     
-    def _initialize_apis(self):
-        """Initialize different API options with their free limits"""
-        apis = {}
-        
-        # Option 1: SerpAPI (original)
-        serpapi_key = os.getenv('SERPAPI_KEY')
-        if serpapi_key:
-            apis['serpapi'] = {
-                'name': 'SerpAPI',
-                'key': serpapi_key,
-                'free_requests': 250,
-                'priority': 1
-            }
-        
-        # Option 2: Pixabay API (5000 free requests/hour)
-        pixabay_key = os.getenv('PIXABAY_API_KEY')
-        if pixabay_key:
-            apis['pixabay'] = {
-                'name': 'Pixabay',
-                'key': pixabay_key,
-                'free_requests': 5000,
-                'priority': 2
-            }
-        
-        # Option 3: Unsplash API (5000 free requests/hour)
-        unsplash_key = os.getenv('UNSPLASH_API_KEY')
-        if unsplash_key:
-            apis['unsplash'] = {
-                'name': 'Unsplash',
-                'key': unsplash_key,
-                'free_requests': 5000,
-                'priority': 3
-            }
-        
-        # Option 4: Bing Image Search API (1000 free requests/month)
-        bing_key = os.getenv('BING_SEARCH_KEY')
-        if bing_key:
-            apis['bing'] = {
-                'name': 'Bing Image Search',
-                'key': bing_key,
-                'free_requests': 1000,
-                'priority': 4
-            }
-        
-        # Option 5: Google Custom Search API (100 free requests/day)
-        google_key = os.getenv('GOOGLE_API_KEY')
-        google_cx = os.getenv('GOOGLE_CX')
-        if google_key and google_cx:
-            apis['google'] = {
-                'name': 'Google Custom Search',
-                'key': google_key,
-                'cx': google_cx,
-                'free_requests': 100,
-                'priority': 5
-            }
-        
-        return apis
+    # Multi-API initializer removed (Pixabay only)
     
-    def get_best_api(self):
-        """Get the best available API based on free requests"""
-        if not self.api_options:
-            return None
-        
-        # Sort by free requests (highest first)
-        sorted_apis = sorted(self.api_options.items(), 
-                           key=lambda x: x[1]['free_requests'], reverse=True)
-        
-        return sorted_apis[0][0], sorted_apis[0][1]
+    # Removed get_best_api (Pixabay only)
     
     def search_images_pixabay(self, query, count=10):
         """Search images using Pixabay API (official docs: https://pixabay.com/api/docs/)"""
         try:
+            # Ensure API key exists
+            pixabay_key = self.pixabay_key
+            if not pixabay_key:
+                print("    Pixabay API key missing. Set PIXABAY_API_KEY in environment.")
+                return []
+
+            # Conform to API constraints: q max 100 chars, per_page 3-200
+            safe_query = (query or "").strip()[:100]
+            per_page = max(3, min(int(count), 200))
+
             params = {
-                'key': self.api_options['pixabay']['key'],  # API key as query param
-                'q': query,
+                'key': pixabay_key,  # API key as query param
+                'q': safe_query,
                 'image_type': 'photo',
-                'per_page': min(count, 200),  # Pixabay limit
-                'safesearch': 'true'
+                'per_page': per_page,
+                'safesearch': 'true',
+                'orientation': 'horizontal',
+                'order': 'popular',
+                'lang': 'en'
             }
             response = requests.get(
                 'https://pixabay.com/api/',
@@ -116,7 +62,7 @@ class WebScrapingService:
                     })
                 return images
             else:
-                print(f"    Pixabay API error: {response.status_code}")
+                print(f"    Pixabay API error: {response.status_code} - {response.text}")
                 return []
         except Exception as e:
             print(f"    Pixabay search error: {e}")
@@ -240,80 +186,21 @@ class WebScrapingService:
             return []
     
     def _search_images(self, query, count=10):
-        """Search images using the best available API"""
-        api_name, api_config = self.get_best_api()
-        
-        if not api_name:
-            print("    No API available")
-            return []
-        
-        print(f"    Using {api_config['name']} (free requests: {api_config['free_requests']})")
-        
-        if api_name == 'serpapi':
-            return self._search_product_images_serpapi(query, count)
-        elif api_name == 'pixabay':
-            return self.search_images_pixabay(query, count)
-        elif api_name == 'unsplash':
-            return self.search_images_unsplash(query, count)
-        elif api_name == 'bing':
-            return self.search_images_bing(query, count)
-        elif api_name == 'google':
-            return self.search_images_google(query, count)
-        else:
-            print(f"    Unknown API: {api_name}")
-            return []
+        """Search images using Pixabay only"""
+        print("    Using Pixabay")
+        return self.search_images_pixabay(query, count)
     
-    def _search_product_images_serpapi(self, search_query, num_images):
-        """Search for product images using SerpAPI (original method)"""
-        try:
-            search = GoogleSearch({
-                "q": search_query,
-                "tbm": "isch",
-                "api_key": self.api_key,
-                "num": num_images,
-                "safe": "active",
-                "img_type": "photo",
-                "img_size": "medium",
-                "gl": "us",
-                "hl": "en"
-            })
-            
-            results = search.get_dict()
-            images = []
-            
-            if "images_results" in results:
-                for img in results["images_results"]:
-                    if "original" in img:
-                        images.append({
-                            'url': img["original"],
-                            'title': img.get("title", ""),
-                            'width': img.get("width", 0),
-                            'height': img.get("height", 0)
-                        })
-            
-            return images
-            
-        except Exception as e:
-            print(f"    SerpAPI search error: {e}")
-            return []
+    # SerpAPI support removed
     
     def scrape_product_images(self, csv_file_path, images_per_product=15):
-        """Scrape product images using the best available API"""
-        best_api = self.get_best_api()
-        
-        if not best_api:
+        """Scrape product images using Pixabay only"""
+        # Ensure Pixabay available
+        if not self.pixabay_key:
             print("Error: No API available")
-            print("Please set up one of these APIs:")
-            print("  - SERPAPI_KEY (250 free requests)")
-            print("  - PIXABAY_API_KEY (5000 free requests/hour)")
-            print("  - UNSPLASH_API_KEY (5000 free requests/hour)")
-            print("  - BING_SEARCH_KEY (1000 free requests/month)")
-            print("  - GOOGLE_API_KEY + GOOGLE_CX (100 free requests/day)")
+            print("Please set PIXABAY_API_KEY in your environment.")
             return pd.DataFrame()
-        
-        api_name, api_config = best_api
-        print(f"Using {api_config['name']} with {api_config['free_requests']} free requests")
-        
+
+        print("Using Pixabay (see rate limits at https://pixabay.com/api/docs/)")
         print(f"Starting image scraping for {images_per_product} images per product...")
         print("Note: This will use more API calls but will give better training results!")
         
@@ -510,10 +397,6 @@ class WebScrapingService:
 
     def _search_product_images_robust(self, product_name, stock_code, max_images=15):
         """Search for product images with multiple query variations"""
-        if not self.api_key:
-            print("Error: SERPAPI_KEY not found")
-            return []
-        
         # Clean and optimize the product name for search
         optimized_name = self._clean_product_name(product_name)
         print(f"    Optimized search term: '{optimized_name}'")
@@ -534,13 +417,12 @@ class WebScrapingService:
         
         all_images = []
         
+        # Calculate at least 3 images per variation (Pixabay minimum per_page)
+        images_per_variation = max(3, int(math.ceil(max(1, max_images) / float(len(search_variations)))))
+
         for i, search_query in enumerate(search_variations):
             try:
                 print(f"    Trying search variation {i+1}/{len(search_variations)}: '{search_query}'")
-                
-                # Calculate how many images to request for this variation
-                images_per_variation = max(1, max_images // len(search_variations))
-                
                 # Search for images
                 search_results = self._search_images(search_query, images_per_variation)
                 
@@ -576,42 +458,7 @@ class WebScrapingService:
         print(f"    Found {len(unique_images)} unique images, filtered to {len(unique_images)}")
         return unique_images
     
-    def _search_product_images(self, search_query, num_images):
-        """Search for product images using SerpAPI"""
-        try:
-            # Configure search parameters
-            search_params = {
-                "q": search_query,
-                "tbm": "isch",  # Image search
-                "api_key": self.api_key,
-                "num": num_images,
-                "safe": "active",
-                "img_type": "photo",
-                "img_size": "medium",
-                "gl": "us",  # Search in US
-                "hl": "en"   # English results
-            }
-            
-            # Perform search
-            search = GoogleSearch(search_params)
-            results = search.get_dict()
-            
-            # Extract image URLs
-            images = []
-            if "images_results" in results:
-                for result in results["images_results"][:num_images]:
-                    if "original" in result:
-                        images.append({
-                            'url': result['original'],
-                            'title': result.get('title', ''),
-                            'source': result.get('source', '')
-                        })
-            
-            return images
-            
-        except Exception as e:
-            print(f"    Search error for '{search_query}': {e}")
-            return []
+    # SerpAPI helper removed
     
     def _download_images_robust(self, stock_code, images):
         """Download images with retry logic and better error handling"""

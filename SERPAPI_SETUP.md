@@ -1,41 +1,39 @@
-# SerpAPI Setup Guide for Module 3
+# Pixabay Setup Guide for Module 3
 
-## What is SerpAPI?
+## What is Pixabay?
 
-SerpAPI is a service that provides access to search engine results (Google, Bing, etc.) through a simple API. We're using it to scrape product images for training the CNN model.
+Pixabay provides a free image API that we use to download training images for the CNN model.
 
 ## Setup Steps
 
-### 1. Get SerpAPI Key
+### 1. Get Pixabay API Key
 
-1. Go to [serpapi.com](https://serpapi.com)
-2. Sign up for a free account
-3. Get your API key from the dashboard
-4. **Free tier**: 100 searches per month (enough for testing)
+1. Go to [pixabay.com/api/docs](https://pixabay.com/api/docs/)
+2. Sign up and generate an API key
+3. **Free tier**: generous quota, typically 5000 requests/hour
 
 ### 2. Set Environment Variable
 
 Add to your `.env` file:
 ```
-SERPAPI_KEY=your_api_key_here
+PIXABAY_API_KEY=your_api_key_here
 ```
 
 ### 3. Install Dependencies
 
-```bash
-pip install google-search-results
-```
+No extra packages are needed beyond `requests` and `python-dotenv`.
 
 ## Usage
 
-### Step 1: Scrape Product Images
+### Step 1: Scrape Product Images (Pixabay)
 ```bash
 python run_web_scraping.py
 ```
 
 This will:
 - Read product stock codes from `data/CNN_Model_Train_Data.csv`
-- Search for 5 images per product using Google Images
+- Generate robust search queries from full product names
+- Auto-allocate images per product based on Pixabay’s free API limits
 - Download images to `data/scraped_images/`
 - Save scraping results to `data/scraped_images/scraping_results.csv`
 
@@ -63,8 +61,8 @@ Upload a product image through the web interface to test the trained model.
 ## Troubleshooting
 
 ### No Images Downloaded
-- Check your SerpAPI key is correct
-- Verify you have remaining API calls
+- Check your Pixabay key is correct
+- Verify you have remaining API quota
 - Check internet connection
 
 ### Low Model Accuracy
@@ -79,15 +77,8 @@ Upload a product image through the web interface to test the trained model.
 
 ## Cost
 
-- **SerpAPI**: Free tier = 100 searches/month
-- **For 10 products × 5 images = 50 searches**
-- **You can train multiple models with the free tier**
+- **Pixabay**: Free tier is sufficient for prototyping and small datasets
 
-## Alternative APIs
-
-If SerpAPI doesn't work, you can also use:
-- **Bing Image Search API** (Microsoft)
-- **Google Custom Search API**
-- **Unsplash API** (for stock photos)
+We use only Pixabay for this project to keep things simple and reliable.
 
 Let me know if you need help with any of these alternatives!

@@ -15,13 +15,13 @@ def test_web_scraping():
     
     scraper = WebScrapingService()
     
-    # Check if API key is set
-    if not scraper.api_key:
-        print("❌ SERPAPI_KEY not found in environment variables")
-        print("Please set SERPAPI_KEY in your .env file")
+    # Check if Pixabay API key is set
+    if not getattr(scraper, 'pixabay_key', None):
+        print("❌ PIXABAY_API_KEY not found in environment variables")
+        print("Please set PIXABAY_API_KEY in your .env file")
         return False
     
-    print("✅ SerpAPI key found")
+    print("✅ Pixabay key found")
     
     # Check if CSV file exists
     csv_path = "data/CNN_Model_Train_Data.csv"

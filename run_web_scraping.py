@@ -16,7 +16,7 @@ from services.web_scraping import WebScrapingService
 def main():
     print("Starting Web Scraping for Product Images (Task 5)")
     print("=" * 50)
-    print("Auto-allocating requests based on best available image API")
+    print("Using Pixabay API")
     
     # Clean up existing images for fresh start
     data_dir = "data/scraped_images"
@@ -47,10 +47,8 @@ def main():
         num_products = df['StockCode'].astype(str).nunique()
         print(f"Dataset contains {num_products} products")
         
-        # Calculate optimal images per product based on best API free limit
-        # Falls back to 250 if API metadata is unavailable
-        best = scraper.get_best_api()
-        max_api_requests = best[1]['free_requests'] if best else 250
+        # Calculate optimal images per product based on Pixabay free limit
+        max_api_requests = 5000  # Pixabay free tier guideline
         images_per_product = max(1, max_api_requests // max(1, num_products))
         # Put a sane cap so we don't over-download on very small datasets
         images_per_product = min(images_per_product, 10)
@@ -59,8 +57,10 @@ def main():
         print(f"  Total API requests available: {max_api_requests}")
         print(f"  Number of products: {num_products}")
         print(f"  Images per product: {images_per_product}")
-        print(f"  Total images to download: {num_products * images_per_product}")
-        print(f"  API requests needed: {num_products * images_per_product}")
+        total_needed = num_products * images_per_product
+        # Pixabay per_page minimum is 3, we request in chunks per variation
+        print(f"  Total images to download: {total_needed}")
+        print(f"  API requests needed: {total_needed}")
         
         if images_per_product < 2:
             print(f"\n⚠️  Warning: Only {images_per_product} image per product!")
