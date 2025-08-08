@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-CNN Model Training Script (Optimized for Limited Data)
+CNN Model Training Script for Module 3
+Trains the CNN using images in data/scraped_images and product list in data/CNN_Model_Train_Data.csv
 """
 
 import os
@@ -22,30 +23,10 @@ def main():
             print("  python run_web_scraping.py")
             return
         
-        # Check for short names dataset first, then fallback options
-        dataset_options = [
-            "data/CNN_Model_Train_Data_short_names.csv",
-            "data/CNN_Model_Train_Data_very_short.csv",
-            "data/CNN_Model_Train_Data_short.csv",
-            "data/CNN_Model_Train_Data_best_searchable.csv",
-            "data/CNN_Model_Train_Data_serpapi_optimized.csv",
-            "data/CNN_Model_Train_Data_balanced_125.csv",
-            "data/CNN_Model_Train_Data_quality_83.csv",
-            "data/CNN_Model_Train_Data_premium_50.csv",
-            "data/CNN_Model_Train_Data_recommended.csv",
-            "data/CNN_Model_Train_Data.csv"
-        ]
-        
-        csv_file_path = None
-        for option in dataset_options:
-            if os.path.exists(option):
-                csv_file_path = option
-                break
-        
-        if not csv_file_path:
-            print(f"Error: No dataset file found!")
-            print("Please create an optimized dataset:")
-            print("  python create_optimized_dataset.py")
+        # Always use the original dataset list
+        csv_file_path = "data/CNN_Model_Train_Data.csv"
+        if not os.path.exists(csv_file_path):
+            print("Error: data/CNN_Model_Train_Data.csv not found!")
             return
         
         print(f"Found dataset file: {csv_file_path}")
@@ -61,7 +42,7 @@ def main():
         # Count products in dataset
         import pandas as pd
         df = pd.read_csv(csv_file_path)
-        num_products = len(df)
+        num_products = df['StockCode'].astype(str).nunique()
         print(f"Dataset contains {num_products} products")
         
         # Calculate average images per product

@@ -14,6 +14,7 @@ class WebScrapingService:
         self.api_key = os.getenv('SERPAPI_KEY')  # Keep for backward compatibility
         self.download_dir = "data/scraped_images"
         self.results = []
+        self._product_seen = set()
         
         # Create download directory if it doesn't exist
         if not os.path.exists(self.download_dir):
@@ -316,8 +317,12 @@ class WebScrapingService:
         print(f"Starting image scraping for {images_per_product} images per product...")
         print("Note: This will use more API calls but will give better training results!")
         
-        # Read product data with names
+        # Read product data and ensure uniqueness
         df = pd.read_csv(csv_file_path)
+        # Keep unique StockCodes only
+        if 'StockCode' in df.columns:
+            df['StockCode'] = df['StockCode'].astype(str)
+            df = df.drop_duplicates(subset=['StockCode'])
         
         # If we only have stock codes, we need to get product names from the main dataset
         if 'StockCode' in df.columns and len(df.columns) == 1:
@@ -387,6 +392,10 @@ class WebScrapingService:
                 print(f"Skipping {stock_code} - no product description available")
                 continue
             
+            if stock_code in self._product_seen:
+                continue
+            self._product_seen.add(stock_code)
+
             print(f"\nProcessing product {i+1}/{len(df)}: {stock_code}")
             print(f"Product: {product_name}")
             
@@ -448,6 +457,15 @@ class WebScrapingService:
         name = re.sub(r'[^\w\s]', ' ', name)
         name = re.sub(r'\s+', ' ', name).strip()
         
+        # Normalize domain-specific synonyms to broaden search
+        synonym_map = {
+            'lantern': ['lantern', 'candle lamp'],
+            'bottle': ['bottle', 'flask'],
+            'heart': ['heart', 'love shape'],
+            'bag': ['bag', 'tote'],
+            'mug': ['mug', 'cup']
+        }
+
         # Extract key words (avoid generic terms)
         words = name.split()
         key_words = []
@@ -470,7 +488,15 @@ class WebScrapingService:
         
         # If we have key words, use them; otherwise use original (cleaned)
         if key_words:
-            optimized_name = ' '.join(key_words[:4])  # Limit to 4 key words
+            # Expand with a synonym when available to improve recall
+            expanded = []
+            for kw in key_words[:3]:
+                expanded.append(kw)
+                for base, syns in synonym_map.items():
+                    if kw.lower() == base:
+                        expanded.append(syns[0])
+                        break
+            optimized_name = ' '.join(dict.fromkeys(expanded))
         else:
             # Fallback: use first few words of cleaned name
             words = name.split()
@@ -493,18 +519,12 @@ class WebScrapingService:
         print(f"    Optimized search term: '{optimized_name}'")
         
         # Create multiple search variations for better results
-        search_variations = [
-            optimized_name,
-            f"{optimized_name} product",
-            f"{optimized_name} item",
-            f"{optimized_name} image",
-            f"{optimized_name} photo",
-            f"{optimized_name} retail",
-            f"{optimized_name} store",
-            f"{optimized_name} online",
-            f"{optimized_name} shopping",
-            f"{optimized_name} buy"
-        ]
+        brand_terms = ["retail", "store", "online", "shopping", "buy"]
+        image_terms = ["image", "photo"]
+        object_terms = ["product", "item"]
+        search_variations = [optimized_name]
+        for term in (object_terms + image_terms + brand_terms):
+            search_variations.append(f"{optimized_name} {term}")
         
         # Limit variations based on max_images to avoid wasting API calls
         if max_images <= 5:

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Web Scraping for Product Images (Task 5)
-Optimized for 250 SerpAPI requests
+Scrape images for ALL products listed in data/CNN_Model_Train_Data.csv.
+Automatically allocates images-per-product based on available free API requests.
 """
 
 import os
@@ -15,7 +16,7 @@ from services.web_scraping import WebScrapingService
 def main():
     print("Starting Web Scraping for Product Images (Task 5)")
     print("=" * 50)
-    print("Optimized for 250 SerpAPI requests")
+    print("Auto-allocating requests based on best available image API")
     
     # Clean up existing images for fresh start
     data_dir = "data/scraped_images"
@@ -28,30 +29,9 @@ def main():
     scraper = WebScrapingService()
     
     try:
-        # Use the short names dataset (100 products with short, searchable names)
-        csv_file_path = "data/CNN_Model_Train_Data_short_names.csv"
-        
-        # Fallback options if short names dataset doesn't exist
-        fallback_options = [
-            "data/CNN_Model_Train_Data_very_short.csv",
-            "data/CNN_Model_Train_Data_short.csv",
-            "data/CNN_Model_Train_Data_best_searchable.csv",
-            "data/CNN_Model_Train_Data_serpapi_optimized.csv",
-            "data/CNN_Model_Train_Data_balanced_125.csv",
-            "data/CNN_Model_Train_Data_quality_83.csv", 
-            "data/CNN_Model_Train_Data_premium_50.csv",
-            "data/CNN_Model_Train_Data_recommended.csv",
-            "data/CNN_Model_Train_Data.csv"
-        ]
-        
-        if not os.path.exists(csv_file_path):
-            print(f"Short names dataset not found, checking alternatives...")
-            for fallback in fallback_options:
-                if os.path.exists(fallback):
-                    csv_file_path = fallback
-                    print(f"Using fallback: {csv_file_path}")
-                    break
-        
+        # Always use the original list of products
+        csv_file_path = "data/CNN_Model_Train_Data.csv"
+
         if not os.path.exists(csv_file_path):
             print(f"Error: No dataset file found!")
             print("Please create an optimized dataset:")
@@ -63,12 +43,17 @@ def main():
         # Count products in the dataset
         import pandas as pd
         df = pd.read_csv(csv_file_path)
-        num_products = len(df)
+        # Use unique stock codes to avoid duplicate scraping
+        num_products = df['StockCode'].astype(str).nunique()
         print(f"Dataset contains {num_products} products")
         
-        # Calculate optimal images per product based on 250 API limit
-        max_api_requests = 250
-        images_per_product = max_api_requests // num_products
+        # Calculate optimal images per product based on best API free limit
+        # Falls back to 250 if API metadata is unavailable
+        best = scraper.get_best_api()
+        max_api_requests = best[1]['free_requests'] if best else 250
+        images_per_product = max(1, max_api_requests // max(1, num_products))
+        # Put a sane cap so we don't over-download on very small datasets
+        images_per_product = min(images_per_product, 10)
         
         print(f"\n📊 API Usage Plan:")
         print(f"  Total API requests available: {max_api_requests}")
