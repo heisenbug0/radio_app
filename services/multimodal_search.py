@@ -143,21 +143,24 @@ class MultimodalSearchService:
         return emb, ids
 
     def search_by_image(self, image_path: str, top_k: int = 5):
-        if self.text_embeddings is None:
-            self.build_or_load_text_embeddings()
-        img_emb = self._feature_extraction_image(image_path)
-        img_emb = self._normalize(img_emb)
-        sims = (img_emb @ self.text_embeddings.T)[0]
-        top_idx = np.argsort(sims)[-top_k:][::-1]
-        results = []
-        for rank, idx in enumerate(top_idx, start=1):
-            row = self.products_df_clip.iloc[idx]
-            results.append({
-                "rank": rank,
-                "stock_code": row['StockCode'],
-                "description": row['Description'],
-                "unit_price": float(row['UnitPrice']),
-                "quantity": int(row['Quantity']),
-                "similarity_score": float(sims[idx])
-            })
-        return results
+        try:
+            if self.text_embeddings is None:
+                self.build_or_load_text_embeddings()
+            img_emb = self._feature_extraction_image(image_path)
+            img_emb = self._normalize(img_emb)
+            sims = (img_emb @ self.text_embeddings.T)[0]
+            top_idx = np.argsort(sims)[-top_k:][::-1]
+            results = []
+            for rank, idx in enumerate(top_idx, start=1):
+                row = self.products_df_clip.iloc[idx]
+                results.append({
+                    "rank": rank,
+                    "stock_code": row['StockCode'],
+                    "description": row['Description'],
+                    "unit_price": float(row['UnitPrice']),
+                    "quantity": int(row['Quantity']),
+                    "similarity_score": float(sims[idx])
+                })
+            return results
+        except Exception:
+            return []
