@@ -64,12 +64,12 @@ class DataPreparationService:
         df['Description'] = df['Description'].str.upper()
 
         # Remove rows with noisy or missing descriptions
-        noise_patterns = [
-            r'^MISSING$', r'^MIXED\s*UP$', r'^UNKNOWN$', r'^UNKWN$', r'^NA$', r'^N/A$',
-            r'^POSTAGE$', r'^CARRIAGE$', r'^SAMPLE$', r'^DAMAGED$', r'^BROKEN$'
+        noise_patterns_exact = [
+            r'^UNKNOWN$', r'^UNKWN$', r'^NA$', r'^N/A$', r'^POSTAGE$', r'^CARRIAGE$', r'^SAMPLE$', r'^DAMAGED$', r'^BROKEN$'
         ]
-        noise_regex = re.compile('|'.join(noise_patterns))
-        df = df[~df['Description'].fillna('').apply(lambda t: bool(noise_regex.search(t)))]
+        noise_regex_exact = re.compile('|'.join(noise_patterns_exact))
+        # Drop rows that are exactly known-noise OR contain tokens like MISSING or MIXED UP anywhere
+        df = df[~df['Description'].fillna('').apply(lambda t: bool(noise_regex_exact.search(t)) or ('MISSING' in t) or ('MIXED UP' in t))]
 
         # Keep descriptions that contain at least one letter
         df = df[df['Description'].str.contains(r'[A-Z]', regex=True, na=False)]

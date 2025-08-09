@@ -10,6 +10,7 @@ class AppService:
         self.data_service = DataPreparationService()
         self.ocr_service = OCRService()
         self.cnn_service = CNNModelService()
+        self.mm_service = None
         self.initialize_services()
     
     def initialize_services(self):
@@ -24,7 +25,11 @@ class AppService:
                 self.data_service.clean_dataset(dataset_path)
                 self.data_service.create_product_vectors()
                 self.data_service.upload_to_pinecone()
-                print("Data preparation service initialized successfully")
+                # Initialize multimodal search with CLIP embeddings
+                from .multimodal_search import MultimodalSearchService
+                self.mm_service = MultimodalSearchService(self.data_service.products_df)
+                self.mm_service.build_or_load_text_embeddings()
+                print("Data preparation + multimodal search initialized successfully")
             else:
                 print("Warning: Dataset file not found. Data preparation service will not be available.")
             
@@ -196,26 +201,44 @@ class AppService:
                 temp_path = temp_file.name
             
             try:
-                # Predict product class using CNN / Zero-shot
+                # If multimodal search is available, use CLIP embeddings directly for image->product retrieval
+                if self.mm_service is not None:
+                    products = self.mm_service.search_by_image(temp_path, top_k=5)
+                    if products:
+                        return {
+                            "products": [
+                                {
+                                    "rank": p["rank"],
+                                    "stock_code": p["stock_code"],
+                                    "description": p["description"],
+                                    "unit_price": p["unit_price"],
+                                    "quantity": p["quantity"],
+                                    "similarity_score": round(float(p["similarity_score"]), 3),
+                                }
+                                for p in products
+                            ],
+                            "response": "Results:",
+                            "predicted_class": products[0]["description"],
+                            "predicted_label": products[0]["description"],
+                            "confidence": round(float(products[0]["similarity_score"]), 3),
+                        }
+                    else:
+                        return {
+                            "products": [],
+                            "response": "No products found.",
+                            "predicted_class": "Unknown",
+                            "predicted_label": "",
+                            "confidence": 0.0,
+                        }
+
+                # Fallback: previous zero-shot label->semantic search path
                 prediction_result = self.cnn_service.predict_product(temp_path)
-                
-                if prediction_result is None:
-                    return {
-                        "products": [],
-                        "response": "Failed to identify product from image. Please try a different image.",
-                        "predicted_class": "Unknown"
-                    }
-                
                 predicted_class = prediction_result.get('predicted_class', "Unknown")
                 confidence = prediction_result.get('confidence', 0.0)
-
-                # Prefer a human-readable label if provided by the model (zero-shot path)
                 predicted_label = None
                 top3 = prediction_result.get('top_3_predictions') or []
                 if top3 and isinstance(top3[0], dict):
                     predicted_label = top3[0].get('label') or None
-
-                # Try to map stock code to a description from the dataset
                 mapped_description = None
                 try:
                     df = getattr(self.data_service, 'products_df', None)
@@ -225,13 +248,16 @@ class AppService:
                             mapped_description = str(subset.iloc[0]['Description'])
                 except Exception:
                     mapped_description = None
-
-                # Build the query text for semantic search
                 query_text = predicted_label or mapped_description or str(predicted_class)
-                
-                # Search for similar products using the query text
+                if re.search(r"\b(MISSING|MIXED\s*UP|UNKNOWN|N/?A|POSTAGE|CARRIAGE|SAMPLE|DAMAGED|BROKEN)\b", query_text, re.IGNORECASE):
+                    return {
+                        "products": [],
+                        "response": "No products found.",
+                        "predicted_class": predicted_class,
+                        "predicted_label": predicted_label or mapped_description or "",
+                        "confidence": round(float(confidence), 3)
+                    }
                 products = self.data_service.search_products(query_text, top_k=5)
-                
                 if products:
                     formatted_products = []
                     for i, product in enumerate(products, 1):
@@ -244,7 +270,6 @@ class AppService:
                             "similarity_score": round(product['similarity_score'], 3)
                         }
                         formatted_products.append(formatted_product)
-                    
                     return {
                         "products": formatted_products,
                         "response": "Results:",
