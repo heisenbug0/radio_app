@@ -208,6 +208,11 @@ class AppService:
                 if self.mm_service is not None:
                     products = self.mm_service.search_by_image(temp_path, top_k=5)
                     if products:
+                        # Debug log: top candidates (descriptions & scores)
+                        try:
+                            print("[MM_TOP] ", [(p["description"], round(float(p["similarity_score"]), 3)) for p in products])
+                        except Exception:
+                            pass
                         return {
                             "products": [
                                 {
@@ -226,6 +231,14 @@ class AppService:
                             "confidence": round(float(products[0]["similarity_score"]), 3),
                         }
                     else:
+                        print("[MM_EMPTY] No multimodal matches for image.")
+                        # Optionally also log zero-shot labels for diagnosis
+                        if os.getenv('LOG_ZERO_SHOT_LABELS', 'false').lower() in {'1','true','yes'}:
+                            try:
+                                zs = self.cnn_service.predict_product(temp_path)
+                                print("[ZS_TOP3] ", zs.get('top_3_predictions'))
+                            except Exception:
+                                pass
                         return {
                             "products": [],
                             "response": "No products found.",
@@ -242,6 +255,11 @@ class AppService:
                 top3 = prediction_result.get('top_3_predictions') or []
                 if top3 and isinstance(top3[0], dict):
                     predicted_label = top3[0].get('label') or None
+                # Debug log: zero-shot label predictions
+                try:
+                    print("[ZS_TOP3] ", [(t.get('label'), round(float(t.get('confidence', 0.0)), 3)) for t in (top3 or [])])
+                except Exception:
+                    pass
                 mapped_description = None
                 try:
                     df = getattr(self.data_service, 'products_df', None)
@@ -252,6 +270,10 @@ class AppService:
                 except Exception:
                     mapped_description = None
                 query_text = predicted_label or mapped_description or str(predicted_class)
+                try:
+                    print(f"[ZS_QUERY] query_text='{query_text}'")
+                except Exception:
+                    pass
                 if re.search(r"\b(MISSING|MIXED\s*UP|UNKNOWN|N/?A|POSTAGE|CARRIAGE|SAMPLE|DAMAGED|BROKEN)\b", query_text, re.IGNORECASE):
                     return {
                         "products": [],
