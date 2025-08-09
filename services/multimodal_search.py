@@ -9,7 +9,7 @@ from typing import List, Tuple
 
 class MultimodalSearchService:
     def __init__(self, products_df: pd.DataFrame, cache_dir: str = "models"):
-        self.products_df = products_df
+        self.products_df_full = products_df.reset_index(drop=True)
         self.cache_dir = cache_dir
         os.makedirs(self.cache_dir, exist_ok=True)
         self.hf_token = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_API_TOKEN")
@@ -18,6 +18,14 @@ class MultimodalSearchService:
         self.text_ids_path = os.path.join(self.cache_dir, f"clip_text_ids.json")
         self.text_embeddings = None
         self.text_ids = None
+        self.products_df_clip = None
+        # Config for building the index
+        self.filter_to_train_csv = (os.getenv("MM_FILTER_TO_TRAIN_CSV", "true").strip().lower() in {"1","true","yes"})
+        self.train_csv_path = os.getenv("MM_TRAIN_CSV_PATH", "data/CNN_Model_Train_Data.csv")
+        self.max_products = int(os.getenv("MM_MAX_PRODUCTS", "1000"))
+        self.batch_size = int(os.getenv("HF_TEXT_EMBED_BATCH", "32"))
+        self.max_retries = int(os.getenv("HF_REQUEST_RETRIES", "3"))
+        self.retry_sleep = float(os.getenv("HF_REQUEST_RETRY_SLEEP", "1.5"))
 
     def _headers(self):
         headers = {"Accept": "application/json"}
@@ -29,18 +37,32 @@ class MultimodalSearchService:
         norm = np.linalg.norm(x, axis=1, keepdims=True) + 1e-12
         return x / norm
 
+    def _post_json(self, url: str, payload: dict) -> requests.Response:
+        last_exc = None
+        for attempt in range(self.max_retries):
+            try:
+                r = requests.post(url, headers=self._headers(), json=payload, timeout=60)
+                if r.status_code in (429, 503):
+                    time.sleep(self.retry_sleep * (attempt + 1))
+                    continue
+                return r
+            except Exception as e:
+                last_exc = e
+                time.sleep(self.retry_sleep * (attempt + 1))
+        if last_exc:
+            raise last_exc
+        raise RuntimeError("HTTP request failed")
+
     def _feature_extraction_text(self, texts: List[str]) -> np.ndarray:
-        url = f"https://api-inference.huggingface.co/pipeline/feature-extraction"
+        url = "https://api-inference.huggingface.co/pipeline/feature-extraction"
         payload = {"inputs": texts, "options": {"wait_for_model": True}, "parameters": {"model": self.clip_model}}
-        r = requests.post(url, headers=self._headers(), json=payload, timeout=60)
+        r = self._post_json(url, payload)
         if r.status_code >= 400:
-            # Try model-specific endpoint
             url2 = f"https://api-inference.huggingface.co/models/{self.clip_model}"
             payload2 = {"inputs": texts, "options": {"wait_for_model": True}}
-            r = requests.post(url2, headers=self._headers(), json=payload2, timeout=60)
+            r = self._post_json(url2, payload2)
         r.raise_for_status()
         data = r.json()
-        # Data can be [ [dim] , [dim] , ... ] or nested
         arr = np.array(data)
         if arr.ndim == 3:
             arr = arr.mean(axis=1)
@@ -53,21 +75,33 @@ class MultimodalSearchService:
         if image_path.lower().endswith(".png"):
             mime = "image/png"
         data_url = f"data:{mime};base64,{b64}"
-        # Try pipeline endpoint first
-        url = f"https://api-inference.huggingface.co/pipeline/image-feature-extraction"
+        url = "https://api-inference.huggingface.co/pipeline/image-feature-extraction"
         payload = {"inputs": data_url, "options": {"wait_for_model": True}, "parameters": {"model": self.clip_model}}
-        r = requests.post(url, headers=self._headers(), json=payload, timeout=60)
+        r = self._post_json(url, payload)
         if r.status_code >= 400:
-            # Try model endpoint
             url2 = f"https://api-inference.huggingface.co/models/{self.clip_model}"
             payload2 = {"inputs": {"image": data_url}, "options": {"wait_for_model": True}}
-            r = requests.post(url2, headers=self._headers(), json=payload2, timeout=60)
+            r = self._post_json(url2, payload2)
         r.raise_for_status()
         data = r.json()
         vec = np.array(data, dtype=np.float32)
         if vec.ndim > 1:
             vec = vec.mean(axis=tuple(range(1, vec.ndim)))
         return vec.reshape(1, -1)
+
+    def _prepare_products_subset(self) -> pd.DataFrame:
+        df = self.products_df_full
+        if self.filter_to_train_csv and os.path.exists(self.train_csv_path):
+            try:
+                train_df = pd.read_csv(self.train_csv_path, dtype=str)
+                if "StockCode" in train_df.columns:
+                    codes = set(train_df["StockCode"].astype(str).str.strip())
+                    df = df[df["StockCode"].astype(str).str.strip().isin(codes)]
+            except Exception:
+                pass
+        if self.max_products > 0 and len(df) > self.max_products:
+            df = df.head(self.max_products)
+        return df.reset_index(drop=True)
 
     def build_or_load_text_embeddings(self) -> Tuple[np.ndarray, List[int]]:
         # Load cache if present
@@ -76,27 +110,25 @@ class MultimodalSearchService:
                 emb = np.load(self.text_emb_path)
                 with open(self.text_ids_path, "r") as f:
                     ids = json.load(f)
-                # Basic sanity
                 if emb.shape[0] == len(ids) and emb.ndim == 2:
                     self.text_embeddings = emb
                     self.text_ids = ids
+                    self.products_df_clip = self.products_df_full.iloc[ids].reset_index(drop=True)
                     return emb, ids
             except Exception:
                 pass
-        # Build texts list
-        texts = self.products_df['Description'].astype(str).tolist()
-        ids = list(range(len(texts)))
-        # Batch API calls for efficiency
-        batch_size = int(os.getenv("HF_TEXT_EMBED_BATCH", "64"))
+        # Build subset and texts
+        df_clip = self._prepare_products_subset()
+        texts = df_clip['Description'].astype(str).tolist()
+        ids = df_clip.index.tolist()
         all_emb = []
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i:i+batch_size]
+        for i in range(0, len(texts), self.batch_size):
+            batch = texts[i:i+self.batch_size]
             try:
                 emb = self._feature_extraction_text(batch)
                 all_emb.append(emb)
             except Exception:
-                # Backoff on error
-                time.sleep(1.0)
+                time.sleep(self.retry_sleep)
                 continue
         if not all_emb:
             raise RuntimeError("Failed to build text embeddings via HF API")
@@ -107,6 +139,7 @@ class MultimodalSearchService:
             json.dump(ids, f)
         self.text_embeddings = emb
         self.text_ids = ids
+        self.products_df_clip = df_clip
         return emb, ids
 
     def search_by_image(self, image_path: str, top_k: int = 5):
@@ -118,7 +151,7 @@ class MultimodalSearchService:
         top_idx = np.argsort(sims)[-top_k:][::-1]
         results = []
         for rank, idx in enumerate(top_idx, start=1):
-            row = self.products_df.iloc[idx]
+            row = self.products_df_clip.iloc[idx]
             results.append({
                 "rank": rank,
                 "stock_code": row['StockCode'],
