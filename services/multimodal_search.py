@@ -22,10 +22,10 @@ class MultimodalSearchService:
         # Config for building the index
         self.filter_to_train_csv = (os.getenv("MM_FILTER_TO_TRAIN_CSV", "true").strip().lower() in {"1","true","yes"})
         self.train_csv_path = os.getenv("MM_TRAIN_CSV_PATH", "data/CNN_Model_Train_Data.csv")
-        self.max_products = int(os.getenv("MM_MAX_PRODUCTS", "1000"))
-        self.batch_size = int(os.getenv("HF_TEXT_EMBED_BATCH", "32"))
-        self.max_retries = int(os.getenv("HF_REQUEST_RETRIES", "3"))
-        self.retry_sleep = float(os.getenv("HF_REQUEST_RETRY_SLEEP", "1.5"))
+        self.max_products = int(os.getenv("MM_MAX_PRODUCTS", "500"))
+        self.batch_size = int(os.getenv("HF_TEXT_EMBED_BATCH", "16"))
+        self.max_retries = int(os.getenv("HF_REQUEST_RETRIES", "5"))
+        self.retry_sleep = float(os.getenv("HF_REQUEST_RETRY_SLEEP", "2.0"))
 
     def _headers(self):
         headers = {"Accept": "application/json"}
