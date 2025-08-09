@@ -196,7 +196,7 @@ class AppService:
                 temp_path = temp_file.name
             
             try:
-                # Predict product class using CNN
+                # Predict product class using CNN / Zero-shot
                 prediction_result = self.cnn_service.predict_product(temp_path)
                 
                 if prediction_result is None:
@@ -206,14 +206,33 @@ class AppService:
                         "predicted_class": "Unknown"
                     }
                 
-                predicted_class = prediction_result['predicted_class']
-                confidence = prediction_result['confidence']
+                predicted_class = prediction_result.get('predicted_class', "Unknown")
+                confidence = prediction_result.get('confidence', 0.0)
+
+                # Prefer a human-readable label if provided by the model (zero-shot path)
+                predicted_label = None
+                top3 = prediction_result.get('top_3_predictions') or []
+                if top3 and isinstance(top3[0], dict):
+                    predicted_label = top3[0].get('label') or None
+
+                # Try to map stock code to a description from the dataset
+                mapped_description = None
+                try:
+                    df = getattr(self.data_service, 'products_df', None)
+                    if df is not None and not df.empty and predicted_class is not None:
+                        subset = df[df['StockCode'].astype(str) == str(predicted_class)]
+                        if not subset.empty:
+                            mapped_description = str(subset.iloc[0]['Description'])
+                except Exception:
+                    mapped_description = None
+
+                # Build the query text for semantic search
+                query_text = predicted_label or mapped_description or str(predicted_class)
                 
-                # Search for similar products using the predicted class
-                products = self.data_service.search_products(predicted_class, top_k=5)
+                # Search for similar products using the query text
+                products = self.data_service.search_products(query_text, top_k=5)
                 
                 if products:
-                    # Format products for response
                     formatted_products = []
                     for i, product in enumerate(products, 1):
                         formatted_product = {
@@ -230,14 +249,16 @@ class AppService:
                         "products": formatted_products,
                         "response": "Results:",
                         "predicted_class": predicted_class,
-                        "confidence": round(confidence, 3)
+                        "predicted_label": predicted_label or mapped_description or "",
+                        "confidence": round(float(confidence), 3)
                     }
                 else:
                     return {
                         "products": [],
                         "response": "No products found.",
                         "predicted_class": predicted_class,
-                        "confidence": round(confidence, 3)
+                        "predicted_label": predicted_label or mapped_description or "",
+                        "confidence": round(float(confidence), 3)
                     }
                     
             finally:
