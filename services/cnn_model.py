@@ -235,13 +235,11 @@ class CNNModelService:
         self.cutmix_alpha = 1.0
 
         # Zero-shot (Hugging Face) fallback configuration
-        backend_env = (os.getenv("MODEL_BACKEND") or os.getenv("CNN_BACKEND") or "").strip().lower()
-        use_hf_flag = os.getenv("USE_HF_ZERO_SHOT", "0").strip() in {"1", "true", "yes"}
-        self.use_zero_shot = use_hf_flag or backend_env in {"hf", "huggingface", "hf-zero-shot", "zero-shot"}
+        # Zero-shot is the only mode
+        self.use_zero_shot = True
         self.hf_token = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_API_TOKEN")
         self.zero_shot_model = os.getenv("HF_ZERO_SHOT_MODEL", "openai/clip-vit-base-patch32")
-        self._stockcode_to_desc = {}
-        self._desc_to_stockcode = {}
+        self._descriptions = []
         self._csv_default = "data/CNN_Model_Train_Data.csv"
 
         if TENSORFLOW_AVAILABLE:
@@ -281,10 +279,9 @@ class CNNModelService:
     # Data loading & preprocessing
     # -------------------------
     def load_and_preprocess_data(self, data_dir, csv_file_path):
-        if self.use_zero_shot:
-            # Prepare label maps only; no image processing needed for API mode
-            self._prepare_label_mappings(csv_file_path)
-            return np.empty((0,)), np.empty((0,))
+        # Zero-shot path: prepare description labels only; no image preprocessing required
+        self._prepare_label_set(csv_file_path)
+        return np.empty((0,)), np.empty((0,))
         if not os.path.exists(csv_file_path):
             raise ValueError(f"CSV not found: {csv_file_path}")
         df = pd.read_csv(csv_file_path)
@@ -459,14 +456,12 @@ class CNNModelService:
     # Training entrypoint
     # -------------------------
     def train_model(self, data_dir, csv_file_path, warmup_epochs=10, ema_decay=0.9999):
-        if self.use_zero_shot:
-            # In zero-shot mode, we skip training and just prepare labels and placeholder artifacts.
-            print("Zero-shot mode enabled (Hugging Face Inference API). Skipping local training.")
-            self._prepare_label_mappings(csv_file_path)
-            self._write_label_artifacts()
-            self._ensure_placeholder_model_files()
-            return None
-        print("Starting training...")
+        # Zero-shot only: skip training; ensure labels/artifacts exist
+        print("Zero-shot (Hugging Face Inference API). Skipping local training.")
+        self._prepare_label_set(csv_file_path)
+        self._write_label_artifacts()
+        self._ensure_placeholder_model_files()
+        return None
 
         X, y = self.load_and_preprocess_data(data_dir, csv_file_path)
 
@@ -687,12 +682,11 @@ class CNNModelService:
         plt.show()
 
     def save_model(self):
-        if self.use_zero_shot:
-            # Only save label artifacts in zero-shot mode
-            self._write_label_artifacts()
-            self._ensure_placeholder_model_files()
-            print("Zero-shot mode: saved label artifacts and placeholder model files.")
-            return
+        # Only save label artifacts (zero-shot)
+        self._write_label_artifacts()
+        self._ensure_placeholder_model_files()
+        print("Saved label artifacts and placeholder model files.")
+        return
         model_dir = "models"
         os.makedirs(model_dir, exist_ok=True)
         self.model.save(os.path.join(model_dir, "product_cnn_model.keras"))
@@ -704,82 +698,55 @@ class CNNModelService:
         print(f"Model saved to {model_dir}/")
 
     def load_model(self):
-        if self.use_zero_shot:
-            # Load labels only; no local model
-            csv_path = self._csv_default if os.path.exists(self._csv_default) else None
-            self._prepare_label_mappings(csv_path)
-            self._read_label_artifacts()
-            print("Zero-shot mode: loaded label mappings. No local model needed.")
-            return
-        model_dir = "models"
-        self.model = tf.keras.models.load_model(os.path.join(model_dir, "product_cnn_model.keras"),
-                                                custom_objects={"StochasticDepth": StochasticDepth})
-        with open(os.path.join(model_dir, "label_encoder.pkl"), "rb") as f:
-            self.label_encoder = pickle.load(f)
-        with open(os.path.join(model_dir, "class_names.txt"), "r") as f:
-            self.class_names = [line.strip() for line in f.readlines()]
-        print("Model loaded successfully")
+        # Load labels only; no local model
+        csv_path = self._csv_default if os.path.exists(self._csv_default) else None
+        self._prepare_label_set(csv_path)
+        self._read_label_artifacts()
+        print("Loaded label set for zero-shot. No local model needed.")
+        return
 
     def predict_product(self, image_path):
-        if self.use_zero_shot:
-            return self._predict_zero_shot(image_path)
-        if self.model is None:
-            self.load_model()
-        image = self.load_and_preprocess_image(image_path)
-        if image is None:
-            return None
-        image = np.expand_dims(image, axis=0).astype(np.float32)
-        predictions = self.model.predict(image)
-        predicted_class = np.argmax(predictions[0])
-        confidence = float(predictions[0][predicted_class])
-        top_3_indices = np.argsort(predictions[0])[-3:][::-1]
-        top_3_predictions = [{"class": self.class_names[idx], "confidence": float(predictions[0][idx])} for idx in top_3_indices]
-        return {"predicted_class": self.class_names[predicted_class], "confidence": confidence, "top_3_predictions": top_3_predictions}
+        return self._predict_zero_shot(image_path)
 
     # -------------------------
     # Zero-shot helpers (Hugging Face Inference API)
     # -------------------------
-    def _prepare_label_mappings(self, csv_file_path=None):
-        """Build mappings between StockCode and human-readable descriptions."""
-        self._stockcode_to_desc = {}
-        self._desc_to_stockcode = {}
-        self.class_names = []
-        # Prefer provided CSV; otherwise try artifacts; otherwise skip
+    def _prepare_label_set(self, csv_file_path=None):
+        """Build a list of human-readable labels (descriptions) used as candidate labels for zero-shot."""
+        self._descriptions = []
+        # Prefer provided CSV; otherwise skip (UI still works but with no candidate labels)
         if csv_file_path and os.path.exists(csv_file_path):
             df = pd.read_csv(csv_file_path, dtype=str)
             if "StockCode" in df.columns:
                 df = df.drop_duplicates(subset=["StockCode"])  # one per product
-                # Try to enrich with descriptions from main dataset if needed
-                if "Description" not in df.columns or df["Description"].isna().all():
-                    try:
-                        main_df = pd.read_csv("data/dataset.csv", dtype=str, encoding="latin-1")
-                        main_df = main_df.rename(columns={c: c.strip() for c in main_df.columns})
-                        if "StockCode" in main_df.columns and "Description" in main_df.columns:
-                            df = df.merge(main_df[["StockCode", "Description"]].drop_duplicates(), on="StockCode", how="left")
-                    except Exception:
-                        pass
-                for _, row in df.iterrows():
-                    sc = str(row.get("StockCode", "")).strip()
-                    desc = str(row.get("Description", "")).strip() if row.get("Description") is not None else ""
-                    if sc:
-                        self._stockcode_to_desc[sc] = desc or sc
-                        self._desc_to_stockcode[self._stockcode_to_desc[sc]] = sc
-                self.class_names = sorted(list(self._stockcode_to_desc.keys()), key=lambda x: str(x))
+                # Enrich with descriptions from main dataset
                 try:
-                    self.label_encoder.fit(self.class_names)
+                    main_df = pd.read_csv("data/dataset.csv", dtype=str, encoding="latin-1")
+                    main_df = main_df.rename(columns={c: c.strip() for c in main_df.columns})
+                    if "StockCode" in main_df.columns and "Description" in main_df.columns:
+                        df = df.merge(main_df[["StockCode", "Description"]].drop_duplicates(), on="StockCode", how="left")
                 except Exception:
                     pass
-        else:
-            # Attempt to read artifacts if CSV missing
-            try:
-                with open(os.path.join("models", "class_names.txt"), "r") as f:
-                    self.class_names = [line.strip() for line in f.readlines() if line.strip()]
-                # If we do not have descriptions, fallback to identity mapping
-                for sc in self.class_names:
-                    self._stockcode_to_desc[sc] = sc
-                    self._desc_to_stockcode[sc] = sc
-            except Exception:
-                pass
+                descs = []
+                for _, row in df.iterrows():
+                    desc = str(row.get("Description", "")).strip()
+                    if desc:
+                        descs.append(desc)
+                # Deduplicate and keep order
+                seen = set()
+                clean = []
+                for d in descs:
+                    if d not in seen:
+                        seen.add(d)
+                        clean.append(d)
+                self._descriptions = clean
+        # Update class_names to mirror labels for consistency with tests
+        self.class_names = list(self._descriptions)
+        try:
+            if self.class_names:
+                self.label_encoder.fit(self.class_names)
+        except Exception:
+            pass
 
     def _write_label_artifacts(self):
         os.makedirs("models", exist_ok=True)
@@ -823,11 +790,11 @@ class CNNModelService:
         import requests
 
         # Ensure label mappings are ready
-        if not self._stockcode_to_desc:
-            self._prepare_label_mappings(self._csv_default if os.path.exists(self._csv_default) else None)
+        if not self._descriptions:
+            self._prepare_label_set(self._csv_default if os.path.exists(self._csv_default) else None)
 
-        # Candidate labels are product descriptions where available, otherwise stock codes
-        candidate_labels = list(self._stockcode_to_desc.values())
+        # Candidate labels are product descriptions
+        candidate_labels = list(self._descriptions)
         # Cap to avoid oversized payloads
         max_labels = int(os.getenv("HF_MAX_CANDIDATE_LABELS", "100"))
         if len(candidate_labels) > max_labels:
@@ -889,8 +856,7 @@ class CNNModelService:
             top = sorted(predictions, key=lambda x: x[1], reverse=True)[:3]
             top3 = []
             for label, score in top:
-                sc = self._desc_to_stockcode.get(label, label)
-                top3.append({"class": sc, "confidence": float(score), "label": label})
+                top3.append({"class": label, "confidence": float(score), "label": label})
             predicted_class = top3[0]["class"]
             confidence = top3[0]["confidence"]
             return {
