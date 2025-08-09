@@ -24,16 +24,44 @@ class DataPreparationService:
                 from pinecone import Pinecone
                 pc = Pinecone(api_key=api_key)
                 index_name = "product-recommendations"
-                existing_indexes = [index.name for index in pc.list_indexes()]
-                if index_name not in existing_indexes:
-                    pc.create_index(
-                        name=index_name,
-                        dimension=768,  # all-mpnet-base-v2 output dim
-                        metric="cosine"
-                    )
+                # Collect existing index names robustly across SDK versions
+                index_names = []
+                try:
+                    listed = pc.list_indexes()
+                    if isinstance(listed, list):
+                        for it in listed:
+                            if isinstance(it, str):
+                                index_names.append(it)
+                            else:
+                                name = getattr(it, 'name', None)
+                                if not name and isinstance(it, dict):
+                                    name = it.get('name')
+                                if name:
+                                    index_names.append(name)
+                    elif isinstance(listed, dict):
+                        for it in listed.get('indexes', []):
+                            if isinstance(it, dict) and 'name' in it:
+                                index_names.append(it['name'])
+                except Exception:
+                    pass
+                if index_name not in index_names:
+                    try:
+                        # Newer SDKs (v7+) require a ServerlessSpec via 'spec'
+                        from pinecone import ServerlessSpec
+                        cloud = os.getenv('PINECONE_CLOUD', 'aws')
+                        region = os.getenv('PINECONE_REGION', 'us-east-1')
+                        pc.create_index(
+                            name=index_name,
+                            dimension=768,
+                            metric="cosine",
+                            spec=ServerlessSpec(cloud=cloud, region=region)
+                        )
+                    except Exception:
+                        # Fallback for older SDK signature
+                        pc.create_index(name=index_name, dimension=768, metric="cosine")
                     print(f"Created new Pinecone index: {index_name}")
                 self.pinecone_index = pc.Index(index_name)
-                print("Pinecone initialized successfully with latest API")
+                print("Pinecone initialized successfully")
             else:
                 print("Warning: PINECONE_API_KEY not found. Using local storage only.")
         except Exception as e:
