@@ -1,578 +1,254 @@
+# services/web_scraping.py
 import os
-import requests
-import pandas as pd
 import time
 import random
-import re # Added for _clean_product_name
 import math
+import hashlib
+import logging
+import requests
+import pandas as pd
+from io import BytesIO
+from PIL import Image
+
+from dotenv import load_dotenv
+load_dotenv()
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
+logger = logging.getLogger(__name__)
+
 
 class WebScrapingService:
-    def __init__(self):
-        # Pixabay only API key
-        self.pixabay_key = os.getenv('PIXABAY_API_KEY')
-        self.download_dir = "data/scraped_images"
+    def __init__(self, serpapi_key=None, download_dir="data/scraped_images", min_width=200, min_height=200, per_request_min=3):
+        self.serpapi_key = serpapi_key or os.getenv("SERPAPI_API_KEY")
+        self.download_dir = download_dir
         self.results = []
-        self._product_seen = set()
-        
-        # Create download directory if it doesn't exist
-        if not os.path.exists(self.download_dir):
-            os.makedirs(self.download_dir)
-    
-    # Multi-API initializer removed (Pixabay only)
-    
-    # Removed get_best_api (Pixabay only)
-    
-    def search_images_pixabay(self, query, count=10):
-        """Search images using Pixabay API (official docs: https://pixabay.com/api/docs/)"""
+        self._seen_urls = set()
+        self._seen_hashes = set()
+        self.min_width = int(min_width)
+        self.min_height = int(min_height)
+        self.per_request_min = max(3, int(per_request_min))
+        os.makedirs(self.download_dir, exist_ok=True)
+
+    def search_images_serpapi(self, query, count=10):
+        if not self.serpapi_key:
+            logger.warning("SerpAPI key missing.")
+            return []
+        safe_query = (query or "").strip()[:200]
+        params = {
+            "engine": "google",
+            "q": safe_query,
+            "tbm": "isch",
+            "num": max(self.per_request_min, min(int(count), 100)),
+            "api_key": self.serpapi_key,
+        }
         try:
-            # Ensure API key exists
-            pixabay_key = self.pixabay_key
-            if not pixabay_key:
-                print("    Pixabay API key missing. Set PIXABAY_API_KEY in environment.")
+            logger.info("SerpAPI search: q=%s num=%d", safe_query, params["num"])
+            r = requests.get("https://serpapi.com/search.json", params=params, timeout=15)
+            if r.status_code != 200:
+                logger.warning("SerpAPI returned %s: %s", r.status_code, r.text[:300])
                 return []
-
-            # Conform to API constraints: q max 100 chars, per_page 3-200
-            safe_query = (query or "").strip()[:100]
-            per_page = max(3, min(int(count), 200))
-
-            params = {
-                'key': pixabay_key,  # API key as query param
-                'q': safe_query,
-                'image_type': 'photo',
-                'per_page': per_page,
-                'safesearch': 'true',
-                'orientation': 'horizontal',
-                'order': 'popular',
-                'lang': 'en'
-            }
-            response = requests.get(
-                'https://pixabay.com/api/',
-                params=params,
-                timeout=10
-            )
-            if response.status_code == 200:
-                data = response.json()
-                images = []
-                for item in data.get('hits', []):
-                    images.append({
-                        'url': item.get('webformatURL', ''),
-                        'title': item.get('tags', ''),
-                        'width': item.get('webformatWidth', 0),
-                        'height': item.get('webformatHeight', 0)
-                    })
-                return images
-            else:
-                print(f"    Pixabay API error: {response.status_code} - {response.text}")
-                return []
+            data = r.json()
+            hits = data.get("images_results") or data.get("image_results") or data.get("inline_images") or []
+            images = []
+            for h in hits:
+                # SerpAPI image result fields vary: 'original', 'thumbnail', 'link', 'title'
+                url = h.get("original") or h.get("origin") or h.get("link") or h.get("thumbnail")
+                title = h.get("title") or h.get("alt") or h.get("snippet") or ""
+                width = h.get("width") or 0
+                height = h.get("height") or 0
+                if url:
+                    images.append({"url": url, "title": title, "width": width, "height": height})
+            logger.info("SerpAPI returned %d image candidates", len(images))
+            return images
         except Exception as e:
-            print(f"    Pixabay search error: {e}")
+            logger.exception("SerpAPI search error: %s", e)
             return []
 
-    def search_images_unsplash(self, query, count=10):
-        """Search images using Unsplash API (official docs: https://unsplash.com/documentation#search-photos)"""
-        try:
-            # Unsplash uses an Access Key (not OAuth) as 'Authorization: Client-ID <ACCESS_KEY>'
-            headers = {
-                'Authorization': f'Client-ID {self.api_options["unsplash"]["key"]}'
-            }
-            params = {
-                'query': query,
-                'per_page': min(count, 30),  # Unsplash limit
-                'orientation': 'landscape'
-            }
-            response = requests.get(
-                'https://api.unsplash.com/search/photos',
-                headers=headers,
-                params=params,
-                timeout=10
-            )
-            if response.status_code == 200:
-                data = response.json()
-                images = []
-                for item in data.get('results', []):
-                    images.append({
-                        'url': item.get('urls', {}).get('regular', ''),
-                        'title': item.get('description', ''),
-                        'width': item.get('width', 0),
-                        'height': item.get('height', 0)
-                    })
-                return images
-            else:
-                print(f"    Unsplash API error: {response.status_code}")
-                return []
-        except Exception as e:
-            print(f"    Unsplash search error: {e}")
-            return []
-    
-    def search_images_bing(self, query, count=10):
-        """Search images using Bing Image Search API"""
-        try:
-            headers = {
-                'Ocp-Apim-Subscription-Key': self.api_options['bing']['key']
-            }
-            
-            params = {
-                'q': query,
-                'count': min(count, 150),  # Bing limit
-                'imageType': 'photo',
-                'safeSearch': 'strict'
-            }
-            
-            response = requests.get(
-                'https://api.bing.microsoft.com/v7.0/images/search',
-                headers=headers,
-                params=params,
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                images = []
-                
-                for item in data.get('value', []):
-                    images.append({
-                        'url': item.get('contentUrl', ''),
-                        'title': item.get('name', ''),
-                        'width': item.get('width', 0),
-                        'height': item.get('height', 0)
-                    })
-                
-                return images
-            else:
-                print(f"    Bing API error: {response.status_code}")
-                return []
-                
-        except Exception as e:
-            print(f"    Bing search error: {e}")
-            return []
-    
-    def search_images_google(self, query, count=10):
-        """Search images using Google Custom Search API"""
-        try:
-            params = {
-                'key': self.api_options['google']['key'],
-                'cx': self.api_options['google']['cx'],
-                'q': query,
-                'searchType': 'image',
-                'num': min(count, 10),  # Google limit
-                'safe': 'active'
-            }
-            
-            response = requests.get(
-                'https://www.googleapis.com/customsearch/v1',
-                params=params,
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                images = []
-                
-                for item in data.get('items', []):
-                    images.append({
-                        'url': item.get('link', ''),
-                        'title': item.get('title', ''),
-                        'width': item.get('image', {}).get('width', 0),
-                        'height': item.get('image', {}).get('height', 0)
-                    })
-                
-                return images
-            else:
-                print(f"    Google API error: {response.status_code}")
-                return []
-                
-        except Exception as e:
-            print(f"    Google search error: {e}")
-            return []
-    
-    def _search_images(self, query, count=10):
-        """Search images using Pixabay only"""
-        print("    Using Pixabay")
-        return self.search_images_pixabay(query, count)
-    
-    # SerpAPI support removed
-    
-    def scrape_product_images(self, csv_file_path, images_per_product=15):
-        """Scrape product images using Pixabay only"""
-        # Ensure Pixabay available
-        if not self.pixabay_key:
-            print("Error: No API available")
-            print("Please set PIXABAY_API_KEY in your environment.")
-            return pd.DataFrame()
-
-        print("Using Pixabay (see rate limits at https://pixabay.com/api/docs/)")
-        print(f"Starting image scraping for {images_per_product} images per product...")
-        print("Note: This will use more API calls but will give better training results!")
-        
-        # Read product data and ensure uniqueness
-        df = pd.read_csv(csv_file_path)
-        # Keep unique StockCodes only
-        if 'StockCode' in df.columns:
-            df['StockCode'] = df['StockCode'].astype(str)
-            df = df.drop_duplicates(subset=['StockCode'])
-        
-        # If we only have stock codes, we need to get product names from the main dataset
-        if 'StockCode' in df.columns and len(df.columns) == 1:
-            print("Stock codes only found. Loading product names from main dataset...")
-            try:
-                # Load the main dataset to get product names
-                main_df = pd.read_csv('data/dataset.csv', encoding='latin-1')
-                
-                # Clean stock codes in both dataframes
-                def clean_stock_code(code):
-                    """Clean stock code by removing special characters"""
-                    if pd.isna(code):
-                        return None
-                    # Convert to string and remove special characters
-                    code_str = str(code)
-                    # Remove special characters like ö, ^, etc.
-                    import re
-                    cleaned = re.sub(r'[^0-9]', '', code_str)
-                    return cleaned if cleaned else None
-                
-                # Clean stock codes in both dataframes
-                df['StockCode'] = df['StockCode'].apply(clean_stock_code)
-                main_df['StockCode'] = main_df['StockCode'].apply(clean_stock_code)
-                
-                # Remove rows with None stock codes
-                df = df.dropna(subset=['StockCode'])
-                main_df = main_df.dropna(subset=['StockCode'])
-                
-                # Convert to string for merging
-                df['StockCode'] = df['StockCode'].astype(str)
-                main_df['StockCode'] = main_df['StockCode'].astype(str)
-                
-                # Get unique product names for each stock code
-                product_names = main_df.groupby('StockCode')['Description'].first().reset_index()
-                df = df.merge(product_names, on='StockCode', how='left')
-                print(f"Loaded product names for {len(df)} products")
-                
-                # Check if we have product names
-                missing_names = df[df['Description'].isna()]
-                if len(missing_names) > 0:
-                    print(f"Warning: {len(missing_names)} products without descriptions:")
-                    for _, row in missing_names.iterrows():
-                        print(f"  Stock code {row['StockCode']} - No description found")
-                    print("These products will be skipped.")
-                    df = df.dropna(subset=['Description'])
-                
-            except Exception as e:
-                print(f"Error loading product names: {e}")
-                print("❌ Cannot proceed without product names!")
-                print("Please ensure the main dataset contains product descriptions.")
-                return pd.DataFrame()
-        
-        # Verify we have product names
-        if 'Description' not in df.columns:
-            print("❌ No product descriptions found!")
-            print("Cannot proceed with stock code search as it will give wrong results.")
-            return pd.DataFrame()
-        
-        total_images = 0
-        successful_products = 0
-        
-        for i, row in df.iterrows():
-            stock_code = row['StockCode']
-            product_name = row.get('Description', '')
-            
-            if not product_name or pd.isna(product_name):
-                print(f"Skipping {stock_code} - no product description available")
-                continue
-            
-            if stock_code in self._product_seen:
-                continue
-            self._product_seen.add(stock_code)
-
-            print(f"\nProcessing product {i+1}/{len(df)}: {stock_code}")
-            print(f"Product: {product_name}")
-            
-            try:
-                # Search for product images using the actual product name
-                images = self._search_product_images_robust(product_name, stock_code, images_per_product)
-                
-                if images:
-                    # Download images
-                    downloaded_count = self._download_images_robust(stock_code, images)
-                    total_images += downloaded_count
-                    successful_products += 1
-                    
-                    print(f"  Downloaded {downloaded_count} images for {stock_code}")
-                else:
-                    print(f"  No images found for {stock_code}")
-                    
-            except Exception as e:
-                print(f"  Error processing {stock_code}: {e}")
-            
-            # Rate limiting - be respectful to the API
-            time.sleep(random.uniform(1, 2))
-        
-        print(f"\nScraping completed!")
-        print(f"Successfully processed {successful_products}/{len(df)} products")
-        print(f"Total images downloaded: {total_images}")
-        print(f"Average images per product: {total_images/len(df):.1f}")
-        
-        # Save results
-        results_df = pd.DataFrame(self.results)
-        if not results_df.empty:
-            results_path = os.path.join(self.download_dir, 'scraping_results.csv')
-            results_df.to_csv(results_path, index=False)
-            print(f"Results saved to: {results_path}")
-        
-        return results_df
-    
     def _clean_product_name(self, product_name):
-        """Clean and optimize product name for better search results"""
         if not product_name or pd.isna(product_name):
             return None
-        
-        # Convert to string and clean
         name = str(product_name).strip()
-        
-        # Remove common prefixes that don't help search
-        prefixes_to_remove = [
-            'SET OF ', 'SET ', 'PACK OF ', 'PACK ', 'BOX OF ', 'BOX ',
-            'LARGE ', 'SMALL ', 'MEDIUM ', 'MINI ', 'BIG ',
-            '$', '£', '€', '¥'
-        ]
-        
-        for prefix in prefixes_to_remove:
-            if name.upper().startswith(prefix):
-                name = name[len(prefix):].strip()
-        
-        # Remove special characters and extra spaces
+        prefixes = ["SET OF ", "SET ", "PACK OF ", "PACK ", "BOX OF ", "BOX ", "LARGE ", "SMALL ", "MINI ", "$", "£", "€", "¥"]
+        for p in prefixes:
+            if name.upper().startswith(p):
+                name = name[len(p):].strip()
         import re
-        name = re.sub(r'[^\w\s]', ' ', name)
-        name = re.sub(r'\s+', ' ', name).strip()
-        
-        # Normalize domain-specific synonyms to broaden search
-        synonym_map = {
-            'lantern': ['lantern', 'candle lamp'],
-            'bottle': ['bottle', 'flask'],
-            'heart': ['heart', 'love shape'],
-            'bag': ['bag', 'tote'],
-            'mug': ['mug', 'cup']
-        }
+        name = re.sub(r"[^\w\s]", " ", name)
+        name = re.sub(r"\s+", " ", name).strip()
+        words = [w for w in name.split() if len(w) > 2 and not w.isdigit()]
+        if not words:
+            return name[:50]
+        return " ".join(words[:4])
 
-        # Extract key words (avoid generic terms)
-        words = name.split()
-        key_words = []
-        
-        # Common words to avoid (too generic)
-        generic_words = {
-            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-            'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during',
-            'before', 'after', 'above', 'below', 'between', 'among', 'within',
-            'set', 'pack', 'box', 'large', 'small', 'medium', 'mini', 'big',
-            'design', 'style', 'color', 'colour', 'size', 'type', 'kind', 'sort'
-        }
-        
-        for word in words:
-            word_lower = word.lower()
-            if (word_lower not in generic_words and 
-                len(word) > 2 and 
-                not word.isdigit()):
-                key_words.append(word)
-        
-        # If we have key words, use them; otherwise use original (cleaned)
-        if key_words:
-            # Expand with a synonym when available to improve recall
-            expanded = []
-            for kw in key_words[:3]:
-                expanded.append(kw)
-                for base, syns in synonym_map.items():
-                    if kw.lower() == base:
-                        expanded.append(syns[0])
-                        break
-            optimized_name = ' '.join(dict.fromkeys(expanded))
-        else:
-            # Fallback: use first few words of cleaned name
-            words = name.split()
-            optimized_name = ' '.join(words[:3])  # Limit to 3 words
-        
-        # Ensure we have something meaningful
-        if len(optimized_name) < 3:
-            optimized_name = name[:50]  # Use first 50 chars of original
-        
-        return optimized_name
+    def _download_and_validate(self, url):
+        try:
+            headers = {"User-Agent": random.choice([
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+                "Mozilla/5.0 (X11; Linux x86_64)"
+            ])}
+            r = requests.get(url, headers=headers, timeout=18, stream=True)
+            r.raise_for_status()
+            content_type = r.headers.get("content-type", "")
+            if not content_type or not content_type.startswith("image/"):
+                logger.debug("Non-image content-type %s for url %s", content_type, url)
+                return None
+            data = r.content
+            h = hashlib.sha256(data).hexdigest()
+            if h in self._seen_hashes:
+                logger.debug("Duplicate image by hash %s", h[:12])
+                return None
+            img = Image.open(BytesIO(data)).convert("RGB")
+            w, hgt = img.size
+            if w < self.min_width or hgt < self.min_height:
+                logger.debug("Image too small %dx%d (min %dx%d) %s", w, hgt, self.min_width, self.min_height, url)
+                return None
+            fmt = (img.format or "").lower()
+            ext = "jpg"
+            if "png" in fmt:
+                ext = "png"
+            elif "webp" in fmt:
+                ext = "webp"
+            return {"bytes": data, "hash": hashlib.sha256(data).hexdigest(), "width": w, "height": hgt, "ext": ext}
+        except Exception as e:
+            logger.debug("Download/validate error for %s: %s", url, e)
+            return None
 
-    def _search_product_images_robust(self, product_name, stock_code, max_images=15):
-        """Search for product images with multiple query variations"""
-        # Clean and optimize the product name for search
-        optimized_name = self._clean_product_name(product_name)
-        print(f"    Optimized search term: '{optimized_name}'")
-        
-        # Create multiple search variations for better results
-        brand_terms = ["retail", "store", "online", "shopping", "buy"]
-        image_terms = ["image", "photo"]
-        object_terms = ["product", "item"]
-        search_variations = [optimized_name]
-        for term in (object_terms + image_terms + brand_terms):
-            search_variations.append(f"{optimized_name} {term}")
-        
-        # Limit variations based on max_images to avoid wasting API calls
+    def _unique_filename(self, stock_code, index, ext, content_hash):
+        short = content_hash[:10]
+        safe_code = "".join(c for c in str(stock_code) if c.isalnum() or c in ("-", "_")).strip() or "prod"
+        base = f"{safe_code}_{index}_{short}"
+        filename = f"{base}.{ext}"
+        path = os.path.join(self.download_dir, filename)
+        i = 1
+        while os.path.exists(path):
+            filename = f"{base}_{i}.{ext}"
+            path = os.path.join(self.download_dir, filename)
+            i += 1
+        return filename, path
+
+    def _search_product_images_robust(self, product_name, max_images=10):
+        optimized = self._clean_product_name(product_name)
+        logger.info("Optimized search term: '%s'", optimized)
+        variations = [optimized, f"{optimized} product", f"{optimized} photo", f"{optimized} item", f"{optimized} retail"]
         if max_images <= 5:
-            search_variations = search_variations[:3]  # Use fewer variations for small requests
-        elif max_images <= 10:
-            search_variations = search_variations[:5]  # Use medium variations
-        
-        all_images = []
-        
-        # Calculate at least 3 images per variation (Pixabay minimum per_page)
-        images_per_variation = max(3, int(math.ceil(max(1, max_images) / float(len(search_variations)))))
+            variations = variations[:3]
+        images_per_variation = max(self.per_request_min, math.ceil(max(1, max_images) / max(1, len(variations))))
+        collected = []
+        for q in variations:
+            found = self.search_images_serpapi(q, images_per_variation)
+            if found:
+                for f in found:
+                    u = f.get("url")
+                    if u and u not in self._seen_urls:
+                        collected.append(f)
+                        self._seen_urls.add(u)
+                        if len(collected) >= max_images:
+                            break
+            if len(collected) >= max_images:
+                break
+            time.sleep(random.uniform(0.4, 1.2))
+        unique = []
+        seen = set()
+        for item in collected:
+            u = item.get("url")
+            if u and u not in seen:
+                unique.append(item)
+                seen.add(u)
+            if len(unique) >= max_images:
+                break
+        logger.info("Found %d unique candidate images (requested %d)", len(unique), max_images)
+        return unique
 
-        for i, search_query in enumerate(search_variations):
-            try:
-                print(f"    Trying search variation {i+1}/{len(search_variations)}: '{search_query}'")
-                # Search for images
-                search_results = self._search_images(search_query, images_per_variation)
-                
-                if search_results:
-                    all_images.extend(search_results)
-                    print(f"      Found {len(search_results)} images")
-                    
-                    # If we have enough images, stop searching
-                    if len(all_images) >= max_images:
-                        break
-                else:
-                    print(f"      No images found")
-                
-                # Rate limiting between searches
-                time.sleep(random.uniform(0.5, 1.0))
-                
-            except Exception as e:
-                print(f"    Search error for '{search_query}': {e}")
-                continue
-        
-        # Remove duplicates and limit to max_images
-        unique_images = []
-        seen_urls = set()
-        
-        for img in all_images:
-            if img['url'] not in seen_urls:
-                unique_images.append(img)
-                seen_urls.add(img['url'])
-                
-                if len(unique_images) >= max_images:
-                    break
-        
-        print(f"    Found {len(unique_images)} unique images, filtered to {len(unique_images)}")
-        return unique_images
-    
-    # SerpAPI helper removed
-    
     def _download_images_robust(self, stock_code, images):
-        """Download images with retry logic and better error handling"""
-        downloaded_count = 0
-        
-        for i, image_info in enumerate(images):
+        downloaded = 0
+        for idx, info in enumerate(images, start=1):
+            url = info.get("url")
+            if not url:
+                continue
+            result = self._download_and_validate(url)
+            if not result:
+                logger.debug("Skipped invalid/duplicate image: %s", url)
+                continue
+            content_hash = result["hash"]
+            if content_hash in self._seen_hashes:
+                continue
+            filename, path = self._unique_filename(stock_code, downloaded + 1, result["ext"], content_hash)
             try:
-                url = image_info['url']
-                
-                # Skip certain problematic domains
-                if any(domain in url.lower() for domain in ['autozone.com', 'oreillyauto.com']):
-                    print(f"    Skipping problematic domain: {url}")
-                    continue
-                
-                # Download image with retry logic
-                success = self._download_single_image(stock_code, i+1, image_info)
-                if success:
-                    downloaded_count += 1
-                
-            except Exception as e:
-                print(f"    Download error for image {i+1}: {e}")
+                with open(path, "wb") as f:
+                    f.write(result["bytes"])
+                self._seen_hashes.add(content_hash)
                 self.results.append({
-                    'stock_code': stock_code,
-                    'filename': f"{stock_code}_{i+1}_failed",
-                    'url': image_info.get('url', ''),
-                    'title': image_info.get('title', ''),
-                    'source': image_info.get('source', ''),
-                    'status': 'failed'
+                    "stock_code": stock_code,
+                    "filename": filename,
+                    "url": url,
+                    "width": result["width"],
+                    "height": result["height"],
+                    "status": "success"
                 })
-        
-        return downloaded_count
-    
-    def _download_single_image(self, stock_code, image_num, image_info):
-        """Download a single image with retry logic"""
-        url = image_info['url']
-        max_retries = 3
-        
-        for attempt in range(max_retries):
+                downloaded += 1
+                logger.info("Saved %s -> %s (%dx%d)", url, filename, result["width"], result["height"])
+            except Exception as e:
+                logger.exception("Failed saving image %s: %s", path, e)
+            time.sleep(random.uniform(0.2, 0.6))
+        return downloaded
+
+    def scrape_product_images(self, csv_file_path, images_per_product=5):
+        if not self.serpapi_key:
+            logger.error("No SerpAPI key set. Set SERPAPI_API_KEY in environment.")
+            return pd.DataFrame()
+        logger.info("Starting scraping using SerpAPI. images_per_product=%d", images_per_product)
+        df = pd.read_csv(csv_file_path, dtype=str)
+        if "StockCode" not in df.columns:
+            logger.error("CSV missing 'StockCode' column.")
+            return pd.DataFrame()
+        df = df.drop_duplicates(subset=["StockCode"])
+        if "Description" not in df.columns or df["Description"].isna().all():
             try:
-                # Use different user agents to avoid blocking
-                user_agents = [
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
-                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                ]
-                
-                headers = {
-                    'User-Agent': random.choice(user_agents),
-                    'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.9',
-                    'Accept-Encoding': 'gzip, deflate, br',
-                    'Connection': 'keep-alive',
-                    'Upgrade-Insecure-Requests': '1'
-                }
-                
-                # Download image
-                response = requests.get(url, headers=headers, timeout=15, stream=True)
-                response.raise_for_status()
-                
-                # Check if it's actually an image
-                content_type = response.headers.get('content-type', '')
-                if not content_type.startswith('image/'):
-                    print(f"    Skipping non-image content: {content_type}")
-                    return False
-                
-                # Determine file extension
-                if 'jpeg' in content_type or 'jpg' in content_type:
-                    ext = '.jpg'
-                elif 'png' in content_type:
-                    ext = '.png'
-                elif 'webp' in content_type:
-                    ext = '.webp'
-                else:
-                    ext = '.jpg'  # Default
-                
-                # Save image
-                filename = f"{stock_code}_{image_num}{ext}"
-                filepath = os.path.join(self.download_dir, filename)
-                
-                with open(filepath, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        f.write(chunk)
-                
-                # Record result
-                self.results.append({
-                    'stock_code': stock_code,
-                    'filename': filename,
-                    'url': url,
-                    'title': image_info.get('title', ''),
-                    'source': image_info.get('source', ''),
-                    'status': 'success'
-                })
-                
-                return True
-                
-            except requests.exceptions.HTTPError as e:
-                if e.response.status_code == 403:
-                    print(f"    Access forbidden (403) for {url}, attempt {attempt + 1}/{max_retries}")
-                    if attempt < max_retries - 1:
-                        time.sleep(random.uniform(1, 3))
-                        continue
-                else:
-                    print(f"    HTTP error {e.response.status_code} for {url}")
-                return False
-                
+                main_df = pd.read_csv("data/dataset.csv", dtype=str, encoding="latin-1")
+                main_df = main_df.rename(columns={c: c.strip() for c in main_df.columns})
+                if "StockCode" in main_df.columns and "Description" in main_df.columns:
+                    merged = df.merge(main_df[["StockCode", "Description"]].drop_duplicates(), on="StockCode", how="left")
+                    merged = merged.dropna(subset=["Description"])
+                    df = merged
             except Exception as e:
-                print(f"    Download error (attempt {attempt + 1}/{max_retries}): {e}")
-                if attempt < max_retries - 1:
-                    time.sleep(random.uniform(1, 2))
-                    continue
-                return False
-        
-        return False
-    
+                logger.error("Could not load main dataset for descriptions: %s", e)
+                return pd.DataFrame()
+        if "Description" not in df.columns:
+            logger.error("No product descriptions available after merge.")
+            return pd.DataFrame()
+        total_images = 0
+        successful_products = 0
+        for i, row in df.iterrows():
+            stock_code = str(row["StockCode"]).strip()
+            product_name = row.get("Description", "")
+            if not product_name or stock_code == "":
+                logger.info("Skipping stock_code=%s (no description)", stock_code)
+                continue
+            if any(r.get("stock_code") == stock_code for r in self.results):
+                logger.info("Already processed %s", stock_code)
+                continue
+            logger.info("Processing product %d/%d: %s", i + 1, len(df), stock_code)
+            logger.info("Product name: %s", product_name)
+            try:
+                images = self._search_product_images_robust(product_name, max_images=images_per_product)
+                if images:
+                    downloaded_count = self._download_images_robust(stock_code, images)
+                    total_images += downloaded_count
+                    successful_products += 1 if downloaded_count > 0 else 0
+                    logger.info("Downloaded %d images for %s", downloaded_count, stock_code)
+                else:
+                    logger.info("No images found for %s", stock_code)
+            except Exception as e:
+                logger.exception("Error processing %s: %s", stock_code, e)
+            time.sleep(random.uniform(1.0, 2.0))
+        logger.info("Scraping completed: processed %d/%d products, total images %d", successful_products, len(df), total_images)
+        results_df = pd.DataFrame(self.results)
+        if not results_df.empty:
+            results_path = os.path.join(self.download_dir, "scraping_results.csv")
+            results_df.to_csv(results_path, index=False)
+            logger.info("Results saved to: %s", results_path)
+        return results_df
+
     def cleanup(self):
-        """Clean up resources"""
-        pass  # No cleanup needed for SerpAPI
+        pass
