@@ -229,6 +229,15 @@ class AppService:
                 # Build the query text for semantic search
                 query_text = predicted_label or mapped_description or str(predicted_class)
                 
+                # Guard against noisy predictions (e.g., MISSING, MIXED UP)
+                if re.search(r"\b(MISSING|MIXED\s*UP|UNKNOWN|N/?A|POSTAGE|CARRIAGE|SAMPLE|DAMAGED|BROKEN)\b", query_text, re.IGNORECASE):
+                    return {
+                        "products": [],
+                        "response": "No products found.",
+                        "predicted_class": predicted_class,
+                        "predicted_label": predicted_label or mapped_description or "",
+                        "confidence": round(float(confidence), 3)
+                    }
                 # Search for similar products using the query text
                 products = self.data_service.search_products(query_text, top_k=5)
                 
