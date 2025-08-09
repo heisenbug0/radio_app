@@ -712,14 +712,12 @@ class CNNModelService:
     # Zero-shot helpers (Hugging Face Inference API)
     # -------------------------
     def _prepare_label_set(self, csv_file_path=None):
-        """Build a list of human-readable labels (descriptions) used as candidate labels for zero-shot."""
+        """Build a list of concise human-readable labels used as candidate labels for zero-shot."""
         self._descriptions = []
-        # Prefer provided CSV; otherwise skip (UI still works but with no candidate labels)
         if csv_file_path and os.path.exists(csv_file_path):
             df = pd.read_csv(csv_file_path, dtype=str)
             if "StockCode" in df.columns:
                 df = df.drop_duplicates(subset=["StockCode"])  # one per product
-                # Enrich with descriptions from main dataset
                 try:
                     main_df = pd.read_csv("data/dataset.csv", dtype=str, encoding="latin-1")
                     main_df = main_df.rename(columns={c: c.strip() for c in main_df.columns})
@@ -727,12 +725,19 @@ class CNNModelService:
                         df = df.merge(main_df[["StockCode", "Description"]].drop_duplicates(), on="StockCode", how="left")
                 except Exception:
                     pass
+                def _clean_desc(txt: str) -> str:
+                    import re
+                    t = (txt or "").upper().strip()
+                    t = re.sub(r"[^A-Z0-9\s]", " ", t)
+                    t = re.sub(r"\s+", " ", t).strip()
+                    words = [w for w in t.split() if len(w) > 2 and not w.isdigit()]
+                    return " ".join(words[:4]) if words else (t[:40] if t else "")
                 descs = []
                 for _, row in df.iterrows():
-                    desc = str(row.get("Description", "")).strip()
-                    if desc:
-                        descs.append(desc)
-                # Deduplicate and keep order
+                    raw = row.get("Description", "")
+                    cleaned = _clean_desc(str(raw))
+                    if cleaned:
+                        descs.append(cleaned)
                 seen = set()
                 clean = []
                 for d in descs:
@@ -740,7 +745,6 @@ class CNNModelService:
                         seen.add(d)
                         clean.append(d)
                 self._descriptions = clean
-        # Update class_names to mirror labels for consistency with tests
         self.class_names = list(self._descriptions)
         try:
             if self.class_names:
@@ -789,21 +793,16 @@ class CNNModelService:
         import base64
         import requests
 
-        # Ensure label mappings are ready
         if not self._descriptions:
             self._prepare_label_set(self._csv_default if os.path.exists(self._csv_default) else None)
 
-        # Candidate labels are product descriptions
         candidate_labels = list(self._descriptions)
-        # Cap to avoid oversized payloads
         max_labels = int(os.getenv("HF_MAX_CANDIDATE_LABELS", "100"))
         if len(candidate_labels) > max_labels:
             candidate_labels = candidate_labels[:max_labels]
         if not candidate_labels:
-            # Nothing to classify against
             return {"predicted_class": "Unknown", "confidence": 0.0, "top_3_predictions": []}
 
-        # Encode image as data URL
         try:
             with open(image_path, "rb") as f:
                 b64 = base64.b64encode(f.read()).decode("utf-8")
@@ -812,57 +811,52 @@ class CNNModelService:
                 mime = "image/png"
             data_url = f"data:{mime};base64,{b64}"
         except Exception:
-            return None
+            return {"predicted_class": "Unknown", "confidence": 0.0, "top_3_predictions": []}
 
-        # Build request
-        url = f"https://api-inference.huggingface.co/models/{self.zero_shot_model}"
         headers = {"Accept": "application/json"}
         if self.hf_token:
             headers["Authorization"] = f"Bearer {self.hf_token}"
-        payload = {
-            "inputs": {
-                "image": data_url
-            },
-            "parameters": {
-                "candidate_labels": candidate_labels
-            },
-            "options": {"wait_for_model": True}
-        }
 
-        try:
-            resp = requests.post(url, headers=headers, json=payload, timeout=60)
-            if resp.status_code >= 400:
-                # Try the pipeline endpoint as a fallback
-                url2 = "https://api-inference.huggingface.co/pipeline/zero-shot-image-classification"
-                resp = requests.post(url2, headers=headers, json=payload, timeout=60)
-            resp.raise_for_status()
-            data = resp.json()
-            # Responses can be list of {label, score} or dict with 'labels'/'scores'
-            predictions = []
-            if isinstance(data, list):
-                for item in data:
+        def parse_response(resp_json):
+            preds = []
+            if isinstance(resp_json, list):
+                for item in resp_json:
                     label = item.get("label")
                     score = float(item.get("score", 0.0))
-                    predictions.append((label, score))
-            elif isinstance(data, dict):
-                labels = data.get("labels", [])
-                scores = data.get("scores", [])
-                predictions = list(zip(labels, [float(s) for s in scores]))
-            else:
-                predictions = []
+                    if label:
+                        preds.append((label, score))
+            elif isinstance(resp_json, dict):
+                labels = resp_json.get("labels", []) or resp_json.get("candidate_labels", [])
+                scores = resp_json.get("scores", [])
+                if labels and scores:
+                    preds = list(zip(labels, [float(s) for s in scores]))
+            return preds
+
+        payloads = [
+            {"url": "https://api-inference.huggingface.co/pipeline/zero-shot-image-classification",
+             "json": {"inputs": {"image": data_url}, "parameters": {"candidate_labels": candidate_labels}, "options": {"wait_for_model": True}}},
+            {"url": "https://api-inference.huggingface.co/pipeline/zero-shot-image-classification",
+             "json": {"inputs": {"image": data_url, "candidate_labels": candidate_labels}, "options": {"wait_for_model": True}}},
+            {"url": f"https://api-inference.huggingface.co/models/{self.zero_shot_model}",
+             "json": {"inputs": {"image": data_url}, "parameters": {"candidate_labels": candidate_labels}, "options": {"wait_for_model": True}}},
+        ]
+
+        try:
+            predictions = []
+            for item in payloads:
+                r = requests.post(item["url"], headers=headers, json=item["json"], timeout=60)
+                if r.status_code >= 400:
+                    continue
+                data = r.json()
+                predictions = parse_response(data)
+                if predictions:
+                    break
             if not predictions:
-                return None
-            # Map back to stock codes when possible
+                return {"predicted_class": "Unknown", "confidence": 0.0, "top_3_predictions": []}
             top = sorted(predictions, key=lambda x: x[1], reverse=True)[:3]
-            top3 = []
-            for label, score in top:
-                top3.append({"class": label, "confidence": float(score), "label": label})
+            top3 = [{"class": lbl, "confidence": float(scr), "label": lbl} for lbl, scr in top]
             predicted_class = top3[0]["class"]
             confidence = top3[0]["confidence"]
-            return {
-                "predicted_class": predicted_class,
-                "confidence": confidence,
-                "top_3_predictions": top3
-            }
+            return {"predicted_class": predicted_class, "confidence": confidence, "top_3_predictions": top3}
         except Exception:
-            return None
+            return {"predicted_class": "Unknown", "confidence": 0.0, "top_3_predictions": []}
