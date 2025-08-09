@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import requests
 from typing import List, Tuple
+from dotenv import load_dotenv
+load_dotenv()
 
 class MultimodalSearchService:
     def __init__(self, products_df: pd.DataFrame, cache_dir: str = "models"):
