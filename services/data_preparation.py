@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import re
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+import unicodedata
 
 load_dotenv()
 
@@ -38,23 +39,57 @@ class DataPreparationService:
         except Exception as e:
             print(f"Warning: Pinecone initialization failed: {e}. Using local storage only.")
     
+    def _normalize_ascii(self, text: str) -> str:
+        if not isinstance(text, str):
+            text = str(text) if text is not None else ""
+        # Normalize unicode and strip to ASCII
+        text = unicodedata.normalize('NFKD', text)
+        text = text.encode('ascii', 'ignore').decode('ascii')
+        return text
+    
     def clean_dataset(self, file_path):
         print("Loading and cleaning dataset...")
-        df = pd.read_csv(file_path)
+        # Use latin-1 to avoid decode errors from source file
+        df = pd.read_csv(file_path, encoding='latin-1')
         df = df.drop_duplicates()
-        df['StockCode'] = df['StockCode'].astype(str).str.strip()
-        df['StockCode'] = df['StockCode'].apply(lambda x: re.sub(r'[^\w\s-]', '', x))
-        df['Description'] = df['Description'].astype(str).str.strip()
-        df['Description'] = df['Description'].apply(lambda x: re.sub(r'[^\w\s-]', '', x))
-        df['Description'] = df['Description'].fillna('Unknown Product')
-        df['StockCode'] = df['StockCode'].fillna('UNKNOWN')
-        df = df[df['Description'].str.len() > 0]
-        df['UnitPrice'] = pd.to_numeric(df['UnitPrice'], errors='coerce').fillna(0.0)
-        df['Quantity'] = pd.to_numeric(df['Quantity'], errors='coerce').fillna(0)
+
+        # Normalize and clean stock codes and descriptions
+        df['StockCode'] = df['StockCode'].astype(str).map(self._normalize_ascii).str.strip()
+        df['StockCode'] = df['StockCode'].apply(lambda x: re.sub(r'[^A-Za-z0-9_-]', '', x))
+        df['Description'] = df['Description'].astype(str).map(self._normalize_ascii).str.strip()
+        df['Description'] = df['Description'].apply(lambda x: re.sub(r'[^A-Za-z0-9\s-]', ' ', x))
+        df['Description'] = df['Description'].apply(lambda x: re.sub(r'\s+', ' ', x).strip())
+
+        # Standardize case for semantic matching
+        df['Description'] = df['Description'].str.upper()
+
+        # Remove rows with noisy or missing descriptions
+        noise_patterns = [
+            r'^MISSING$', r'^MIXED\s*UP$', r'^UNKNOWN$', r'^UNKWN$', r'^NA$', r'^N/A$',
+            r'^POSTAGE$', r'^CARRIAGE$', r'^SAMPLE$', r'^DAMAGED$', r'^BROKEN$'
+        ]
+        noise_regex = re.compile('|'.join(noise_patterns))
+        df = df[~df['Description'].fillna('').apply(lambda t: bool(noise_regex.search(t)))]
+
+        # Keep descriptions that contain at least one letter
+        df = df[df['Description'].str.contains(r'[A-Z]', regex=True, na=False)]
+        # Minimum useful description length
+        df = df[df['Description'].str.len() >= 3]
+
+        # Quantities and prices: keep only positive to avoid returns/credits noise
+        df['UnitPrice'] = pd.to_numeric(df['UnitPrice'], errors='coerce')
+        df['Quantity'] = pd.to_numeric(df['Quantity'], errors='coerce')
+        df = df[(df['Quantity'] > 0) & (df['UnitPrice'] > 0)]
+
+        # Drop empty stock codes
+        df = df[df['StockCode'].str.len() > 0]
+
+        # Aggregate
         self.products_df = df.groupby(['StockCode', 'Description']).agg({
             'UnitPrice': 'mean',
             'Quantity': 'sum'
         }).reset_index()
+
         print(f"Cleaned dataset: {len(self.products_df)} unique products")
         return self.products_df
     
