@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 class WebScrapingService:
     def __init__(self, serpapi_key=None, download_dir="data/scraped_images", min_width=200, min_height=200, per_request_min=3):
         self.serpapi_key = serpapi_key or os.getenv("SERPAPI_API_KEY")
+        self.pixabay_key = os.getenv("PIXABAY_API_KEY")
         self.download_dir = download_dir
         self.results = []
         self._seen_urls = set()
@@ -62,6 +63,40 @@ class WebScrapingService:
             return images
         except Exception as e:
             logger.exception("SerpAPI search error: %s", e)
+            return []
+
+    def search_images_pixabay(self, query, count=10):
+        if not self.pixabay_key:
+            logger.warning("Pixabay key missing.")
+            return []
+        safe_query = (query or "").strip()[:200]
+        params = {
+            "key": self.pixabay_key,
+            "q": safe_query,
+            "image_type": "photo",
+            "per_page": max(self.per_request_min, min(int(count), 200)),
+            "safesearch": "true",
+            "order": "popular",
+        }
+        try:
+            logger.info("Pixabay search: q=%s per_page=%d", safe_query, params["per_page"])
+            r = requests.get("https://pixabay.com/api/", params=params, timeout=15)
+            if r.status_code != 200:
+                logger.warning("Pixabay returned %s: %s", r.status_code, r.text[:300])
+                return []
+            data = r.json()
+            hits = data.get("hits", [])
+            images = []
+            for h in hits:
+                url = h.get("largeImageURL") or h.get("webformatURL") or h.get("previewURL")
+                width = h.get("imageWidth") or h.get("webformatWidth") or 0
+                height = h.get("imageHeight") or h.get("webformatHeight") or 0
+                if url:
+                    images.append({"url": url, "title": h.get("tags", ""), "width": width, "height": height})
+            logger.info("Pixabay returned %d image candidates", len(images))
+            return images
+        except Exception as e:
+            logger.exception("Pixabay search error: %s", e)
             return []
 
     def _clean_product_name(self, product_name):
@@ -136,7 +171,15 @@ class WebScrapingService:
         images_per_variation = max(self.per_request_min, math.ceil(max(1, max_images) / max(1, len(variations))))
         collected = []
         for q in variations:
-            found = self.search_images_serpapi(q, images_per_variation)
+            found = []
+            # Prefer SerpAPI if available, else Pixabay
+            if self.serpapi_key:
+                found = self.search_images_serpapi(q, images_per_variation)
+            elif self.pixabay_key:
+                found = self.search_images_pixabay(q, images_per_variation)
+            else:
+                logger.error("No image search API key provided. Set SERPAPI_API_KEY or PIXABAY_API_KEY in env.")
+                return []
             if found:
                 for f in found:
                     u = f.get("url")
@@ -194,10 +237,11 @@ class WebScrapingService:
         return downloaded
 
     def scrape_product_images(self, csv_file_path, images_per_product=5):
-        if not self.serpapi_key:
-            logger.error("No SerpAPI key set. Set SERPAPI_API_KEY in environment.")
+        if not (self.serpapi_key or self.pixabay_key):
+            logger.error("No image API key set. Set SERPAPI_API_KEY or PIXABAY_API_KEY in environment.")
             return pd.DataFrame()
-        logger.info("Starting scraping using SerpAPI. images_per_product=%d", images_per_product)
+        logger.info("Starting scraping using %s. images_per_product=%d",
+                    "SerpAPI" if self.serpapi_key else "Pixabay", images_per_product)
         df = pd.read_csv(csv_file_path, dtype=str)
         if "StockCode" not in df.columns:
             logger.error("CSV missing 'StockCode' column.")

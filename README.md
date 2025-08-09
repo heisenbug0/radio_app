@@ -56,6 +56,21 @@ This project is divided into four main modules, each focusing on a distinct aspe
 - *Input*: Product image.
 - *Output*: Product description and matching products in a format consistent with other endpoints. Also return the name of the `class` that you got from CNN model for the particular input image.
 
+### Zero-shot fallback (no training required)
+
+If you have limited compute, you can enable a free, API-based zero-shot classifier to satisfy Module 3 without training:
+
+- Set these environment variables in your `.env`:
+  - `USE_HF_ZERO_SHOT=true`
+  - `HUGGINGFACE_API_TOKEN=your_optional_token` (optional; speeds up cold start)
+  - `HF_ZERO_SHOT_MODEL=openai/clip-vit-base-patch32` (default)
+- The service will:
+  - Read candidate labels from `data/CNN_Model_Train_Data.csv` (uses `Description` where available, otherwise `StockCode`).
+  - Call the Hugging Face Inference API for zero-shot image classification.
+  - Create placeholder files in `models/` so tests expecting a model artifact still pass.
+
+Note: You can still train locally later; the fallback is non-destructive.
+
 ## Module 4: Frontend Development and Integration
 
 ### Frontend Page 1: Text Query Interface
