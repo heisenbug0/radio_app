@@ -15,7 +15,8 @@ class MultimodalSearchService:
         self.cache_dir = cache_dir
         os.makedirs(self.cache_dir, exist_ok=True)
         self.hf_token = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_API_TOKEN")
-        self.clip_model = os.getenv("HF_CLIP_MODEL", os.getenv("HF_ZERO_SHOT_MODEL", "openai/clip-vit-base-patch32"))
+        # Use a non-provider CLIP model by default
+        self.clip_model = os.getenv("HF_CLIP_MODEL", os.getenv("HF_ZERO_SHOT_MODEL", "laion/CLIP-ViT-B-32-laion2B-s34B-b79K"))
         self.text_emb_path = os.path.join(self.cache_dir, f"clip_text_embeddings.npy")
         self.text_ids_path = os.path.join(self.cache_dir, f"clip_text_ids.json")
         self.text_embeddings = None

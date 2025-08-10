@@ -6,8 +6,8 @@ from typing import List, Dict
 class ImageCaptionService:
     def __init__(self):
         self.hf_token = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_API_TOKEN")
-        # Default to a widely available caption model on HF
-        self.model_id = os.getenv("HF_IMAGE_CAPTION_MODEL", "nlpconnect/vit-gpt2-image-captioning")
+        # Default to a non-provider caption model
+        self.model_id = os.getenv("HF_IMAGE_CAPTION_MODEL", "Salesforce/blip-image-captioning-base")
         self.timeout = float(os.getenv("HF_TIMEOUT", "60"))
 
     def _headers(self) -> Dict[str, str]:
@@ -27,19 +27,16 @@ class ImageCaptionService:
         except Exception as e:
             return {"success": False, "error": f"read_error: {e}", "caption": ""}
 
-        # Prefer pipeline endpoint with top-level model
         url = "https://api-inference.huggingface.co/pipeline/image-to-text"
         payload = {"model": self.model_id, "inputs": data_url, "parameters": {"max_new_tokens": 32}, "options": {"wait_for_model": True}}
         try:
             r = requests.post(url, headers=self._headers(), json=payload, timeout=self.timeout)
             if r.status_code >= 400:
-                # Fallback to model endpoint
                 url2 = f"https://api-inference.huggingface.co/models/{self.model_id}"
                 payload2 = {"inputs": data_url, "parameters": {"max_new_tokens": 32}, "options": {"wait_for_model": True}}
                 r = requests.post(url2, headers=self._headers(), json=payload2, timeout=self.timeout)
             r.raise_for_status()
             data = r.json()
-            # Data often is a list like [{"generated_text": "..."}]
             text = ""
             if isinstance(data, list) and data:
                 item = data[0]
