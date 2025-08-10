@@ -54,10 +54,16 @@ class MultimodalSearchService:
         raise RuntimeError("HTTP request failed")
 
     def _feature_extraction_text(self, texts: List[str]) -> np.ndarray:
+        # Prefer pipeline endpoint with model specified at top level of payload
         url = "https://api-inference.huggingface.co/pipeline/feature-extraction"
-        payload = {"inputs": texts, "options": {"wait_for_model": True}, "parameters": {"model": self.clip_model}}
+        payload = {"model": self.clip_model, "inputs": texts, "options": {"wait_for_model": True}}
         r = self._post_json(url, payload)
         if r.status_code >= 400:
+            try:
+                print(f"[HF_TEXT_ERR] pipeline status={r.status_code} body={r.text[:200]}")
+            except Exception:
+                pass
+            # Fallback to model endpoint
             url2 = f"https://api-inference.huggingface.co/models/{self.clip_model}"
             payload2 = {"inputs": texts, "options": {"wait_for_model": True}}
             r = self._post_json(url2, payload2)
@@ -66,6 +72,8 @@ class MultimodalSearchService:
         arr = np.array(data)
         if arr.ndim == 3:
             arr = arr.mean(axis=1)
+        if arr.ndim == 1:
+            arr = arr.reshape(1, -1)
         return arr.astype(np.float32)
 
     def _feature_extraction_image(self, image_path: str) -> np.ndarray:
@@ -76,9 +84,13 @@ class MultimodalSearchService:
             mime = "image/png"
         data_url = f"data:{mime};base64,{b64}"
         url = "https://api-inference.huggingface.co/pipeline/image-feature-extraction"
-        payload = {"inputs": data_url, "options": {"wait_for_model": True}, "parameters": {"model": self.clip_model}}
+        payload = {"model": self.clip_model, "inputs": data_url, "options": {"wait_for_model": True}}
         r = self._post_json(url, payload)
         if r.status_code >= 400:
+            try:
+                print(f"[HF_IMG_ERR] pipeline status={r.status_code} body={r.text[:200]}")
+            except Exception:
+                pass
             url2 = f"https://api-inference.huggingface.co/models/{self.clip_model}"
             payload2 = {"inputs": {"image": data_url}, "options": {"wait_for_model": True}}
             r = self._post_json(url2, payload2)
@@ -127,7 +139,11 @@ class MultimodalSearchService:
             try:
                 emb = self._feature_extraction_text(batch)
                 all_emb.append(emb)
-            except Exception:
+            except Exception as e:
+                try:
+                    print(f"[HF_TEXT_BATCH_FAIL] i={i} err={e}")
+                except Exception:
+                    pass
                 time.sleep(self.retry_sleep)
                 continue
         if not all_emb:
@@ -162,5 +178,9 @@ class MultimodalSearchService:
                     "similarity_score": float(sims[idx])
                 })
             return results
-        except Exception:
+        except Exception as e:
+            try:
+                print(f"[MM_ERR] {e}")
+            except Exception:
+                pass
             return []
