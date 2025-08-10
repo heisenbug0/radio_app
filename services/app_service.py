@@ -27,14 +27,14 @@ class AppService:
                 self.data_service.clean_dataset(dataset_path)
                 self.data_service.create_product_vectors()
                 self.data_service.upload_to_pinecone()
-                # Initialize multimodal search with CLIP embeddings
-                from .multimodal_search import MultimodalSearchService
+                # Initialize local multimodal search with CLIP embeddings
                 try:
-                    self.mm_service = MultimodalSearchService(self.data_service.products_df)
+                    from .local_multimodal_search import LocalMultimodalSearchService
+                    self.mm_service = LocalMultimodalSearchService(self.data_service.products_df)
                     self.mm_service.build_or_load_text_embeddings()
-                    print("Data preparation + multimodal search initialized successfully")
+                    print("Data preparation + local multimodal search initialized successfully")
                 except Exception as mm_err:
-                    print(f"Warning: Multimodal search initialization failed: {mm_err}. Continuing without it.")
+                    print(f"Warning: Local multimodal search initialization failed: {mm_err}. Continuing without it.")
             else:
                 print("Warning: Dataset file not found. Data preparation service will not be available.")
             

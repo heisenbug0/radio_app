@@ -19,3 +19,5 @@ google-cloud-vision
 easyocr
 sentence-transformers==2.2.2
 huggingface-hub==0.19.3
+torch>=2.2.0
+torchvision>=0.17.0
