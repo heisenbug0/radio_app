@@ -232,20 +232,13 @@ class AppService:
                         }
                     else:
                         print("[MM_EMPTY] No multimodal matches for image.")
-                        # Optionally also log zero-shot labels for diagnosis
-                        if os.getenv('LOG_ZERO_SHOT_LABELS', 'false').lower() in {'1','true','yes'}:
-                            try:
-                                zs = self.cnn_service.predict_product(temp_path)
-                                print("[ZS_TOP3] ", zs.get('top_3_predictions'))
-                            except Exception:
-                                pass
-                        return {
-                            "products": [],
-                            "response": "No products found.",
-                            "predicted_class": "Unknown",
-                            "predicted_label": "",
-                            "confidence": 0.0,
-                        }
+                        # Also log zero-shot labels for diagnosis
+                        try:
+                            zs = self.cnn_service.predict_product(temp_path)
+                            print("[ZS_TOP3] ", zs.get('top_3_predictions'))
+                        except Exception:
+                            pass
+                        # Continue to zero-shot fallback below instead of returning immediately
 
                 # Fallback: previous zero-shot label->semantic search path
                 prediction_result = self.cnn_service.predict_product(temp_path)
@@ -303,6 +296,11 @@ class AppService:
                         "confidence": round(float(confidence), 3)
                     }
                 else:
+                    # Log that semantic search found no matches for the label
+                    try:
+                        print(f"[ZS_NO_MATCH] query_text='{query_text}'")
+                    except Exception:
+                        pass
                     return {
                         "products": [],
                         "response": "No products found.",
