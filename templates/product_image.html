@@ -263,7 +263,6 @@
                 <div class="prediction-title">Product Prediction:</div>
                 <div class="prediction-text">
                     <strong>Class:</strong> <span id="predictedClass">Unknown</span><br>
-                    <strong>Confidence:</strong> <span class="confidence" id="confidence">0%</span>
                 </div>
             </div>
             
@@ -371,32 +370,28 @@
         
         function displayResults(result) {
             document.getElementById('predictedClass').textContent = result.predicted_class || 'Unknown';
-            document.getElementById('confidence').textContent = `${(result.confidence * 100).toFixed(1)}%`;
             document.getElementById('responseText').textContent = result.response;
             
-            const tbody = document.getElementById('productsTableBody');
-            tbody.innerHTML = '';
-            
+            const tableBody = document.querySelector('#productsTable tbody');
+            tableBody.innerHTML = '';
             if (result.products && result.products.length > 0) {
-                result.products.forEach(product => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${product.rank}</td>
-                        <td>${product.stock_code}</td>
-                        <td>${product.description}</td>
-                        <td>$${product.unit_price.toFixed(2)}</td>
-                        <td>${product.quantity}</td>
-                        <td>${product.similarity_score}</td>
+                result.products.forEach(p => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${p.rank}</td>
+                        <td>${p.stock_code}</td>
+                        <td>${p.description}</td>
+                        <td>${p.unit_price}</td>
+                        <td>${p.quantity}</td>
+                        <td>${p.similarity_score}</td>
                     `;
-                    tbody.appendChild(row);
+                    tableBody.appendChild(tr);
                 });
             } else {
-                const row = document.createElement('tr');
-                row.innerHTML = '<td colspan="6" style="text-align: center; color: #666;">No products found</td>';
-                tbody.appendChild(row);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="6" class="no-results">No products found.</td>`;
+                tableBody.appendChild(tr);
             }
-            
-            document.getElementById('results').style.display = 'block';
         }
     </script>
 </body>
