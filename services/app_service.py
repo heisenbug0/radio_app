@@ -229,8 +229,6 @@ class AppService:
                             ],
                             "response": "Results:",
                             "predicted_class": products[0]["description"],
-                            "predicted_label": products[0]["description"],
-                            "confidence": round(float(products[0]["similarity_score"]), 3),
                         }
                     else:
                         print("[MM_EMPTY] No multimodal matches for image.")
@@ -258,8 +256,6 @@ class AppService:
                                     ],
                                     "response": "Results:",
                                     "predicted_class": caption_text,
-                                    "predicted_label": caption_text,
-                                    "confidence": 0.0,
                                 }
                         # Also log zero-shot labels for diagnosis
                         try:
@@ -300,9 +296,7 @@ class AppService:
                     return {
                         "products": [],
                         "response": "No products found.",
-                        "predicted_class": predicted_class,
-                        "predicted_label": predicted_label or mapped_description or "",
-                        "confidence": round(float(confidence), 3)
+                        "predicted_class": predicted_class
                     }
                 products = self.data_service.search_products(query_text, top_k=5)
                 if products:
@@ -321,8 +315,6 @@ class AppService:
                         "products": formatted_products,
                         "response": "Results:",
                         "predicted_class": predicted_class,
-                        "predicted_label": predicted_label or mapped_description or "",
-                        "confidence": round(float(confidence), 3)
                     }
                 else:
                     # Log that semantic search found no matches for the label
@@ -333,9 +325,7 @@ class AppService:
                     return {
                         "products": [],
                         "response": "No products found.",
-                        "predicted_class": predicted_class,
-                        "predicted_label": predicted_label or mapped_description or "",
-                        "confidence": round(float(confidence), 3)
+                        "predicted_class": predicted_class
                     }
                     
             finally:
@@ -347,6 +337,5 @@ class AppService:
             return {
                 "products": [],
                 "response": f"An error occurred while processing the product image: {str(e)}",
-                "predicted_class": "Unknown",
-                "confidence": 0.0
+                "predicted_class": "Unknown"
             }
