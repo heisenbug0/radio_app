@@ -1,6 +1,7 @@
 from .data_preparation import DataPreparationService
 from .ocr_service import OCRService
 from .cnn_model import CNNModelService
+from .image_caption_service import ImageCaptionService
 import os
 import tempfile
 import re
@@ -11,6 +12,7 @@ class AppService:
         self.ocr_service = OCRService()
         self.cnn_service = CNNModelService()
         self.mm_service = None
+        self.caption_service = ImageCaptionService()
         self.initialize_services()
     
     def initialize_services(self):
@@ -232,6 +234,33 @@ class AppService:
                         }
                     else:
                         print("[MM_EMPTY] No multimodal matches for image.")
+                        # Try image caption -> semantic search as documented
+                        cap = self.caption_service.caption(temp_path)
+                        if cap.get("success") and cap.get("caption"):
+                            caption_text = cap["caption"].strip()
+                            try:
+                                print(f"[CAPTION] {caption_text}")
+                            except Exception:
+                                pass
+                            products = self.data_service.search_products(caption_text, top_k=5)
+                            if products:
+                                return {
+                                    "products": [
+                                        {
+                                            "rank": i,
+                                            "stock_code": p['stock_code'],
+                                            "description": p['description'],
+                                            "unit_price": p['unit_price'],
+                                            "quantity": p['quantity'],
+                                            "similarity_score": round(p['similarity_score'], 3),
+                                        }
+                                        for i, p in enumerate(products, 1)
+                                    ],
+                                    "response": "Results:",
+                                    "predicted_class": caption_text,
+                                    "predicted_label": caption_text,
+                                    "confidence": 0.0,
+                                }
                         # Also log zero-shot labels for diagnosis
                         try:
                             zs = self.cnn_service.predict_product(temp_path)
