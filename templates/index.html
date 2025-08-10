@@ -270,7 +270,6 @@
             </div>
             
             <div class="results-section" id="productResultsSection">
-                <div class="confidence-info" id="confidenceInfo"></div>
                 <h4 id="productResponseText"></h4>
                 <table class="product-table" id="productProductTable">
                     <thead>
@@ -283,8 +282,7 @@
                             <th>Score</th>
                         </tr>
                     </thead>
-                    <tbody id="productProductTableBody">
-                    </tbody>
+                    <tbody id="productProductsTableBody"></tbody>
                 </table>
             </div>
         </div>
@@ -449,37 +447,28 @@
         }
         
         function displayProductResults(data) {
-            if (data.predicted_class && data.confidence) {
-                document.getElementById('confidenceInfo').innerHTML = 
-                    `<strong>Identified Product:</strong> ${data.predicted_class}<br>
-                     <strong>Confidence:</strong> ${(data.confidence * 100).toFixed(1)}%`;
-            }
-            
-            document.getElementById('productResponseText').innerHTML = data.response || 'Products found:';
-            document.getElementById('productResponseText').className = data.products && data.products.length > 0 ? 'success' : 'error';
-            
-            const tableBody = document.getElementById('productProductTableBody');
-            tableBody.innerHTML = '';
-            
-            if (data.products && data.products.length > 0) {
-                data.products.forEach(product => {
-                    const row = tableBody.insertRow();
-                    row.insertCell(0).textContent = product.rank || '-';
-                    row.insertCell(1).textContent = product.stock_code || '-';
-                    row.insertCell(2).textContent = product.description || '-';
-                    row.insertCell(3).textContent = product.unit_price || '-';
-                    row.insertCell(4).textContent = product.quantity || '-';
-                    row.insertCell(5).textContent = product.similarity_score || '-';
+            const productsBody = document.getElementById('productProductsTableBody');
+            const responseText = document.getElementById('productResponseText');
+            productsBody.innerHTML = '';
+            responseText.textContent = data.response || '';
+            if (data.products && data.products.length) {
+                data.products.forEach(p => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${p.rank}</td>
+                        <td>${p.stock_code}</td>
+                        <td>${p.description}</td>
+                        <td>${p.unit_price}</td>
+                        <td>${p.quantity}</td>
+                        <td>${p.similarity_score}</td>
+                    `;
+                    productsBody.appendChild(tr);
                 });
             } else {
-                const row = tableBody.insertRow();
-                row.insertCell(0).colSpan = 6;
-                row.cells[0].textContent = 'No similar products found';
-                row.cells[0].style.textAlign = 'center';
-                row.cells[0].style.color = '#666';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="6" style="text-align:center;color:#666;">No products found.</td>`;
+                productsBody.appendChild(tr);
             }
-            
-            document.getElementById('productResultsSection').style.display = 'block';
         }
         
         // File Upload Handlers
