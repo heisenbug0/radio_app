@@ -1,0 +1,27 @@
+.navlink_label {
+    font-family: 'Nunito_sans_semibold';
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 20px;
+    letter-spacing: 0em;
+    text-align: left;
+    text-transform: capitalize;
+    color: var(--light_1);
+}
+
+.navlink_body {
+    border-radius: 8px;
+}
+
+.navlink_body:hover {
+    background-color: var(--dark_1);
+}
+
+.box_width {
+    width: 100%;
+    max-width: 300px;
+}
+
+.divider_color {
+    border: 2px solid var(--dark_0)
+}
