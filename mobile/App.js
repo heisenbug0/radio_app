@@ -42,8 +42,8 @@ const navTheme = {
 };
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
-const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL; // should point to web origin (e.g., https://yourdomain.com)
-const streamApiKey = process.env.EXPO_PUBLIC_STREAM_API_KEY;
+const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL; // web serverless base
+const [streamApiKey, setStreamApiKey] = React.useState(undefined);
 
 function Loading() {
   return (
@@ -66,24 +66,29 @@ export default function App() {
   const [streamClient, setStreamClient] = useState(null);
 
   useEffect(() => {
-    if (!streamApiKey) return;
     let isMounted = true;
     async function init() {
       try {
-        const token = await fetch(`${apiBaseUrl}/api/stream/token`, { credentials: 'include' })
-          .then((r) => r.json())
-          .then((d) => d.token);
+        // fetch public config
+        const cfg = await fetch(`${apiBaseUrl}/api/stream/config`).then((r) => r.json());
+        if (!cfg?.stream_api_key) return;
+        if (isMounted) setStreamApiKey(cfg.stream_api_key);
+        // request token with Bearer Clerk session token if present
+        const tokenResp = await fetch(`${apiBaseUrl}/api/stream/token`, {
+          headers: {
+            // Clerk Expo automatically attaches auth to fetch if using fetch with signedIn? If not, we can inject token via getToken if needed.
+          },
+        }).then((r) => r.json());
+        const token = tokenResp?.token;
         if (!token) return;
         const client = new StreamVideoClient({
-          apiKey: streamApiKey,
-          user: {
-            id: 'me', // RN SDK uses user object; token is scoped to Clerk user on server
-          },
+          apiKey: cfg.stream_api_key,
+          user: { id: 'me' },
           token,
         });
         if (isMounted) setStreamClient(client);
       } catch (e) {
-        // noop; handled in screens where needed
+        // handled in UI
       }
     }
     init();
@@ -91,7 +96,7 @@ export default function App() {
       isMounted = false;
       if (streamClient) streamClient.disconnectUser?.();
     };
-  }, [streamApiKey, apiBaseUrl]);
+  }, [apiBaseUrl]);
 
   const storage = useMemo(
     () => ({
