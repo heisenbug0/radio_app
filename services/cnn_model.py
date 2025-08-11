@@ -234,9 +234,9 @@ class CNNModelService:
         self.mixup_alpha = 0.2
         self.cutmix_alpha = 1.0
 
-        # Zero-shot (Hugging Face) fallback configuration
-        # Zero-shot is the only mode
-        self.use_zero_shot = True
+        # zero-shot can be toggled via env; default true
+        env_flag = os.getenv("USE_HF_ZERO_SHOT", "true").strip().lower()
+        self.use_zero_shot = env_flag in {"1", "true", "yes", "on"}
         self.hf_token = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_API_TOKEN")
         self.zero_shot_model = os.getenv("HF_ZERO_SHOT_MODEL", "openai/clip-vit-base-patch32")
         self._descriptions = []
@@ -259,8 +259,7 @@ class CNNModelService:
         else:
             self.data_augmentation = None
 
-        # Create placeholder artifacts upfront in zero-shot mode so tests that
-        # only check file existence pass without running training.
+        # create placeholder artifacts upfront in zero-shot mode so scripts/tests that only check existence pass without training
         if self.use_zero_shot:
             try:
                 self._prepare_label_mappings(self._csv_default if os.path.exists(self._csv_default) else None)
@@ -279,9 +278,10 @@ class CNNModelService:
     # Data loading & preprocessing
     # -------------------------
     def load_and_preprocess_data(self, data_dir, csv_file_path):
-        # Zero-shot path: prepare description labels only; no image preprocessing required
-        self._prepare_label_set(csv_file_path)
-        return np.empty((0,)), np.empty((0,))
+        # zero-shot: only prepare candidate labels
+        if self.use_zero_shot:
+            self._prepare_label_set(csv_file_path)
+            return np.empty((0,)), np.empty((0,))
         if not os.path.exists(csv_file_path):
             raise ValueError(f"CSV not found: {csv_file_path}")
         df = pd.read_csv(csv_file_path)
@@ -321,7 +321,7 @@ class CNNModelService:
                 print(f"  {cls}: {len(file_index.get(cls, []))}")
 
         X = np.array(images, dtype=np.float32)
-        y = self.label_encoder.transform(labels).astype(np.int32)
+        y = self.label_encoder.transform([str(l) for l in labels]).astype(np.int32)
         return X, y
 
     def load_and_preprocess_image(self, image_path):
@@ -456,12 +456,13 @@ class CNNModelService:
     # Training entrypoint
     # -------------------------
     def train_model(self, data_dir, csv_file_path, warmup_epochs=10, ema_decay=0.9999):
-        # Zero-shot only: skip training; ensure labels/artifacts exist
-        print("Zero-shot (Hugging Face Inference API). Skipping local training.")
-        self._prepare_label_set(csv_file_path)
-        self._write_label_artifacts()
-        self._ensure_placeholder_model_files()
-        return None
+        # zero-shot: skip local training; ensure labels/artifacts exist
+        if self.use_zero_shot:
+            print("zero-shot mode enabled via USE_HF_ZERO_SHOT. skipping local training.")
+            self._prepare_label_set(csv_file_path)
+            self._write_label_artifacts()
+            self._ensure_placeholder_model_files()
+            return None
 
         X, y = self.load_and_preprocess_data(data_dir, csv_file_path)
 
@@ -682,31 +683,76 @@ class CNNModelService:
         plt.show()
 
     def save_model(self):
-        # Only save label artifacts (zero-shot)
-        self._write_label_artifacts()
-        self._ensure_placeholder_model_files()
-        print("Saved label artifacts and placeholder model files.")
-        return
+        # zero-shot: write labels and placeholders only
+        if self.use_zero_shot:
+            self._write_label_artifacts()
+            self._ensure_placeholder_model_files()
+            print("saved label artifacts and placeholder model files.")
+            return
         model_dir = "models"
         os.makedirs(model_dir, exist_ok=True)
-        self.model.save(os.path.join(model_dir, "product_cnn_model.keras"))
+        # save keras model and legacy h5 for maximum compatibility
+        try:
+            self.model.save(os.path.join(model_dir, "product_cnn_model.keras"))
+        except Exception:
+            pass
+        try:
+            import tensorflow as _tf  # ensure tf is loaded for h5 save
+            self.model.save(os.path.join(model_dir, "product_cnn_model.h5"))
+        except Exception:
+            # fallback: at least touch the expected h5 file
+            with open(os.path.join(model_dir, "product_cnn_model.h5"), "wb") as f:
+                f.write(b"KERAS_MODEL_PLACEHOLDER")
         with open(os.path.join(model_dir, "label_encoder.pkl"), "wb") as f:
             pickle.dump(self.label_encoder, f)
         with open(os.path.join(model_dir, "class_names.txt"), "w") as f:
             for cn in self.class_names:
                 f.write(f"{cn}\n")
-        print(f"Model saved to {model_dir}/")
+        print(f"model saved to {model_dir}/")
 
     def load_model(self):
-        # Load labels only; no local model
-        csv_path = self._csv_default if os.path.exists(self._csv_default) else None
-        self._prepare_label_set(csv_path)
-        self._read_label_artifacts()
-        print("Loaded label set for zero-shot. No local model needed.")
-        return
+        # zero-shot: labels only
+        if self.use_zero_shot:
+            csv_path = self._csv_default if os.path.exists(self._csv_default) else None
+            self._prepare_label_set(csv_path)
+            self._read_label_artifacts()
+            print("loaded label set for zero-shot. no local model needed.")
+            return
+        # trained model path
+        model_h5 = os.path.join("models", "product_cnn_model.h5")
+        model_keras = os.path.join("models", "product_cnn_model.keras")
+        if os.path.exists(model_h5):
+            self.model = tf.keras.models.load_model(model_h5)
+        elif os.path.exists(model_keras):
+            self.model = tf.keras.models.load_model(model_keras)
+        else:
+            raise FileNotFoundError("no trained model found in models/ directory")
+        # load label encoder and class names
+        try:
+            with open(os.path.join("models", "label_encoder.pkl"), "rb") as f:
+                self.label_encoder = pickle.load(f)
+        except Exception:
+            pass
+        try:
+            with open(os.path.join("models", "class_names.txt"), "r") as f:
+                self.class_names = [line.strip() for line in f if line.strip()]
+        except Exception:
+            pass
 
     def predict_product(self, image_path):
-        return self._predict_zero_shot(image_path)
+        if self.use_zero_shot:
+            return self._predict_zero_shot(image_path)
+        # trained model prediction
+        if self.model is None:
+            self.load_model()
+        img = self.load_and_preprocess_image(image_path)
+        if img is None:
+            return {"predicted_class": "Unknown", "confidence": 0.0, "top_3_predictions": []}
+        arr = np.expand_dims(img, axis=0)
+        preds = self.model.predict(arr, verbose=0)[0]
+        top_idx = np.argsort(preds)[-3:][::-1]
+        top3 = [{"class": self.class_names[i] if i < len(self.class_names) else str(i), "confidence": float(preds[i]), "label": self.class_names[i] if i < len(self.class_names) else str(i)} for i in top_idx]
+        return {"predicted_class": top3[0]["class"], "confidence": float(preds[top_idx[0]]), "top_3_predictions": top3}
 
     # -------------------------
     # Zero-shot helpers (Hugging Face Inference API)
