@@ -35,3 +35,13 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
 # afrimeet-web
+
+# Web App
+
+This app provides a Stream token endpoint used by the mobile app:
+
+- `GET /api/stream/token` (requires Clerk session cookie)
+
+Environment variables required:
+- `NEXT_PUBLIC_STREAM_API_KEY`
+- `STREAM_SECRET_KEY`
