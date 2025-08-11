@@ -69,26 +69,20 @@ export default function App() {
     let isMounted = true;
     async function init() {
       try {
-        // fetch public config
-        const cfg = await fetch(`${apiBaseUrl}/api/stream/config`).then((r) => r.json());
-        if (!cfg?.stream_api_key) return;
+        const cfgRes = await fetch(`${apiBaseUrl}/api/stream/config`);
+        if (!cfgRes.ok) throw new Error('Config unavailable');
+        const cfg = await cfgRes.json();
+        if (!cfg?.stream_api_key) throw new Error('Invalid config');
         if (isMounted) setStreamApiKey(cfg.stream_api_key);
-        // request token with Bearer Clerk session token if present
-        const tokenResp = await fetch(`${apiBaseUrl}/api/stream/token`, {
-          headers: {
-            // Clerk Expo automatically attaches auth to fetch if using fetch with signedIn? If not, we can inject token via getToken if needed.
-          },
-        }).then((r) => r.json());
-        const token = tokenResp?.token;
-        if (!token) return;
-        const client = new StreamVideoClient({
-          apiKey: cfg.stream_api_key,
-          user: { id: 'me' },
-          token,
-        });
+        const tokenRes = await fetch(`${apiBaseUrl}/api/stream/token`);
+        if (!tokenRes.ok) throw new Error('Token unavailable');
+        const tokenJson = await tokenRes.json();
+        const token = tokenJson?.token;
+        if (!token) throw new Error('Invalid token');
+        const client = new StreamVideoClient({ apiKey: cfg.stream_api_key, user: { id: 'me' }, token });
         if (isMounted) setStreamClient(client);
       } catch (e) {
-        // handled in UI
+        if (isMounted) setStreamClient(null);
       }
     }
     init();

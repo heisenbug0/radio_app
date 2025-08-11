@@ -1,35 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList } from 'react-native';
 import { useStreamVideoClient, Call } from '@stream-io/video-react-native-sdk';
 import { useUser } from '@clerk/clerk-expo';
+import ErrorView from '../components/ErrorView';
 
 export default function UpcomingScreen() {
   const client = useStreamVideoClient();
   const { user } = useUser();
   const [calls, setCalls] = useState<Call[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const load = async () => {
-      if (!client || !user) return;
-      setLoading(true);
-      try {
-        const { calls } = await client.queryCalls({
-          sort: [{ field: 'starts_at', direction: -1 }],
-          filter_conditions: {
-            starts_at: { $exists: true },
-            $or: [{ created_by_user_id: user.id }, { members: { $in: [user.id] } }],
-          },
-          limit: 20,
-        });
-        const now = new Date();
-        setCalls(calls.filter((c) => c.state.startsAt && new Date(c.state.startsAt) > now));
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+  const load = useCallback(async () => {
+    if (!client || !user) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const { calls } = await client.queryCalls({
+        sort: [{ field: 'starts_at', direction: -1 }],
+        filter_conditions: {
+          starts_at: { $exists: true },
+          $or: [{ created_by_user_id: user.id }, { members: { $in: [user.id] } }],
+        },
+        limit: 20,
+      });
+      const now = new Date();
+      setCalls(calls.filter((c) => c.state.startsAt && new Date(c.state.startsAt) > now));
+    } catch (e) {
+      setError('Unable to load upcoming meetings');
+    } finally {
+      setLoading(false);
+    }
   }, [client, user?.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (error) return <ErrorView message={error} onRetry={load} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#1C1F2E', padding: 16 }}>
