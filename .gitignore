@@ -9,3 +9,5 @@ data_preparation.*
 all-mpnet-base-v2
 data/scraped_images
 models
+mobile
+web
