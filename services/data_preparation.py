@@ -11,7 +11,8 @@ load_dotenv()
 
 class DataPreparationService:
     def __init__(self):
-        self.model = SentenceTransformer('./all-mpnet-base-v2')
+        # use a well-known sentence-transformers model id
+        self.model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
         self.products_df = None
         self.product_vectors = None
         self.pinecone_index = None
