@@ -35,8 +35,14 @@
         "RECORD_AUDIO",
         "MODIFY_AUDIO_SETTINGS",
         "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS",
+        "BLUETOOTH",
         "BLUETOOTH_ADMIN"
-      ]
+      ],
+      "package": "com.heisenbugg.afrimeet"
     },
     "web": {
       "bundler": "metro",

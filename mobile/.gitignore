@@ -40,3 +40,6 @@ yarn-error.log*
 # expo
 .expo
 .expo-shared
+
+# Build
+android
