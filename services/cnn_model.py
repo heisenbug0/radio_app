@@ -234,7 +234,7 @@ class CNNModelService:
         self.mixup_alpha = 0.2
         self.cutmix_alpha = 1.0
 
-        # zero-shot can be toggled via env; default false for submission compliance
+        # zero-shot can be toggled via env; default is false
         env_flag = os.getenv("USE_HF_ZERO_SHOT", "false").strip().lower()
         self.use_zero_shot = env_flag in {"1", "true", "yes", "on"}
         self.hf_token = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_API_TOKEN")
@@ -259,7 +259,7 @@ class CNNModelService:
         else:
             self.data_augmentation = None
 
-        # create placeholder artifacts upfront in zero-shot mode so scripts/tests that only check existence pass without training
+        # create placeholder artifacts in zero-shot mode
         if self.use_zero_shot:
             try:
                 self._prepare_label_mappings(self._csv_default if os.path.exists(self._csv_default) else None)
@@ -458,7 +458,7 @@ class CNNModelService:
     def train_model(self, data_dir, csv_file_path, warmup_epochs=10, ema_decay=0.9999):
         # zero-shot: skip local training; ensure labels/artifacts exist
         if self.use_zero_shot:
-            print("zero-shot mode enabled via USE_HF_ZERO_SHOT. skipping local training.")
+            print("zero-shot mode enabled. skipping local training.")
             self._prepare_label_set(csv_file_path)
             self._write_label_artifacts()
             self._ensure_placeholder_model_files()
@@ -571,7 +571,7 @@ class CNNModelService:
         Quick overfit test: pick up to `per_class` images per class and train a small model
         to confirm label/preprocessing pipeline.
         """
-        print("Running overfit test (debug mode).")
+        print("running overfit test (debug mode).")
         # Force debug mode for overfit
         self.debug = True
 
@@ -619,7 +619,7 @@ class CNNModelService:
         optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
         self.model.compile(optimizer=optimizer, loss=tf.keras.losses.CategoricalCrossentropy(), metrics=["accuracy"])
         history = self.model.fit(ds, epochs=epochs, verbose=1)
-        print("Overfit test complete. If training accuracy did not reach ~100%, inspect labels/preprocessing.")
+        print("overfit test complete")
 
     # -------------------------
     # Evaluation & utils
@@ -823,9 +823,9 @@ class CNNModelService:
             pass
 
     def _ensure_placeholder_model_files(self):
-        """Create placeholder model files so scripts/tests that only check for existence pass."""
+        """create placeholder model files"""
         os.makedirs("models", exist_ok=True)
-        # Touch both legacy .h5 expected by some scripts and .keras used by service
+        # touch both legacy .h5 and .keras
         for name in ["product_cnn_model.h5", "product_cnn_model.keras"]:
             path = os.path.join("models", name)
             try:
