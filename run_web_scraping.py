@@ -1,4 +1,3 @@
-# run_web_scraping.py
 import os
 import shutil
 import logging

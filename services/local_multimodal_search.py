@@ -14,10 +14,10 @@ class LocalMultimodalSearchService:
         self.products_df = products_df.reset_index(drop=True)
         self.cache_dir = cache_dir
         os.makedirs(self.cache_dir, exist_ok=True)
-        # CLIP text+image model (local, downloaded via HF once then cached)
+        # clip text+image model (local)
         self.model_name = os.getenv("CLIP_LOCAL_MODEL", "clip-ViT-B-32")
         self.model = SentenceTransformer(self.model_name)
-        # Cache files
+        # cache files
         safe_name = self.model_name.replace('/', '_')
         self.text_emb_path = os.path.join(self.cache_dir, f"{safe_name}_text_embeddings.npy")
         self.text_ids_path = os.path.join(self.cache_dir, f"{safe_name}_text_ids.json")
@@ -45,7 +45,7 @@ class LocalMultimodalSearchService:
             df = df.head(max_products)
         texts = df['Description'].astype(str).tolist()
         ids = df.index.tolist()
-        # Encode texts
+        # encode texts
         embeddings = self.model.encode(texts, batch_size=batch_size, convert_to_numpy=True, show_progress_bar=True)
         embeddings = self._normalize_rows(embeddings)
         np.save(self.text_emb_path, embeddings)
@@ -57,11 +57,11 @@ class LocalMultimodalSearchService:
 
     def search_by_image(self, image_path: str, top_k: int = 5) -> List[Dict]:
         if self.text_embeddings is None:
-            # Reasonable defaults; adjust via env if needed
+            # reasonable defaults; override via env if needed
             max_products = int(os.getenv("CLIP_LOCAL_MAX_PRODUCTS", "2000"))
             batch_size = int(os.getenv("CLIP_LOCAL_TEXT_BATCH", "64"))
             self.build_or_load_text_embeddings(max_products=max_products, batch_size=batch_size)
-        # Load and encode image
+        # encode image
         image = Image.open(image_path).convert('RGB')
         img_emb = self.model.encode([image], convert_to_numpy=True)
         img_emb = self._normalize_rows(img_emb)
