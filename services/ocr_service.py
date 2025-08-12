@@ -5,68 +5,68 @@ import re
 
 class OCRService:
     def __init__(self):
-        # Initialize Google Cloud Vision client
+        # google cloud vision client
         try:
             from google.cloud import vision
             self.client = vision.ImageAnnotatorClient()
             self.use_google_vision = True
-            print("Google Cloud Vision API initialized successfully")
+            print("google vision ready")
         except Exception as e:
-            print(f"Warning: Google Cloud Vision not available: {e}")
-            print("Please set GOOGLE_APPLICATION_CREDENTIALS environment variable")
+            print(f"warning: google vision not available: {e}")
+            print("set GOOGLE_APPLICATION_CREDENTIALS if you want to use it")
             self.use_google_vision = False
             self.client = None
         
-        # Initialize EasyOCR as fallback
+        # easyocr fallback
         try:
             import easyocr
             self.reader = easyocr.Reader(['en'])
             self.use_easyocr = True
-            print("EasyOCR fallback initialized successfully")
+            print("easyocr ready")
         except Exception as e:
-            print(f"Warning: EasyOCR not available: {e}")
+            print(f"warning: easyocr not available: {e}")
             self.use_easyocr = False
             self.reader = None
     
     def extract_text(self, image_path=None, image_data=None):
-        """Extract text from image using Google Cloud Vision API with EasyOCR fallback"""
-        # Try Google Cloud Vision first
+        """extract text from image"""
+        # try google vision first
         if self.use_google_vision:
             result = self._extract_with_google_vision(image_path, image_data)
             if result['success']:
                 return result
         
-        # Fallback to EasyOCR
+        # fallback to easyocr
         if self.use_easyocr:
             result = self._extract_with_easyocr(image_path, image_data)
             if result['success']:
                 return result
         
-        # No OCR available
+        # no ocr available
         return {
             'success': False,
-            'error': 'No OCR service available. Please set up Google Cloud Vision API or install EasyOCR.',
+            'error': 'no ocr service available',
             'extracted_text': '',
             'raw_text': ''
         }
     
     def _extract_with_google_vision(self, image_path=None, image_data=None):
-        """Extract text using Google Cloud Vision API"""
+        """extract text using google vision"""
         try:
-            # Load image
+            # load image
             if image_path:
                 with open(image_path, 'rb') as image_file:
                     content = image_file.read()
             elif image_data:
                 content = image_data.read()
             else:
-                raise ValueError("Either image_path or image_data must be provided")
+                raise ValueError("provide image_path or image_data")
             
-            # Create image object
+            # create image object
             from google.cloud import vision
             image = vision.Image(content=content)
             
-            # Perform text detection
+            # text detection
             response = self.client.text_detection(image=image)
             
             if response.error.message:
@@ -77,7 +77,7 @@ class OCRService:
                     'raw_text': ''
                 }
             
-            # Extract text from response
+            # extract text from response
             texts = response.text_annotations
             
             if not texts:
@@ -87,11 +87,11 @@ class OCRService:
                     'raw_text': ''
                 }
             
-            # Get the full text (first element contains all text)
+            # full text is first element
             full_text = texts[0].description
             raw_text = full_text
             
-            # Clean and normalize the extracted text
+            # clean and normalize
             cleaned_text = self.clean_extracted_text(full_text)
             
             return {
@@ -109,33 +109,33 @@ class OCRService:
             }
     
     def _extract_with_easyocr(self, image_path=None, image_data=None):
-        """Extract text using EasyOCR as fallback"""
+        """extract text using easyocr"""
         try:
-            # Load image
+            # load image
             if image_path:
                 image = Image.open(image_path)
             elif image_data:
                 image = Image.open(image_data)
             else:
-                raise ValueError("Either image_path or image_data must be provided")
+                raise ValueError("provide image_path or image_data")
             
-            # Convert to RGB if necessary
+            # convert to rgb if needed
             if image.mode != 'RGB':
                 image = image.convert('RGB')
             
-            # Perform OCR
+            # ocr
             results = self.reader.readtext(image)
             
-            # Extract text from results
+            # collect high confidence text
             texts = []
             for (bbox, text, confidence) in results:
-                if confidence > 0.5:  # Only include high-confidence results
+                if confidence > 0.5:
                     texts.append(text)
             
             full_text = ' '.join(texts)
             raw_text = full_text
             
-            # Clean and normalize the extracted text
+            # clean and normalize
             cleaned_text = self.clean_extracted_text(full_text)
             
             return {
@@ -153,27 +153,27 @@ class OCRService:
             }
     
     def clean_extracted_text(self, text):
-        """Clean and normalize extracted text"""
+        """clean and normalize text"""
         if not text:
             return ""
         
-        # Remove extra whitespace and normalize
+        # strip extra whitespace
         cleaned = re.sub(r'\s+', ' ', text.strip())
         
-        # Remove special characters that might be OCR artifacts
+        # drop odd characters
         cleaned = re.sub(r'[^\w\s\-.,!?]', '', cleaned)
         
-        # Convert to lowercase for consistency
+        # lowercase
         cleaned = cleaned.lower()
         
-        # Common OCR corrections for modern OCR
+        # basic corrections
         corrections = {
-            '0': 'o',  # Common OCR mistake
-            '1': 'l',  # Common OCR mistake
-            '5': 's',  # Common OCR mistake
-            '8': 'b',  # Common OCR mistake
-            'rn': 'm',  # Common OCR mistake
-            'cl': 'd',  # Common OCR mistake
+            '0': 'o',
+            '1': 'l',
+            '5': 's',
+            '8': 'b',
+            'rn': 'm',
+            'cl': 'd',
         }
         
         for wrong, correct in corrections.items():
@@ -182,17 +182,17 @@ class OCRService:
         return cleaned
     
     def validate_query(self, text):
-        """Validate if the extracted text is a reasonable query"""
+        """validate if text is a reasonable query"""
         if not text or len(text.strip()) < 2:
             return False, "Query too short"
         
-        # Check for common OCR artifacts
+        # length check
         if len(text) > 500:
             return False, "Query too long"
         
-        # Check if text contains mostly readable characters
+        # readability check
         readable_chars = sum(1 for c in text if c.isalnum() or c.isspace())
-        if readable_chars / len(text) < 0.3:  # Lowered threshold for handwriting
+        if readable_chars / len(text) < 0.3:
             return False, "Query contains too many non-readable characters"
         
         return True, "Valid query"

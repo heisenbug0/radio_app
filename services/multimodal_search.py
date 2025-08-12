@@ -13,14 +13,14 @@ class MultimodalSearchService:
         self.cache_dir = cache_dir
         os.makedirs(self.cache_dir, exist_ok=True)
         self.hf_token = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_API_TOKEN")
-        # Use a non-provider CLIP model by default
+        # default clip model
         self.clip_model = os.getenv("HF_CLIP_MODEL", os.getenv("HF_ZERO_SHOT_MODEL", "laion/CLIP-ViT-B-32-laion2B-s34B-b79K"))
         self.text_emb_path = os.path.join(self.cache_dir, f"clip_text_embeddings.npy")
         self.text_ids_path = os.path.join(self.cache_dir, f"clip_text_ids.json")
         self.text_embeddings = None
         self.text_ids = None
         self.products_df_clip = None
-        # Config for building the index
+        # basic config
         self.filter_to_train_csv = (os.getenv("MM_FILTER_TO_TRAIN_CSV", "true").strip().lower() in {"1","true","yes"})
         self.train_csv_path = os.getenv("MM_TRAIN_CSV_PATH", "data/CNN_Model_Train_Data.csv")
         self.max_products = int(os.getenv("MM_MAX_PRODUCTS", "500"))
@@ -55,7 +55,7 @@ class MultimodalSearchService:
         raise RuntimeError("HTTP request failed")
 
     def _feature_extraction_text(self, texts: List[str]) -> np.ndarray:
-        # Prefer pipeline endpoint with model specified at top level of payload
+        # prefer pipeline endpoint
         url = "https://api-inference.huggingface.co/pipeline/feature-extraction"
         payload = {"model": self.clip_model, "inputs": texts, "options": {"wait_for_model": True}}
         r = self._post_json(url, payload)
@@ -64,7 +64,7 @@ class MultimodalSearchService:
                 print(f"[HF_TEXT_ERR] pipeline status={r.status_code} body={r.text[:200]}")
             except Exception:
                 pass
-            # Fallback to model endpoint
+            # fallback to model endpoint
             url2 = f"https://api-inference.huggingface.co/models/{self.clip_model}"
             payload2 = {"inputs": texts, "options": {"wait_for_model": True}}
             r = self._post_json(url2, payload2)
@@ -117,7 +117,7 @@ class MultimodalSearchService:
         return df.reset_index(drop=True)
 
     def build_or_load_text_embeddings(self) -> Tuple[np.ndarray, List[int]]:
-        # Load cache if present
+        # load cache if present
         if os.path.exists(self.text_emb_path) and os.path.exists(self.text_ids_path):
             try:
                 emb = np.load(self.text_emb_path)
@@ -130,7 +130,7 @@ class MultimodalSearchService:
                     return emb, ids
             except Exception:
                 pass
-        # Build subset and texts
+        # build subset and texts
         df_clip = self._prepare_products_subset()
         texts = df_clip['Description'].astype(str).tolist()
         ids = df_clip.index.tolist()

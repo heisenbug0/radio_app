@@ -11,49 +11,49 @@ class AppService:
         self.data_service = DataPreparationService()
         self.ocr_service = OCRService()
         self.cnn_service = CNNModelService()
-        self.mm_service = None
+        self.image_search_service = None
         self.caption_service = ImageCaptionService()
         self.initialize_services()
     
     def initialize_services(self):
-        """Initialize all services and load data"""
+        """initialize all services and load data"""
         try:
-            # Initialize data preparation
-            print("Initializing data preparation service...")
+            # init data preparation
+            print("initializing data preparation service...")
             
-            # Check if dataset exists
+            # check if dataset exists
             dataset_path = "data/dataset.csv"
             if os.path.exists(dataset_path):
                 self.data_service.clean_dataset(dataset_path)
                 self.data_service.create_product_vectors()
                 self.data_service.upload_to_pinecone()
-                # Initialize local multimodal search with CLIP embeddings
+                # init local multimodal search with clip embeddings (optional)
                 try:
                     from .local_multimodal_search import LocalMultimodalSearchService
-                    self.mm_service = LocalMultimodalSearchService(self.data_service.products_df)
-                    self.mm_service.build_or_load_text_embeddings()
-                    print("Data preparation + local multimodal search initialized successfully")
+                    self.image_search_service = LocalMultimodalSearchService(self.data_service.products_df)
+                    self.image_search_service.build_or_load_text_embeddings()
+                    print("data preparation + local multimodal search initialized successfully")
                 except Exception as mm_err:
-                    print(f"Warning: Local multimodal search initialization failed: {mm_err}. Continuing without it.")
+                    print(f"warning: local multimodal search initialization failed: {mm_err}. continuing without it.")
             else:
-                print("Warning: Dataset file not found. Data preparation service will not be available.")
+                print("warning: dataset file not found. data preparation service will not be available.")
             
-            print("Services initialized successfully")
+            print("services initialized successfully")
         except Exception as e:
-            print(f"Warning: Service initialization failed: {e}")
-            print("Application will continue with limited functionality.")
+            print(f"warning: service initialization failed: {e}")
+            print("application will continue with limited functionality.")
     
     def process_text_query(self, query):
-        """Process natural language text query and return product recommendations"""
+        """process natural language text query and return product recommendations"""
         try:
-            # Validate query
+            # validate query
             if not query or len(query.strip()) < 2:
                 return {
                     "products": [],
                     "response": "Please provide a valid query with at least 2 characters."
                 }
             
-            # Check for sensitive content
+            # check for sensitive content
             sensitive_patterns = [
                 r'\b(password|secret|private|confidential)\b',
                 r'\b(admin|root|sudo)\b',
@@ -67,12 +67,12 @@ class AppService:
                         "response": "I cannot process queries containing sensitive information."
                     }
             
-            # Search for products
+            # search for products
             products = self.data_service.search_products(query, top_k=5)
             
-            # Generate natural language response
+            # generate natural language response
             if products:
-                # Format products for response
+                # format products for response
                 formatted_products = []
                 for i, product in enumerate(products, 1):
                     formatted_product = {
@@ -90,7 +90,7 @@ class AppService:
                     "response": "Results:"
                 }
             else:
-                # Try with simplified query if no results found
+                # try with simplified query if no results found
                 simplified_query = self.simplify_query(query)
                 if simplified_query != query:
                     products = self.data_service.search_products(simplified_query, top_k=5)
@@ -124,8 +124,8 @@ class AppService:
             }
     
     def simplify_query(self, query):
-        """Simplify query by removing common words and keeping key terms"""
-        # Remove common stop words
+        """simplify query by removing common words and keeping key terms"""
+        # remove common stop words
         stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'her', 'its', 'our', 'their'}
         
         words = query.lower().split()
@@ -134,15 +134,15 @@ class AppService:
         return ' '.join(key_words) if key_words else query
     
     def process_ocr_query(self, image_file):
-        """Process handwritten query from image using OCR"""
+        """process handwritten query from image using ocr"""
         try:
-            # Save uploaded image to temporary file
+            # save image to temp
             with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
                 image_file.save(temp_file.name)
                 temp_path = temp_file.name
             
             try:
-                # Extract text using OCR with multiple attempts
+                # extract text using ocr
                 ocr_result = self.ocr_service.extract_text(image_path=temp_path)
                 
                 if not ocr_result['success']:
@@ -155,7 +155,7 @@ class AppService:
                 
                 extracted_text = ocr_result['extracted_text']
                 
-                # If no text was extracted, provide helpful feedback
+                # if no text was extracted, provide helpful feedback
                 if not extracted_text or len(extracted_text.strip()) < 2:
                     return {
                         "products": [],
@@ -163,7 +163,7 @@ class AppService:
                         "extracted_text": ""
                     }
                 
-                # Validate extracted text
+                # validate extracted text
                 is_valid, validation_message = self.ocr_service.validate_query(extracted_text)
                 
                 if not is_valid:
@@ -173,11 +173,11 @@ class AppService:
                         "extracted_text": extracted_text
                     }
                 
-                # Process the extracted text as a normal query
+                # process the extracted text as a normal query
                 query_result = self.process_text_query(extracted_text)
                 query_result["extracted_text"] = extracted_text
                 
-                # Add OCR-specific response information
+                # add ocr-specific response information
                 if query_result["products"]:
                     query_result["response"] = "Results:"
                 else:
@@ -186,7 +186,7 @@ class AppService:
                 return query_result
                 
             finally:
-                # Clean up temporary file
+                # clean up temp
                 if os.path.exists(temp_path):
                     os.unlink(temp_path)
                     
@@ -198,19 +198,19 @@ class AppService:
             }
     
     def process_image_product_search(self, image_file):
-        """Process product image to identify and recommend similar products"""
+        """process product image to identify and recommend similar products"""
         try:
-            # Save uploaded image to temporary file
+            # save image to temp
             with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
                 image_file.save(temp_file.name)
                 temp_path = temp_file.name
             
             try:
-                # If multimodal search is available, use CLIP embeddings directly for image->product retrieval
-                if self.mm_service is not None:
-                    products = self.mm_service.search_by_image(temp_path, top_k=5)
+                # if multimodal search is available, use clip embeddings for image product retrieval
+                if self.image_search_service is not None:
+                    products = self.image_search_service.search_by_image(temp_path, top_k=5)
                     if products:
-                        # Debug log: top candidates (descriptions & scores)
+                        # debug
                         try:
                             print("[MM_TOP] ", [(p["description"], round(float(p["similarity_score"]), 3)) for p in products])
                         except Exception:
@@ -231,8 +231,8 @@ class AppService:
                             "predicted_class": products[0]["description"],
                         }
                     else:
-                        print("[MM_EMPTY] No multimodal matches for image.")
-                        # Try image caption -> semantic search as documented
+                        print("[MM_EMPTY] no multimodal matches for image.")
+                        # try caption then text search
                         cap = self.caption_service.caption(temp_path)
                         if cap.get("success") and cap.get("caption"):
                             caption_text = cap["caption"].strip()
@@ -257,15 +257,15 @@ class AppService:
                                     "response": "Results:",
                                     "predicted_class": caption_text,
                                 }
-                        # Also log zero-shot labels for diagnosis
+                        # debug
                         try:
                             zs = self.cnn_service.predict_product(temp_path)
                             print("[ZS_TOP3] ", zs.get('top_3_predictions'))
                         except Exception:
                             pass
-                        # Continue to zero-shot fallback below instead of returning immediately
-
-                # Fallback: previous zero-shot label->semantic search path
+                        # continue below
+ 
+                # fallback
                 prediction_result = self.cnn_service.predict_product(temp_path)
                 predicted_class = prediction_result.get('predicted_class', "Unknown")
                 confidence = prediction_result.get('confidence', 0.0)
@@ -273,7 +273,7 @@ class AppService:
                 top3 = prediction_result.get('top_3_predictions') or []
                 if top3 and isinstance(top3[0], dict):
                     predicted_label = top3[0].get('label') or None
-                # Debug log: zero-shot label predictions
+                # debug
                 try:
                     print("[ZS_TOP3] ", [(t.get('label'), round(float(t.get('confidence', 0.0)), 3)) for t in (top3 or [])])
                 except Exception:
@@ -317,7 +317,7 @@ class AppService:
                         "predicted_class": predicted_class,
                     }
                 else:
-                    # Log that semantic search found no matches for the label
+                    # log that semantic search found no matches for the label
                     try:
                         print(f"[ZS_NO_MATCH] query_text='{query_text}'")
                     except Exception:
@@ -329,7 +329,7 @@ class AppService:
                     }
                     
             finally:
-                # Clean up temporary file
+                # clean up temp
                 if os.path.exists(temp_path):
                     os.unlink(temp_path)
                     

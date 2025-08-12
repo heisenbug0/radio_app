@@ -6,7 +6,7 @@ from typing import List, Dict
 class ImageCaptionService:
     def __init__(self):
         self.hf_token = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_API_TOKEN")
-        # Default to a non-provider caption model
+        # default caption model
         self.model_id = os.getenv("HF_IMAGE_CAPTION_MODEL", "Salesforce/blip-image-captioning-base")
         self.timeout = float(os.getenv("HF_TIMEOUT", "60"))
 

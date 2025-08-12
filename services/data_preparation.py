@@ -11,7 +11,8 @@ load_dotenv()
 
 class DataPreparationService:
     def __init__(self):
-        self.model = SentenceTransformer('./all-mpnet-base-v2')
+        # sentence-transformers model
+        self.model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
         self.products_df = None
         self.product_vectors = None
         self.pinecone_index = None
@@ -24,7 +25,7 @@ class DataPreparationService:
                 from pinecone import Pinecone
                 pc = Pinecone(api_key=api_key)
                 index_name = "product-recommendations"
-                # Collect existing index names robustly across SDK versions
+                # collect existing index names
                 index_names = []
                 try:
                     listed = pc.list_indexes()
@@ -46,7 +47,7 @@ class DataPreparationService:
                     pass
                 if index_name not in index_names:
                     try:
-                        # Newer SDKs (v7+) require a ServerlessSpec via 'spec'
+                        # newer sdks use serverless spec
                         from pinecone import ServerlessSpec
                         cloud = os.getenv('PINECONE_CLOUD', 'aws')
                         region = os.getenv('PINECONE_REGION', 'us-east-1')
@@ -57,82 +58,80 @@ class DataPreparationService:
                             spec=ServerlessSpec(cloud=cloud, region=region)
                         )
                     except Exception:
-                        # Fallback for older SDK signature
+                        # fallback to older signature
                         pc.create_index(name=index_name, dimension=768, metric="cosine")
-                    print(f"Created new Pinecone index: {index_name}")
+                    print(f"created pinecone index: {index_name}")
                 self.pinecone_index = pc.Index(index_name)
-                print("Pinecone initialized successfully")
+                print("pinecone ready")
             else:
-                print("Warning: PINECONE_API_KEY not found. Using local storage only.")
+                print("warning: no pinecone api key, using local search")
         except Exception as e:
-            print(f"Warning: Pinecone initialization failed: {e}. Using local storage only.")
+            print(f"warning: pinecone init failed: {e}; using local search")
     
     def _normalize_ascii(self, text: str) -> str:
         if not isinstance(text, str):
             text = str(text) if text is not None else ""
-        # Normalize unicode and strip to ASCII
+        # normalize unicode to ascii
         text = unicodedata.normalize('NFKD', text)
         text = text.encode('ascii', 'ignore').decode('ascii')
         return text
     
     def clean_dataset(self, file_path):
-        print("Loading and cleaning dataset...")
-        # Use latin-1 to avoid decode errors from source file
+        print("loading and cleaning dataset...")
+        # latin-1 to avoid decode errors
         df = pd.read_csv(file_path, encoding='latin-1')
         df = df.drop_duplicates()
 
-        # Normalize and clean stock codes and descriptions
+        # normalize stock codes and descriptions
         df['StockCode'] = df['StockCode'].astype(str).map(self._normalize_ascii).str.strip()
         df['StockCode'] = df['StockCode'].apply(lambda x: re.sub(r'[^A-Za-z0-9_-]', '', x))
         df['Description'] = df['Description'].astype(str).map(self._normalize_ascii).str.strip()
         df['Description'] = df['Description'].apply(lambda x: re.sub(r'[^A-Za-z0-9\s-]', ' ', x))
         df['Description'] = df['Description'].apply(lambda x: re.sub(r'\s+', ' ', x).strip())
 
-        # Standardize case for semantic matching
+        # uppercase for matching
         df['Description'] = df['Description'].str.upper()
 
-        # Remove rows with noisy or missing descriptions
+        # drop noisy/missing descriptions
         noise_patterns_exact = [
             r'^UNKNOWN$', r'^UNKWN$', r'^NA$', r'^N/A$', r'^POSTAGE$', r'^CARRIAGE$', r'^SAMPLE$', r'^DAMAGED$', r'^BROKEN$'
         ]
         noise_regex_exact = re.compile('|'.join(noise_patterns_exact))
-        # Drop rows that are exactly known-noise OR contain tokens like MISSING or MIXED UP anywhere
         df = df[~df['Description'].fillna('').apply(lambda t: bool(noise_regex_exact.search(t)) or ('MISSING' in t) or ('MIXED UP' in t))]
 
-        # Keep descriptions that contain at least one letter
+        # keep useful descriptions
         df = df[df['Description'].str.contains(r'[A-Z]', regex=True, na=False)]
-        # Minimum useful description length
         df = df[df['Description'].str.len() >= 3]
 
-        # Quantities and prices: keep only positive to avoid returns/credits noise
+        # positive quantities and prices
         df['UnitPrice'] = pd.to_numeric(df['UnitPrice'], errors='coerce')
         df['Quantity'] = pd.to_numeric(df['Quantity'], errors='coerce')
         df = df[(df['Quantity'] > 0) & (df['UnitPrice'] > 0)]
 
-        # Drop empty stock codes
+        # drop empty stock codes
         df = df[df['StockCode'].str.len() > 0]
 
-        # Aggregate
+        # aggregate
         self.products_df = df.groupby(['StockCode', 'Description']).agg({
             'UnitPrice': 'mean',
             'Quantity': 'sum'
         }).reset_index()
 
-        print(f"Cleaned dataset: {len(self.products_df)} unique products")
+        print(f"cleaned dataset: {len(self.products_df)} products")
         return self.products_df
     
     def create_product_vectors(self):
-        print("Creating product embeddings with all-mpnet-base-v2...")
+        print("creating product embeddings (all-mpnet-base-v2)...")
         product_texts = self.products_df['Description'].tolist()
         self.product_vectors = self.model.encode(product_texts, show_progress_bar=True, convert_to_numpy=True)
-        print(f"Created embeddings with shape: {self.product_vectors.shape}")
+        print(f"embeddings shape: {self.product_vectors.shape}")
         return self.product_vectors
     
     def upload_to_pinecone(self):
         if not self.pinecone_index:
-            print("Pinecone not available. Skipping upload.")
+            print("pinecone not available, skip upload")
             return
-        print("Uploading vectors to Pinecone...")
+        print("uploading vectors to pinecone...")
         vectors_to_upsert = []
         for idx, row in self.products_df.iterrows():
             vector = self.product_vectors[idx].tolist()
@@ -147,12 +146,12 @@ class DataPreparationService:
         for i in range(0, len(vectors_to_upsert), batch_size):
             batch = vectors_to_upsert[i:i + batch_size]
             self.pinecone_index.upsert(vectors=batch)
-        print(f"Uploaded {len(vectors_to_upsert)} vectors to Pinecone")
+        print(f"uploaded {len(vectors_to_upsert)} vectors")
     
     def get_similarity_metrics(self):
         return {
             "primary_metric": "cosine_similarity",
-            "reasoning": "Cosine similarity is ideal for semantic product matching as it measures the cosine of the angle between two vectors, making it invariant to vector magnitude and focusing on direction similarity.",
+            "reasoning": "cosine focuses on direction similarity and works well for semantic matching",
             "vectorization": "sentence-transformers (all-mpnet-base-v2)",
             "dimensions": self.product_vectors.shape[1] if self.product_vectors is not None else 0
         }
@@ -177,7 +176,7 @@ class DataPreparationService:
                     })
                 return products
             except Exception as e:
-                print(f"Pinecone search failed: {e}. Falling back to local search.")
+                print(f"pinecone search failed: {e}; using local search")
                 return self._local_search(query_vector, top_k)
         else:
             return self._local_search(query_vector, top_k)

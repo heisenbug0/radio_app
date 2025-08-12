@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Setup script for the Product Recommendation System
-This script initializes all components and prepares the system for use.
+setup script for the product recommendation system
 """
 
 import os
@@ -11,93 +10,85 @@ from services.web_scraping import WebScrapingService
 from services.cnn_model import CNNModelService
 
 def main():
-    print("🚀 Initializing Product Recommendation System...")
+    print("initializing system...")
     
-    # Step 1: Data Preparation
-    print("\n📊 Step 1: Data Preparation and Vector Database Setup")
+    # step 1: data prep and vectors
+    print("\nstep 1: data prep and vector db")
     try:
         data_service = DataPreparationService()
         data_service.clean_dataset("data/dataset.csv")
         data_service.create_product_vectors()
         data_service.upload_to_pinecone()
-        print("✅ Data preparation completed successfully")
+        print("data prep done")
     except Exception as e:
-        print(f"⚠️  Data preparation warning: {e}")
-        print("   System will continue with local storage only")
+        print(f"warning: data prep: {e}")
+        print("using local storage only")
     
-    # Step 2: Web Scraping (Optional - for CNN training data)
-    print("\n🕷️  Step 2: Web Scraping for CNN Training Data")
+    # step 2: web scraping (optional)
+    print("\nstep 2: web scraping for cnn data")
     try:
         scraping_service = WebScrapingService()
         
-        # Check if we already have scraped images
         if os.path.exists("data/scraped_images/scraping_results.csv"):
-            print("✅ Scraped images already exist, skipping scraping")
+            print("images already present, skipping scraping")
         else:
-            print("   Starting web scraping for product images...")
-            print("   Note: This may take a while and requires internet connection")
+            print("starting image scraping...")
+            print("note: needs internet and may take a while")
             
-            # Only scrape a few products for demo purposes
             import pandas as pd
             df = pd.read_csv("data/CNN_Model_Train_Data.csv")
-            # Take first 5 products for demo
             demo_df = df.head(5)
             demo_df.to_csv("data/demo_products.csv", index=False)
             
             scraping_service.scrape_product_images("data/demo_products.csv", images_per_product=3)
-            print("✅ Web scraping completed")
+            print("scraping done")
         
         scraping_service.cleanup()
     except Exception as e:
-        print(f"⚠️  Web scraping warning: {e}")
-        print("   CNN model will use placeholder data")
+        print(f"warning: scraping: {e}")
+        print("cnn will use fallback if needed")
     
-    # Step 3: CNN Model Training (Optional)
-    print("\n🤖 Step 3: CNN Model Training")
+    # step 3: cnn training (optional)
+    print("\nstep 3: cnn training")
     try:
         cnn_service = CNNModelService()
         
-        # Check if model already exists
         if os.path.exists("models/product_cnn_model.h5"):
-            print("✅ CNN model already exists, skipping training")
+            print("model found, skipping training")
         else:
-            print("   Starting CNN model training...")
-            print("   Note: This may take a while depending on available data")
+            print("starting training...")
+            print("note: depends on data size and hardware")
             
-            # Try to train with available data
             if os.path.exists("data/scraped_images"):
                 cnn_service.train_model("data/scraped_images", "data/CNN_Model_Train_Data.csv")
-                print("✅ CNN model training completed")
+                print("training done")
             else:
-                print("⚠️  No training data available, CNN model will use fallback")
-                # Create a simple placeholder model
+                print("no training data, using fallback")
                 create_placeholder_model()
-        print("✅ CNN model setup completed")
+        print("cnn setup done")
     except Exception as e:
-        print(f"⚠️  CNN model warning: {e}")
-        print("   Product image recognition will use fallback methods")
+        print(f"warning: cnn: {e}")
+        print("image recognition will use fallback")
     
-    print("\n🎉 Setup completed!")
-    print("\n📋 System Status:")
-    print("   ✅ Data preparation and vector database")
-    print("   ✅ OCR service for handwritten queries")
-    print("   ✅ Web scraping service")
-    print("   ✅ CNN model for product recognition")
-    print("   ✅ Flask web application")
-    print("   ✅ Frontend interfaces")
+    print("\nsetup complete")
+    print("\nstatus:")
+    print("- data prep and vectors ready")
+    print("- ocr service ready")
+    print("- web scraping ready")
+    print("- cnn model ready")
+    print("- flask app ready")
+    print("- frontend ready")
     
-    print("\n🚀 To start the application, run:")
-    print("   python app.py")
-    print("\n🌐 Then visit: http://localhost:5000")
+    print("\nrun: python app.py")
+    print("open: http://localhost:5000")
 
 def create_placeholder_model():
-    """Create a simple placeholder CNN model for demo purposes"""
+    """create a tiny placeholder model"""
     import tensorflow as tf
     import numpy as np
     import pickle
     import os
     
-    # Create a simple model
     model = tf.keras.Sequential([
         tf.keras.layers.Conv2D(16, 3, activation='relu', input_shape=(224, 224, 3)),
         tf.keras.layers.MaxPooling2D(),
@@ -110,13 +101,9 @@ def create_placeholder_model():
     
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     
-    # Create directories
     os.makedirs("models", exist_ok=True)
-    
-    # Save model
     model.save("models/product_cnn_model.h5")
     
-    # Create placeholder label encoder
     label_encoder = type('LabelEncoder', (), {
         'classes_': np.array(['UNKNOWN']),
         'transform': lambda self, y: np.zeros(len(y)),
@@ -126,11 +113,10 @@ def create_placeholder_model():
     with open("models/label_encoder.pkl", 'wb') as f:
         pickle.dump(label_encoder, f)
     
-    # Create placeholder class names
     with open("models/class_names.txt", 'w') as f:
         f.write("UNKNOWN\n")
     
-    print("   ✅ Placeholder CNN model created")
+    print("placeholder model saved")
 
 if __name__ == "__main__":
     main()
