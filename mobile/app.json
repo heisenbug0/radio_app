@@ -50,11 +50,13 @@
     },
     "extra": {
       "eas": {
-        "projectId": "00000000-0000-0000-0000-000000000000"
+        "projectId": "2aa3fdf4-2abf-4723-af50-f827dfa6686b"
       }
     },
     "plugins": [
-      "expo-secure-store"
-    ]
+      "expo-secure-store",
+      "expo-build-properties"
+    ],
+    "owner": "heisenbugg"
   }
 }

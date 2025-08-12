@@ -42,7 +42,7 @@ const navTheme = {
 };
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
-const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL; // web serverless base
+const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
 const [streamApiKey, setStreamApiKey] = React.useState(undefined);
 
 function Loading() {
