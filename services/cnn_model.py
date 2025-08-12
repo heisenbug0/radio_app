@@ -234,7 +234,7 @@ class CNNModelService:
         self.mixup_alpha = 0.2
         self.cutmix_alpha = 1.0
 
-        # zero-shot can be toggled via env; default is false
+        # zero-shot can be toggled via env
         env_flag = os.getenv("USE_HF_ZERO_SHOT", "false").strip().lower()
         self.use_zero_shot = env_flag in {"1", "true", "yes", "on"}
         self.hf_token = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_API_TOKEN")

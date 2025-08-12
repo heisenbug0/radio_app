@@ -136,7 +136,7 @@ class AppService:
     def process_ocr_query(self, image_file):
         """process handwritten query from image using ocr"""
         try:
-            # save uploaded image to temporary file
+            # save image to temp
             with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
                 image_file.save(temp_file.name)
                 temp_path = temp_file.name
@@ -186,7 +186,7 @@ class AppService:
                 return query_result
                 
             finally:
-                # clean up temporary file
+                # clean up temp
                 if os.path.exists(temp_path):
                     os.unlink(temp_path)
                     
@@ -200,17 +200,17 @@ class AppService:
     def process_image_product_search(self, image_file):
         """process product image to identify and recommend similar products"""
         try:
-            # save uploaded image to temporary file
+            # save image to temp
             with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
                 image_file.save(temp_file.name)
                 temp_path = temp_file.name
             
             try:
-                # if multimodal search is available, use clip embeddings for image->product retrieval
+                # if multimodal search is available, use clip embeddings for image product retrieval
                 if self.image_search_service is not None:
                     products = self.image_search_service.search_by_image(temp_path, top_k=5)
                     if products:
-                        # debug log: top candidates
+                        # debug
                         try:
                             print("[MM_TOP] ", [(p["description"], round(float(p["similarity_score"]), 3)) for p in products])
                         except Exception:
@@ -232,7 +232,7 @@ class AppService:
                         }
                     else:
                         print("[MM_EMPTY] no multimodal matches for image.")
-                        # try image caption -> semantic search
+                        # try caption then text search
                         cap = self.caption_service.caption(temp_path)
                         if cap.get("success") and cap.get("caption"):
                             caption_text = cap["caption"].strip()
@@ -257,15 +257,15 @@ class AppService:
                                     "response": "Results:",
                                     "predicted_class": caption_text,
                                 }
-                        # also log zero-shot labels for diagnosis
+                        # debug
                         try:
                             zs = self.cnn_service.predict_product(temp_path)
                             print("[ZS_TOP3] ", zs.get('top_3_predictions'))
                         except Exception:
                             pass
-                        # continue to zero-shot fallback below
+                        # continue below
  
-                # fallback: zero-shot label -> semantic search path
+                # fallback
                 prediction_result = self.cnn_service.predict_product(temp_path)
                 predicted_class = prediction_result.get('predicted_class', "Unknown")
                 confidence = prediction_result.get('confidence', 0.0)
@@ -273,7 +273,7 @@ class AppService:
                 top3 = prediction_result.get('top_3_predictions') or []
                 if top3 and isinstance(top3[0], dict):
                     predicted_label = top3[0].get('label') or None
-                # debug log: zero-shot label predictions
+                # debug
                 try:
                     print("[ZS_TOP3] ", [(t.get('label'), round(float(t.get('confidence', 0.0)), 3)) for t in (top3 or [])])
                 except Exception:
@@ -329,7 +329,7 @@ class AppService:
                     }
                     
             finally:
-                # clean up temporary file
+                # clean up temp
                 if os.path.exists(temp_path):
                     os.unlink(temp_path)
                     
