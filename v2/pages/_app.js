@@ -7,7 +7,6 @@ import { Suspense, useEffect } from "react";
 import { getCurrentLocationData } from "@/utils/helperFunction";
 import SlopedCurtainLoader from "@/components/ui/loaders/SlopedCurtainLoader";
 import ErrorBoundary from "@/components/error/ErrorBoundary";
-import "next-cloudinary/dist/cld-video-player.css";
 
 export default function App({ Component, pageProps }) {
   // Function to request location permission
