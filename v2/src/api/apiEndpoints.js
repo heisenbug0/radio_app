@@ -81,3 +81,7 @@ export const GET_ALL_SIMILAR_PROPERTIES = "get-all-similar-properties";
 export const COMPARE_PROPERTIES = "compare-properties";
 export const GET_PROPERTY_ON_MAP = "get-properties-on-map";
 export const GET_USER_DATA = "get-user-data";
+// Reels
+export const LIST_REELS = "list/reels";
+export const ADD_REEL = "add/reels";
+export const DELETE_REEL = "reels"; // usage: `${DELETE_REEL}/${id}`

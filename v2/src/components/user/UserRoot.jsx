@@ -18,6 +18,7 @@ import EditProject from './project/EditProject'
 import InterestedUsersTable from './InterestedUsersTable'
 import { useState } from 'react'
 import PushNotificationLayout from '../wrapper/PushNotificationLayout'
+import UserReels from './reels/UserReels'
 // Import other user components
 // Placeholder imports - these need to be created or imported properly
 
@@ -55,6 +56,7 @@ const UserRoot = ({ notificationData }) => {
         "add-project": AddProject,
         "edit-project": EditProject,
         "interested": InterestedUsersTable,
+        "reels": UserReels,
     }
 
     // Get the Component to render based on the main section

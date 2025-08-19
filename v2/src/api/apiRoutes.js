@@ -17,6 +17,41 @@ export const getWebSetting = async () => {
   return res.data;
 };
 
+// Reels: list all reels or user-specific reels
+export const getReelsApi = async ({ user_id = "" } = {}) => {
+  const params = {};
+  if (user_id) params.userid = user_id;
+  const res = await api.get(apiEndpoints.LIST_REELS, { params });
+  return res.data;
+};
+
+// Reels: add a reel (expects FormData or JSON with title, property_id, description, video_link, public_id)
+export const addReelApi = async ({
+  title = "",
+  property_id = "",
+  description = "",
+  video_link = "",
+  public_id = "",
+  is_admin = false,
+} = {}) => {
+  const data = createFilteredFormData({
+    title,
+    property_id,
+    description,
+    video_link,
+    public_id,
+    is_admin,
+  });
+  const res = await api.post(apiEndpoints.ADD_REEL, data);
+  return res.data;
+};
+
+// Reels: delete by id
+export const deleteReelApi = async ({ id }) => {
+  const res = await api.delete(`${apiEndpoints.DELETE_REEL}/${id}`);
+  return res.data;
+};
+
 // 2.Get Home Page Data
 export const getHomePageData = async ({
   latitude = "",
