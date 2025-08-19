@@ -1,11 +1,11 @@
 {
-  "name": "eBroker",
-  "short_name": "eBroker",
+  "name": "iLove RealEstate",
+  "short_name": "iLove",
   "description": "Empower Your Real Estate Business",
   "start_url": "/",
   "display": "standalone",
-  "theme_color": "#087c7c",
-  "background_color": "#f5f5f4",
+  "theme_color": "#DB066F",
+  "background_color": "#F4F5F4",
   "icons": [
     {
       "src": "/favicon-16x16.png",
@@ -66,7 +66,7 @@
       "sizes": "512x512",
       "type": "image/png",
       "platform": "wide",
-      "label": "eBroker Home Screen"
+      "label": "iLove RealEstate Home Screen"
     }
   ],
   "capture_links": "existing-client-navigate",
@@ -77,7 +77,7 @@
   "edge_side_panel": {
     "preferred_width": 400
   },
-  "id": "ebroker-pwa",
+  "id": "iloverealestate-pwa",
   "file_handlers": [],
   "protocol_handlers": []
 }

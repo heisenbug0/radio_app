@@ -5,7 +5,7 @@ export default function Document() {
     <Html lang="en" web-version={process.env.NEXT_PUBLIC_WEB_VERSION} seo={process.env.NEXT_PUBLIC_SEO}>
       <Head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap"
           rel="stylesheet"
@@ -13,8 +13,16 @@ export default function Document() {
         <link rel="icon" href="/favicon.ico" />
         <link
           rel="stylesheet"
+          href="https://unpkg.com/cloudinary-video-player@1.11.1/dist/cld-video-player.min.css"
+        />
+        <link
+          rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"
         />
+        <script
+          defer
+          src="https://upload-widget.cloudinary.com/latest/global/all.js"
+        ></script>
         <script
           async
           defer

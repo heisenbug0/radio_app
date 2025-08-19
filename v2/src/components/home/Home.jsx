@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
+import ReelsCarousel from '../reels/ReelsCarousel';
 const MainSwiper = dynamic(() => import('../mainswiper/MainSwiper'), { ssr: false });
 import * as api from "@/api/apiRoutes";
 const Faqs = dynamic(() => import('../faqs/Faqs'), { ssr: false });
@@ -68,7 +69,11 @@ const Home = () => {
                 longitude: userSelectedLocation?.longitude,
                 radius: userSelectedLocation?.radius
             });
-            if (response?.data?.homepage_location_data_available === false && isHomePageLocationAlertEnabled) {
+            if (
+                process.env.NODE_ENV === "production" &&
+                response?.data?.homepage_location_data_available === false &&
+                isHomePageLocationAlertEnabled
+            ) {
                 Swal.fire({
                     title: t("locationDataNotAvailable"),
                     text: t("pleaseChangeLocationOrContinue"),
@@ -353,6 +358,10 @@ const Home = () => {
                 // Actual content when data is loaded
                 <>
                     <MainSwiper slides={homePageData?.slider_section} />
+                    {/* Reels Carousel (branded) */}
+                    <div className='container mx-auto px-4 my-6'>
+                        <ReelsCarousel />
+                    </div>
                     <div className='flex flex-col'>
                         {homePageData?.sections?.map((apiSection, index) => {
                             const { Component, style, label, buttonLink, buttonText } = getSectionInfo(apiSection.type);

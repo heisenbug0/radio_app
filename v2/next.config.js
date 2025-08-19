@@ -16,6 +16,11 @@ const nextConfig = {
         pathname: "**",
         // search: '',
       },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "**",
+      },
     ],
 
     unoptimized: true,
@@ -38,7 +43,7 @@ const nextConfig = {
     return config;
   },
 };
-if (process.env.NEXT_PUBLIC_SEO === "false") {
+if (process.env.NEXT_PUBLIC_SEO === "false" && process.env.NODE_ENV === "production") {
   nextConfig.output = "export";
   nextConfig.exportPathMap = async (
     defaultPathMap,

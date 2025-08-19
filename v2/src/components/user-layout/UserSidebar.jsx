@@ -164,6 +164,11 @@ const UserSidebar = ({ isMobile = false, open = false, toggleDrawer }) => {
       url: "/user/dashboard",
     },
     {
+      title: t("myReels") || "My Reels",
+      icon: MdOutlineDashboard,
+      url: "/user/reels",
+    },
+    {
       title: t("myAdvertisement"),
       icon: RiAdvertisementLine,
       url: "/user/advertisement?tab=property",
