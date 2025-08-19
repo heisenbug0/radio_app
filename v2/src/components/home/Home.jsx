@@ -69,7 +69,11 @@ const Home = () => {
                 longitude: userSelectedLocation?.longitude,
                 radius: userSelectedLocation?.radius
             });
-            if (response?.data?.homepage_location_data_available === false && isHomePageLocationAlertEnabled) {
+            if (
+                process.env.NODE_ENV === "production" &&
+                response?.data?.homepage_location_data_available === false &&
+                isHomePageLocationAlertEnabled
+            ) {
                 Swal.fire({
                     title: t("locationDataNotAvailable"),
                     text: t("pleaseChangeLocationOrContinue"),
