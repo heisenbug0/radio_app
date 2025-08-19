@@ -75,12 +75,12 @@ const Footer = () => {
   //   company_tel1: phone1,
   //   company_tel2: phone2,
   // } = webSettings;
-  const companyName = webSettings?.company_name;
-  const companyDescription = webSettings?.company_description;
-  const address = webSettings?.company_address;
-  const email = webSettings?.company_email;
-  const phone1 = webSettings?.company_tel1;
-  const phone2 = webSettings?.company_tel2;
+  const companyName = webSettings?.company_name || "iLove RealEstate";
+  const companyDescription = webSettings?.company_description || process.env.NEXT_PUBLIC_META_DESCRIPTION;
+  const address = webSettings?.company_address || "7095 Hollywood Blvd, #581, Hollywood, CA 90028";
+  const email = webSettings?.company_email || "iloverealestates@gmail.com";
+  const phone1 = webSettings?.company_tel1 || "+1 840 600 1116";
+  const phone2 = webSettings?.company_tel2 || "";
 
   const phoneNumbers = [phone1, phone2];
 
@@ -104,8 +104,7 @@ const Footer = () => {
               </CustomLink>
               <div>
                 <h2 className="primaryTextColor text-base font-medium">
-                  {companyDescription ||
-                    process.env.NEXT_PUBLIC_META_DESCRIPTION}
+                  {companyDescription}
                 </h2>
               </div>
             </div>
