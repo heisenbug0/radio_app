@@ -1,0 +1,89 @@
+/* @tailwind base; */
+@tailwind components;
+@tailwind utilities;
+
+body {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.phoneContainer {
+  height: 48px;
+  border: none;
+}
+
+.phoneInput {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.dropDown {
+  height: 165px;
+}
+
+.home_banner_overlay {
+  background: linear-gradient(0deg, rgba(65, 70, 78, 0.5), rgba(0, 0, 0, 0.1)),
+    url("../public/banner/hero_banner.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 20px;
+}
+
+.bgOverlay {
+  background: linear-gradient(0deg, rgb(65, 70, 78), rgba(0, 0, 0, 0.24)),
+    url("../public/banner/bg.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.scrollHeaderTransition {
+  /* transition: all 1s ease-out; */
+  transition: 500ms linear 50ms;
+}
+
+.ring-container {
+  width: 150px;
+  height: 150px;
+  position: relative;
+}
+
+
+.navigation-wrapper {
+  position: relative;
+  background-image: linear-gradient(to bottom,
+      rgba(245, 246, 252, 0.52),
+      rgba(117, 19, 93, 0.73));
+}
+
+.arrow {
+  width: 50px;
+  height: 50px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  -webkit-transform: translateY(-50%);
+  cursor: pointer;
+  fill: #db066f;
+  border: 1px solid navajowhite;
+  border-radius: 100%;
+  padding: 10px;
+}
+
+.arrow--left {
+  /* left: 5px; */
+  left: auto;
+  right: 100px;
+}
+
+.arrow--right {
+  left: auto;
+  right: 100px;
+  margin-top: 60px;
+}
+
+.arrow--disabled {
+  fill: rgba(255, 255, 255, 0.5);
+}
