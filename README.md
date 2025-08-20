@@ -1,127 +1,88 @@
-# Project Overview
+## what this is
 
-This project is divided into four main modules, each focusing on a distinct aspect of the system's development. The modules are designed to work together seamlessly, culminating in a comprehensive solution for product recommendation, OCR-based query processing, and image-based product detection.
+small product search app. text, ocr text, product image -> simple recs. flask api + tiny ui.
 
-## Module 1: Data Preparation and Backend Setup
+## structure
 
-### Task 1: E-commerce Dataset Cleaning
+- `app.py` entry
+- `services/` core services (data, ocr, cnn)
+- `pipelines/` thin orchestration for text, ocr, image
+- `ml/` cnn parts split: `modeling/`, `data/`, `training/`
+- `utils/` typed dicts
+- `templates/` simple pages
+- `data/` csv and assets
 
-- *Objective*: Ensure the dataset is clean and ready for analysis and vectorization.
-- *Key Actions*: Remove duplicates, handle missing values, and standardize formats.
+## run
 
-### Task 2: Vector Database Creation
+1) create venv, install requirements
+2) put dataset in `data/dataset.csv`
+3) optional: set pinecone env (else local tf-idf is used)
+4) start server
 
-- *Objective*: Set up a vector database using Pinecone to store product vectors.
-- *Key Actions*: Define the database schema and integrate with Pinecone.
+```bash
+pip install -r requirements.txt
+export FLASK_APP=app.py
+python app.py
+```
 
-### Task 3: Similarity Metrics Selection
+open `http://localhost:5000`
 
-- *Objective*: Choose and justify the similarity metrics used to compare product vectors.
-- *Key Actions*: Evaluate different metrics (e.g., cosine similarity, dot product) and select the best fit based on the dataset characteristics.
+## endpoints
 
-### Endpoint 1: Product Recommendation Service
+- POST `/product-recommendation` with form `query` -> text search
+- POST `/ocr-query` with file `image_data` -> ocr then search
+- POST `/image-product-search` with file `product_image` -> cnn class then search
 
-- *Functionality*: Handle natural language queries to recommend products, including safeguards against bad queries and sensitive data exposure.
-- *Input*: Customer's natural language query.
-- *Output*: Product matches array and a natural language response within specified constraints.
+json shape is simple. see `templates/sample_response.html` or try it.
 
-## Module 2: OCR and Web Scraping
+## how the pieces talk
 
-### Task 4: OCR Functionality Implementation
+- `services/data_preparation.py` cleans csv, builds tf‑idf, searches. pinecone if creds exist. cosine metric.
+- `services/ocr_service.py` preprocess + pytesseract + quick validation.
+- `services/cnn_model.py` orchestrates cnn train/load/predict. uses `ml/` modules.
+- `pipelines/*.py` stitch small steps per use case. very thin. keeps concerns apart.
 
-- *Objective*: Develop the capability to extract text from images using OCR technology.
-- *Key Actions*: Integrate and configure an OCR tool (e.g., Tesseract).
+## notebooks (experiments)
 
-### Task 5: Web Scraping for Product Images
+in `notebooks/` you’ll find:
 
-- *Objective*: Scrape product images from e-commerce websites for training data ``CNN_Model_Train_Data.csv``.
-- *Key Actions*: Automate scraping, download images, and store them systematically and make sure you have enough data to train the CNN model.
+- `01_data_explore.ipynb` quick look at dataset, cleaning preview
+- `02_vector_search_eval.ipynb` tf‑idf search sanity, top‑k hits
+- `03_cnn_training.ipynb` small train run, curves, confusion matrix
+- `04_inference_demos.ipynb` text, ocr, image flows end‑to‑end
 
-### Endpoint 2: OCR-Based Query Processing
+this is what people mean by experimental notebooks: throwaway, small experiments to try ideas, visualize, and record results before baking into code. they don’t ship to prod. you run them locally to test assumptions.
 
-- *Functionality*: Extract and process handwritten queries using the same logic as Endpoint 1.
-- *Input*: Image file with handwritten text.
-- *Output*: Same output format as Endpoint 1, adapted for image inputs also return the extracted test from OCR.
+## dev notes
 
-## Module 3: CNN Model Development
+- small files, short funcs, clear names.
+- typed dicts in `utils/types.py`.
+- minimal docstrings, lowercase tone.
+- errors are handled and never crash the api.
 
-### Task 6: CNN Model Training
+## setup pinecone (optional)
 
-- *Objective*: Develop a CNN model from scratch using only the ``products`` mentioned on ``CNN_Model_Train_Data.csv`` to identify products from images.
-- *Key Actions*: Train the model using scraped images and clean data without using pre-trained models.
+add a `.env` with:
 
-### Endpoint 3: Image-Based Product Detection
+```
+PINECONE_API_KEY=...
+PINECONE_ENVIRONMENT=gcp-starter
+```
 
-- *Functionality*: Use the CNN model to identify products from images and match them using the vector database.
-- *Input*: Product image.
-- *Output*: Product description and matching products in a format consistent with other endpoints. Also return the name of the `class` that you got from CNN model for the particular input image.
+if missing, local tf‑idf search is used.
 
-## Module 4: Frontend Development and Integration
+## train the cnn (optional)
 
-### Frontend Page 1: Text Query Interface
+prepare images in `data/scraped_images/` like `STOCKCODE_1.jpg` etc. products list by `StockCode` in csv.
 
-- *Features*: Form to submit text queries, display natural language responses, and a product details table.
+```python
+from services.cnn_model import CNNModelService
+svc = CNNModelService()
+svc.train_model('data/scraped_images', 'data/CNN_Model_Train_Data.csv')
+```
 
-### Frontend Page 2: Image Query Interface
+it saves into `models/` and api uses it for `/image-product-search`.
 
-- *Features*: Allows users to upload images of handwritten queries and displays results similar to Page 1.
+## license
 
-### Frontend Page 3: Product Image Upload Interface
-
-- *Features*: Users can upload product images, and view the identified product description and related products in natural language and tabular format.
-
-## Instructions for Presentation
-
-### 1. Incremental Report Writing
-
-Each module completion should be accompanied by a concise, to-the-point report that documents the process, decisions, and outcomes. These reports will be incremental, building upon each other as the bootcamp progresses.
-
-#### Report Format Suggestion:
-
-- *Title Page*: Include the module number and title, the names of the team members, and the submission date.
-- *Introduction*: Briefly describe the objectives of the module and its importance to the overall project.
-- *High-Level Flow*:
-  - *Description*: Outline the main tasks and functionalities developed in the module.
-  - *Diagrams*: Include flowcharts or diagrams that visually represent the architecture and data flow.
-  - *Key Decisions*: Summarize crucial decisions made during the module, such as choice of technology, design patterns, and configurations.
-- *Challenges and Solutions*:
-  - Briefly discuss any challenges faced during the module and how they were addressed.
-- *Conclusion*: Sum up the outcomes of the module and its readiness for integration with other modules.
-- *References*: Cite any tools, libraries, or external resources that were used.
-
-### 2. Video Documentation
-
-Participants are required to create two sets of videos for each module, detailing both the functionality and the technical implementation. This will not only aid in a better understanding of the project but also serve as a reference for future projects.
-
-#### Video Requirements:
-
-- *Functional Demonstration Video*:
-  - *Content*: Demonstrate the functionality of each endpoint and page developed in the module.
-  - *Focus*: Show how the system responds to various inputs and scenarios. Explain the user interaction with the system.
-  - *Duration*: Keep the video concise, preferably under 5 minutes.
-- *Code Explanation Video*:
-  - *Content*: Provide a high-level overview of the codebase for the module.
-  - *Focus*: Explain the structure of the code, major classes, and functions. Highlight any significant patterns or algorithms used.
-  - *Duration*: Limit the explanation to under 10 minutes.
-
-### Submission Guidelines:
-
-- *Timing*: Submit the videos along with the incremental report at the end of each module.
-- *Format*: Ensure videos are in a common format (e.g., MP4) and quality is sufficient for clear viewing.
-- *Hosting*: Upload videos to a platform accessible to all participants and reviewers (e.g., Google Drive, YouTube in unlisted mode). Or you can use loom, fluvid, vmaker etc alternatively.
-
-## Instructions for Coding
-
-### General Guidelines
-
-- *Class-Based Implementation*: It is recommended to use class-based implementation for all backend services to ensure organized, reusable, and maintainable code.
-- *Best Practices*:
-  - *ACID Properties*: Ensure that database transactions are Atomic, Consistent, Isolated, and Durable to maintain data integrity and reliability.
-  - *Modularity*: Build the codebase with clear modularity in mind. Separate different functionalities into distinct modules to enhance readability and maintainability.
-- *Packaging*: Organize your code into packages that reflect the services they provide. This approach not only helps in maintaining the code but also simplifies the deployment and scaling process.
-- Directories: Whenever you will test on notebook make sure you keep all the notebooks in ``notebook`` directory and use proper naming for the notebooks.
-
-### Tech Stack
-
-- *Web Framework*: Use Flask for developing the backend. Flask provides flexibility and ease of use for setting up API services.
-- *Vector Database*: Integrate Pinecone to manage and query vector data efficiently. Pinecone supports scalable vector searches which are crucial for the recommendation systems in this project.
+mit
