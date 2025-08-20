@@ -48,7 +48,7 @@ class AppService:
             print("application will continue with limited functionality.")
     
     def process_text_query(self, query) -> TextQueryResult:
-        """text -> products"""
+        """process natural language text query and return product recommendations"""
         try:
             return self.text_pipeline.run(query, top_k=5)
         except Exception as e:

@@ -1,60 +1,85 @@
-# Project Overview
+## what this is
 
-This project is divided into four main modules, each focusing on a distinct aspect of the system's development. The modules are designed to work together seamlessly, culminating in a comprehensive solution for product recommendation, OCR-based query processing, and image-based product detection.
+small product search app. text, ocr text, product image -> simple recs. flask api + tiny ui.
 
-## Module 1: Data Preparation and Backend Setup
+## structure
 
-### Task 1: E-commerce Dataset Cleaning
+- `app.py` entry
+- `services/` core services (data, ocr, cnn, optional multimodal)
+- `pipelines/` thin orchestration for text + ocr
+- `utils/` typed dicts
+- `templates/` simple pages
+- `data/` csv and assets
 
-- *Objective*: Ensure the dataset is clean and ready for analysis and vectorization.
-- *Key Actions*: Remove duplicates, handle missing values, and standardize formats.
+## run
 
-### Task 2: Vector Database Creation
+1) create venv, install requirements
+2) put dataset in `data/dataset.csv`
+3) optional: set pinecone env (else local tf-idf is used)
+4) start server
 
-- *Objective*: Set up a vector database using Pinecone to store product vectors.
-- *Key Actions*: Define the database schema and integrate with Pinecone.
+```bash
+pip install -r requirements.txt
+python app.py
+```
 
-### Task 3: Similarity Metrics Selection
+open `http://localhost:5000`
 
-- *Objective*: Choose and justify the similarity metrics used to compare product vectors.
-- *Key Actions*: Evaluate different metrics (e.g., cosine similarity, dot product) and select the best fit based on the dataset characteristics.
+## endpoints
 
-### Endpoint 1: Product Recommendation Service
+- POST `/product-recommendation` with form `query` -> text search
+- POST `/ocr-query` with file `image_data` -> ocr then search
+- POST `/image-product-search` with file `product_image` -> cnn class or multimodal flow then search
 
-- *Functionality*: Handle natural language queries to recommend products, including safeguards against bad queries and sensitive data exposure.
-- *Input*: Customer's natural language query.
-- *Output*: Product matches array and a natural language response within specified constraints.
+## how the pieces talk
 
-## Module 2: OCR and Web Scraping
+- `services/data_preparation.py` cleans csv, builds tf‑idf, searches. pinecone if creds exist. cosine metric.
+- `services/ocr_service.py` preprocess + pytesseract + validation.
+- `services/cnn_model.py` training/inference. optional zero‑shot and caption helpers stay.
+- `pipelines/text_pipeline.py` and `pipelines/ocr_pipeline.py` are thin, reusable steps.
 
-### Task 4: OCR Functionality Implementation
+## notebooks (experiments)
 
-- *Objective*: Develop the capability to extract text from images using OCR technology.
-- *Key Actions*: Integrate and configure an OCR tool (e.g., Tesseract).
+in `notebooks/`:
 
-### Task 5: Web Scraping for Product Images
+- `01_data_explore.ipynb` quick look at dataset, cleaning preview
+- `02_vector_search_eval.ipynb` tf‑idf search sanity, top‑k hits
+- `03_cnn_training.ipynb` small train run, curves, confusion matrix
+- `04_inference_demos.ipynb` text, ocr, image flows end‑to‑end
 
-- *Objective*: Scrape product images from e-commerce websites for training data ``CNN_Model_Train_Data.csv``.
-- *Key Actions*: Automate scraping, download images, and store them systematically and make sure you have enough data to train the CNN model.
+what is this? experimental notebooks are scratch pads to try ideas, visualize, and record results. they’re not prod code; they help you test assumptions fast.
 
-### Endpoint 2: OCR-Based Query Processing
+## dev notes
 
-- *Functionality*: Extract and process handwritten queries using the same logic as Endpoint 1.
-- *Input*: Image file with handwritten text.
-- *Output*: Same output format as Endpoint 1, adapted for image inputs also return the extracted test from OCR.
+- small files, short funcs, clear names
+- typed dicts in `utils/types.py`
+- lowercase tone, minimal docstrings
+- errors handled, api stays up
 
-## Module 3: CNN Model Development
+## pinecone (optional)
 
-### Task 6: CNN Model Training
+add `.env`:
 
-- *Objective*: Develop a CNN model from scratch using only the ``products`` mentioned on ``CNN_Model_Train_Data.csv`` to identify products from images.
-- *Key Actions*: Train the model using scraped images and clean data without using pre-trained models.
+```
+PINECONE_API_KEY=...
+PINECONE_ENVIRONMENT=gcp-starter
+```
 
-### Endpoint 3: Image-Based Product Detection
+if missing, local tf‑idf search is used.
 
-- *Functionality*: Use the CNN model to identify products from images and match them using the vector database.
-- *Input*: Product image.
-- *Output*: Product description and matching products in a format consistent with other endpoints. Also return the name of the `class` that you got from CNN model for the particular input image.
+## train the cnn (optional)
+
+images in `data/scraped_images/` named like `STOCKCODE_1.jpg`. products list by `StockCode` in csv.
+
+```python
+from services.cnn_model import CNNModelService
+svc = CNNModelService()
+svc.train_model('data/scraped_images', 'data/CNN_Model_Train_Data.csv')
+```
+
+## license
+
+mit
 
 ### Zero-shot fallback (no training required)
 
