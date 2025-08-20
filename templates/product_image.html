@@ -3,112 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Image Upload - Product Recommendation System</title>
+    <title>Project</title>
     <style>
-        * {
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
         }
         
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
+            width: 80%;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
         .header {
-            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
         }
         
         .header h1 {
-            font-size: 2.5em;
+            color: #333;
             margin-bottom: 10px;
-            font-weight: 300;
         }
         
         .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
+            color: #666;
+            margin: 0;
         }
         
         .back-btn {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            cursor: pointer;
+            background: #f2f2f2;
+            color: #333;
+            border: 1px solid #ddd;
+            padding: 8px 16px;
             text-decoration: none;
-            transition: background 0.3s ease;
+            display: inline-block;
+            margin-bottom: 20px;
         }
         
         .back-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-        
-        .content {
-            padding: 40px;
+            background: #e6e6e6;
         }
         
         .upload-section {
-            background: #f8f9fa;
-            padding: 30px;
-            border-radius: 15px;
-            margin-bottom: 30px;
+            background: #f9f9f9;
+            padding: 20px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
             text-align: center;
         }
         
         .upload-area {
-            border: 3px dashed #43e97b;
-            border-radius: 15px;
-            padding: 40px;
-            margin-bottom: 20px;
+            border: 2px dashed #999;
+            padding: 30px;
+            margin-bottom: 15px;
             cursor: pointer;
-            transition: border-color 0.3s ease, background 0.3s ease;
+            background: #fff;
         }
         
         .upload-area:hover {
-            border-color: #38f9d7;
-            background: rgba(67, 233, 123, 0.05);
+            border-color: #666;
+            background: #f9f9f9;
         }
         
         .upload-area.dragover {
-            border-color: #38f9d7;
-            background: rgba(67, 233, 123, 0.1);
+            border-color: #333;
+            background: #f0f0f0;
         }
         
         .upload-icon {
-            font-size: 3em;
-            color: #43e97b;
-            margin-bottom: 15px;
-        }
-        
-        .upload-text {
-            font-size: 1.2em;
+            font-size: 2em;
             color: #666;
             margin-bottom: 10px;
         }
         
+        .upload-text {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
         .upload-hint {
-            font-size: 0.9em;
-            color: #999;
+            font-size: 14px;
+            color: #666;
         }
         
         .file-input {
@@ -116,35 +98,31 @@
         }
         
         .submit-btn {
-            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
-            font-size: 16px;
+            background: #f2f2f2;
+            color: #333;
+            border: 1px solid #ddd;
+            padding: 10px 20px;
+            font-size: 14px;
             cursor: pointer;
-            transition: transform 0.3s ease;
         }
         
         .submit-btn:hover {
-            transform: translateY(-2px);
+            background: #e6e6e6;
         }
         
         .submit-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
-            transform: none;
         }
         
         .preview-section {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         
         .image-preview {
             max-width: 300px;
             max-height: 300px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #ddd;
             display: none;
         }
         
@@ -153,113 +131,77 @@
         }
         
         .prediction-section {
-            background: #e8f5e8;
-            padding: 20px;
-            border-radius: 10px;
+            background: #f9f9f9;
+            padding: 15px;
+            border: 1px solid #ddd;
             margin-bottom: 20px;
-            border-left: 4px solid #28a745;
         }
         
         .prediction-title {
-            font-weight: 600;
-            color: #155724;
+            font-weight: bold;
+            color: #333;
             margin-bottom: 10px;
         }
         
-        .prediction-details {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .predicted-class {
-            font-size: 1.2em;
-            color: #28a745;
-            font-weight: 600;
+        .prediction-text {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.4;
         }
         
         .confidence {
-            background: #28a745;
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.9em;
-            font-weight: 600;
+            font-weight: bold;
+            color: #333;
         }
         
         .response-section {
-            background: #e8f5e8;
-            padding: 20px;
-            border-radius: 10px;
+            background: #f9f9f9;
+            padding: 15px;
+            border: 1px solid #ddd;
             margin-bottom: 20px;
-            border-left: 4px solid #28a745;
         }
         
         .response-text {
-            font-size: 1.1em;
-            color: #155724;
-            line-height: 1.6;
+            font-size: 14px;
+            color: #333;
+            line-height: 1.4;
         }
         
         .products-table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+        
+        .products-table th, .products-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
         }
         
         .products-table th {
-            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-            color: white;
-            padding: 15px;
-            text-align: left;
-            font-weight: 600;
-        }
-        
-        .products-table td {
-            padding: 15px;
-            border-bottom: 1px solid #e9ecef;
+            background-color: #f2f2f2;
+            font-weight: bold;
         }
         
         .products-table tr:hover {
-            background: #f8f9fa;
-        }
-        
-        .rank {
-            font-weight: bold;
-            color: #43e97b;
-        }
-        
-        .price {
-            font-weight: 600;
-            color: #28a745;
-        }
-        
-        .score {
-            background: #e9ecef;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 0.9em;
-            color: #666;
+            background-color: #f9f9f9;
         }
         
         .loading {
             text-align: center;
-            padding: 40px;
+            padding: 20px;
             color: #666;
         }
         
         .spinner {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #43e97b;
+            border-top: 4px solid #333;
             border-radius: 50%;
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin: 0 auto 10px;
         }
         
         @keyframes spin {
@@ -268,12 +210,18 @@
         }
         
         .error {
-            background: #f8d7da;
-            color: #721c24;
+            background: #f9f9f9;
+            color: #333;
             padding: 15px;
-            border-radius: 10px;
-            border-left: 4px solid #dc3545;
+            border: 1px solid #ddd;
             margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                width: 95%;
+                margin: 10px auto;
+            }
         }
     </style>
 </head>
@@ -282,78 +230,73 @@
         <div class="header">
             <a href="/" class="back-btn">← Back</a>
             <h1>Product Image Upload</h1>
-            <p>Upload product images for AI-powered identification and recommendations</p>
+            <p>Upload product images and get AI-powered product identification with similar product recommendations</p>
         </div>
         
-        <div class="content">
-            <div class="upload-section">
-                <div class="upload-area" id="uploadArea">
-                    <div class="upload-icon">🖼️</div>
-                    <div class="upload-text">Click to upload or drag and drop</div>
-                    <div class="upload-hint">Supports: JPG, PNG, GIF, BMP</div>
-                </div>
-                
-                <input type="file" id="fileInput" class="file-input" accept="image/*">
-                
-                <div class="preview-section">
-                    <img id="imagePreview" class="image-preview" alt="Preview">
-                </div>
-                
-                <button type="button" class="submit-btn" id="submitBtn" disabled>
-                    Identify Product
-                </button>
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">🖼️</div>
+                <div class="upload-text">Click to upload or drag and drop</div>
+                <div class="upload-hint">Supports JPG, PNG, GIF, BMP files</div>
             </div>
             
-            <div class="loading" id="loading" style="display: none;">
-                <div class="spinner"></div>
-                <p>Analyzing product image with AI...</p>
+            <input type="file" id="imageFile" class="file-input" accept="image/*">
+            
+            <div class="preview-section">
+                <img id="imagePreview" class="image-preview" alt="Preview">
             </div>
             
-            <div class="error" id="error" style="display: none;"></div>
-            
-            <div class="results" id="results">
-                <div class="prediction-section">
-                    <div class="prediction-title">AI Prediction:</div>
-                    <div class="prediction-details">
-                        <div class="predicted-class" id="predictedClass"></div>
-                        <div class="confidence" id="confidence"></div>
-                    </div>
+            <button type="button" class="submit-btn" id="submitBtn" disabled>
+                Analyze Image
+            </button>
+        </div>
+        
+        <div class="loading" id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Analyzing image...</p>
+        </div>
+        
+        <div class="error" id="error" style="display: none;"></div>
+        
+        <div class="results" id="results">
+            <div class="prediction-section">
+                <div class="prediction-title">Product Prediction:</div>
+                <div class="prediction-text">
+                    <strong>Class:</strong> <span id="predictedClass">Unknown</span><br>
                 </div>
-                
-                <div class="response-section">
-                    <div class="response-text" id="responseText"></div>
-                </div>
-                
-                <table class="products-table" id="productsTable">
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Stock Code</th>
-                            <th>Description</th>
-                            <th>Unit Price</th>
-                            <th>Quantity</th>
-                            <th>Similarity Score</th>
-                        </tr>
-                    </thead>
-                    <tbody id="productsTableBody">
-                    </tbody>
-                </table>
             </div>
+            
+            <div class="response-section">
+                <div class="response-text" id="responseText"></div>
+            </div>
+            
+            <table class="products-table" id="productsTable">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Stock Code</th>
+                        <th>Description</th>
+                        <th>Unit Price</th>
+                        <th>Quantity</th>
+                        <th>Similarity Score</th>
+                    </tr>
+                </thead>
+                <tbody id="productsTableBody">
+                </tbody>
+            </table>
         </div>
     </div>
     
     <script>
         const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
+        const imageFile = document.getElementById('imageFile');
         const imagePreview = document.getElementById('imagePreview');
         const submitBtn = document.getElementById('submitBtn');
         
-        // Handle file selection
-        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('click', () => imageFile.click());
         
-        fileInput.addEventListener('change', handleFileSelect);
+        imageFile.addEventListener('change', handleFileSelect);
         
-        // Handle drag and drop
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             uploadArea.classList.add('dragover');
@@ -366,17 +309,16 @@
         uploadArea.addEventListener('drop', (e) => {
             e.preventDefault();
             uploadArea.classList.remove('dragover');
-            
             const files = e.dataTransfer.files;
             if (files.length > 0) {
-                fileInput.files = files;
+                imageFile.files = files;
                 handleFileSelect();
             }
         });
         
         function handleFileSelect() {
-            const file = fileInput.files[0];
-            if (file && file.type.startsWith('image/')) {
+            const file = imageFile.files[0];
+            if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     imagePreview.src = e.target.result;
@@ -387,12 +329,10 @@
             }
         }
         
-        // Handle form submission
         submitBtn.addEventListener('click', async function() {
-            const file = fileInput.files[0];
+            const file = imageFile.files[0];
             if (!file) return;
             
-            // Show loading
             document.getElementById('loading').style.display = 'block';
             document.getElementById('results').style.display = 'none';
             document.getElementById('error').style.display = 'none';
@@ -426,32 +366,28 @@
         
         function displayResults(result) {
             document.getElementById('predictedClass').textContent = result.predicted_class || 'Unknown';
-            document.getElementById('confidence').textContent = `${(result.confidence * 100).toFixed(1)}%`;
             document.getElementById('responseText').textContent = result.response;
             
-            const tbody = document.getElementById('productsTableBody');
-            tbody.innerHTML = '';
-            
+            const tableBody = document.querySelector('#productsTable tbody');
+            tableBody.innerHTML = '';
             if (result.products && result.products.length > 0) {
-                result.products.forEach(product => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td><span class="rank">#${product.rank}</span></td>
-                        <td>${product.stock_code}</td>
-                        <td>${product.description}</td>
-                        <td class="price">$${product.unit_price.toFixed(2)}</td>
-                        <td>${product.quantity}</td>
-                        <td><span class="score">${product.similarity_score}</span></td>
+                result.products.forEach(p => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${p.rank}</td>
+                        <td>${p.stock_code}</td>
+                        <td>${p.description}</td>
+                        <td>${p.unit_price}</td>
+                        <td>${p.quantity}</td>
+                        <td>${p.similarity_score}</td>
                     `;
-                    tbody.appendChild(row);
+                    tableBody.appendChild(tr);
                 });
             } else {
-                const row = document.createElement('tr');
-                row.innerHTML = '<td colspan="6" style="text-align: center; color: #666;">No similar products found</td>';
-                tbody.appendChild(row);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="6" class="no-results">No products found.</td>`;
+                tableBody.appendChild(tr);
             }
-            
-            document.getElementById('results').style.display = 'block';
         }
     </script>
 </body>

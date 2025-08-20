@@ -3,10 +3,11 @@ pinecone
 pandas
 numpy
 scikit-learn
-pytesseract
 Pillow
 opencv-python
-tensorflow
+tensorflow==2.15.0
+transformers==4.30.2
+keras==2.15.0
 matplotlib
 seaborn
 requests
@@ -14,3 +15,9 @@ beautifulsoup4
 selenium
 webdriver-manager
 python-dotenv
+google-cloud-vision
+easyocr
+sentence-transformers==2.2.2
+huggingface-hub==0.19.3
+torch>=2.2.0
+torchvision>=0.17.0

@@ -1,2 +1,10 @@
 .env
 *.pyc
+*.json
+*.keras
+*.pkl
+venv_311
+venv
+data_preparation.*
+models
+data/scraped_images
