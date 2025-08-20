@@ -2,6 +2,9 @@ from .data_preparation import DataPreparationService
 from .ocr_service import OCRService
 from .cnn_model import CNNModelService
 from .image_caption_service import ImageCaptionService
+from pipelines.text_pipeline import TextQueryPipeline
+from pipelines.ocr_pipeline import OCRPipeline
+from utils.types import TextQueryResult
 import os
 import tempfile
 import re
@@ -13,6 +16,8 @@ class AppService:
         self.cnn_service = CNNModelService()
         self.image_search_service = None
         self.caption_service = ImageCaptionService()
+        self.text_pipeline = TextQueryPipeline(self.data_service)
+        self.ocr_pipeline = OCRPipeline(self.ocr_service, self.data_service)
         self.initialize_services()
     
     def initialize_services(self):
@@ -42,84 +47,14 @@ class AppService:
             print(f"warning: service initialization failed: {e}")
             print("application will continue with limited functionality.")
     
-    def process_text_query(self, query):
-        """process natural language text query and return product recommendations"""
+    def process_text_query(self, query) -> TextQueryResult:
+        """text -> products"""
         try:
-            # validate query
-            if not query or len(query.strip()) < 2:
-                return {
-                    "products": [],
-                    "response": "Please provide a valid query with at least 2 characters."
-                }
-            
-            # check for sensitive content
-            sensitive_patterns = [
-                r'\b(password|secret|private|confidential)\b',
-                r'\b(admin|root|sudo)\b',
-                r'\b(credit\s*card|ssn|social\s*security)\b'
-            ]
-            
-            for pattern in sensitive_patterns:
-                if re.search(pattern, query, re.IGNORECASE):
-                    return {
-                        "products": [],
-                        "response": "I cannot process queries containing sensitive information."
-                    }
-            
-            # search for products
-            products = self.data_service.search_products(query, top_k=5)
-            
-            # generate natural language response
-            if products:
-                # format products for response
-                formatted_products = []
-                for i, product in enumerate(products, 1):
-                    formatted_product = {
-                        "rank": i,
-                        "stock_code": product['stock_code'],
-                        "description": product['description'],
-                        "unit_price": product['unit_price'],
-                        "quantity": product['quantity'],
-                        "similarity_score": round(product['similarity_score'], 3)
-                    }
-                    formatted_products.append(formatted_product)
-                
-                return {
-                    "products": formatted_products,
-                    "response": "Results:"
-                }
-            else:
-                # try with simplified query if no results found
-                simplified_query = self.simplify_query(query)
-                if simplified_query != query:
-                    products = self.data_service.search_products(simplified_query, top_k=5)
-                    if products:
-                        formatted_products = []
-                        for i, product in enumerate(products, 1):
-                            formatted_product = {
-                                "rank": i,
-                                "stock_code": product['stock_code'],
-                                "description": product['description'],
-                                "unit_price": product['unit_price'],
-                                "quantity": product['quantity'],
-                                "similarity_score": round(product['similarity_score'], 3)
-                            }
-                            formatted_products.append(formatted_product)
-                        
-                        return {
-                            "products": formatted_products,
-                            "response": "Results:"
-                        }
-                
-                return {
-                    "products": [],
-                    "response": "No products found."
-                }
-                
+            return self.text_pipeline.run(query, top_k=5)
         except Exception as e:
             return {
                 "products": [],
-                "response": f"An error occurred while processing your query: {str(e)}"
+                "response": f"error: {str(e)}"
             }
     
     def simplify_query(self, query):
@@ -132,7 +67,7 @@ class AppService:
         
         return ' '.join(key_words) if key_words else query
     
-    def process_ocr_query(self, image_file):
+    def process_ocr_query(self, image_file) -> TextQueryResult:
         """process handwritten query from image using ocr"""
         try:
             # save image to temp
@@ -141,48 +76,8 @@ class AppService:
                 temp_path = temp_file.name
             
             try:
-                # extract text using ocr
-                ocr_result = self.ocr_service.extract_text(image_path=temp_path)
-                
-                if not ocr_result['success']:
-                    return {
-                        "products": [],
-                        "response": f"Failed to extract text from image: {ocr_result['error']}. Please ensure the image is clear and contains readable text.",
-                        "extracted_text": "",
-                        "ocr_attempts": []
-                    }
-                
-                extracted_text = ocr_result['extracted_text']
-                
-                # if no text was extracted, provide helpful feedback
-                if not extracted_text or len(extracted_text.strip()) < 2:
-                    return {
-                        "products": [],
-                        "response": "No readable text was found in the image. Please ensure the text is clear, well-lit, and not too small. Try uploading a higher quality image.",
-                        "extracted_text": ""
-                    }
-                
-                # validate extracted text
-                is_valid, validation_message = self.ocr_service.validate_query(extracted_text)
-                
-                if not is_valid:
-                    return {
-                        "products": [],
-                        "response": f"Extracted text validation failed: {validation_message}. Extracted text: '{extracted_text}'. Please try a clearer image.",
-                        "extracted_text": extracted_text
-                    }
-                
-                # process the extracted text as a normal query
-                query_result = self.process_text_query(extracted_text)
-                query_result["extracted_text"] = extracted_text
-                
-                if query_result["products"]:
-                    query_result["response"] = "Results:"
-                else:
-                    query_result["response"] = "No products found."
-                
-                return query_result
-                
+                return self.ocr_pipeline.run(image_path=temp_path)
+            
             finally:
                 # clean up temp
                 if os.path.exists(temp_path):
@@ -191,7 +86,7 @@ class AppService:
         except Exception as e:
             return {
                 "products": [],
-                "response": f"An error occurred while processing the image: {str(e)}. Please try uploading a different image.",
+                "response": f"error: {str(e)}",
                 "extracted_text": ""
             }
     
