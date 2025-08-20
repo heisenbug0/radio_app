@@ -1,6 +1,10 @@
 from .data_preparation import DataPreparationService
 from .ocr_service import OCRService
 from .cnn_model import CNNModelService
+from pipelines.text_pipeline import TextQueryPipeline
+from pipelines.ocr_pipeline import OCRPipeline
+from pipelines.image_pipeline import ImageProductPipeline
+from utils.types import TextQueryResult
 import os
 import tempfile
 import re
@@ -10,6 +14,9 @@ class AppService:
         self.data_service = DataPreparationService()
         self.ocr_service = OCRService()
         self.cnn_service = CNNModelService()
+        self.text_pipeline = TextQueryPipeline(self.data_service)
+        self.ocr_pipeline = OCRPipeline(self.ocr_service, self.data_service)
+        self.image_pipeline = ImageProductPipeline(self.cnn_service, self.data_service)
         self.initialize_services()
     
     def initialize_services(self):
@@ -25,69 +32,15 @@ class AppService:
         except Exception as e:
             print(f"Warning: Service initialization failed: {e}")
     
-    def process_text_query(self, query):
-        """Process natural language text query and return product recommendations"""
+    def process_text_query(self, query: str) -> TextQueryResult:
+        """text query -> products"""
         try:
-            # Validate query
-            if not query or len(query.strip()) < 2:
-                return {
-                    "products": [],
-                    "response": "Please provide a valid query with at least 2 characters."
-                }
-            
-            # Check for sensitive content
-            sensitive_patterns = [
-                r'\b(password|secret|private|confidential)\b',
-                r'\b(admin|root|sudo)\b',
-                r'\b(credit\s*card|ssn|social\s*security)\b'
-            ]
-            
-            for pattern in sensitive_patterns:
-                if re.search(pattern, query, re.IGNORECASE):
-                    return {
-                        "products": [],
-                        "response": "I cannot process queries containing sensitive information."
-                    }
-            
-            # Search for products
-            products = self.data_service.search_products(query, top_k=5)
-            
-            # Generate natural language response
-            if products:
-                response = f"I found {len(products)} products matching your query '{query}'. "
-                response += "Here are the top recommendations:"
-                
-                # Format products for response
-                formatted_products = []
-                for i, product in enumerate(products, 1):
-                    formatted_product = {
-                        "rank": i,
-                        "stock_code": product['stock_code'],
-                        "description": product['description'],
-                        "unit_price": product['unit_price'],
-                        "quantity": product['quantity'],
-                        "similarity_score": round(product['similarity_score'], 3)
-                    }
-                    formatted_products.append(formatted_product)
-                
-                return {
-                    "products": formatted_products,
-                    "response": response
-                }
-            else:
-                return {
-                    "products": [],
-                    "response": f"I couldn't find any products matching your query '{query}'. Please try different keywords."
-                }
-                
+            return self.text_pipeline.run(query)
         except Exception as e:
-            return {
-                "products": [],
-                "response": f"An error occurred while processing your query: {str(e)}"
-            }
+            return {"products": [], "response": f"error: {str(e)}"}
     
-    def process_ocr_query(self, image_file):
-        """Process handwritten query from image using OCR"""
+    def process_ocr_query(self, image_file) -> TextQueryResult:
+        """image -> ocr -> products"""
         try:
             # Save uploaded image to temporary file
             with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
@@ -95,33 +48,7 @@ class AppService:
                 temp_path = temp_file.name
             
             try:
-                # Extract text using OCR
-                ocr_result = self.ocr_service.extract_text(image_path=temp_path)
-                
-                if not ocr_result['success']:
-                    return {
-                        "products": [],
-                        "response": f"Failed to extract text from image: {ocr_result['error']}",
-                        "extracted_text": ""
-                    }
-                
-                extracted_text = ocr_result['extracted_text']
-                
-                # Validate extracted text
-                is_valid, validation_message = self.ocr_service.validate_query(extracted_text)
-                
-                if not is_valid:
-                    return {
-                        "products": [],
-                        "response": f"Extracted text validation failed: {validation_message}",
-                        "extracted_text": extracted_text
-                    }
-                
-                # Process the extracted text as a normal query
-                query_result = self.process_text_query(extracted_text)
-                query_result["extracted_text"] = extracted_text
-                
-                return query_result
+                return self.ocr_pipeline.run(image_path=temp_path)
                 
             finally:
                 # Clean up temporary file
@@ -129,14 +56,10 @@ class AppService:
                     os.unlink(temp_path)
                     
         except Exception as e:
-            return {
-                "products": [],
-                "response": f"An error occurred while processing the image: {str(e)}",
-                "extracted_text": ""
-            }
+            return {"products": [], "response": f"error: {str(e)}", "extracted_text": ""}
     
-    def process_image_product_search(self, image_file):
-        """Process product image to identify and recommend similar products"""
+    def process_image_product_search(self, image_file) -> TextQueryResult:
+        """product image -> class -> products"""
         try:
             # Save uploaded image to temporary file
             with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
@@ -144,57 +67,7 @@ class AppService:
                 temp_path = temp_file.name
             
             try:
-                # Predict product class using CNN
-                prediction_result = self.cnn_service.predict_product(temp_path)
-                
-                if prediction_result is None:
-                    return {
-                        "products": [],
-                        "response": "Failed to identify product from image. Please try a different image.",
-                        "predicted_class": "Unknown"
-                    }
-                
-                predicted_class = prediction_result['predicted_class']
-                confidence = prediction_result['confidence']
-                
-                # Search for similar products using the predicted class
-                products = self.data_service.search_products(predicted_class, top_k=5)
-                
-                # Generate response
-                if confidence > 0.7:
-                    response = f"I identified this product as '{predicted_class}' with {confidence:.1%} confidence. "
-                else:
-                    response = f"I tentatively identified this product as '{predicted_class}' with {confidence:.1%} confidence. "
-                
-                if products:
-                    response += f"Here are similar products:"
-                    
-                    # Format products for response
-                    formatted_products = []
-                    for i, product in enumerate(products, 1):
-                        formatted_product = {
-                            "rank": i,
-                            "stock_code": product['stock_code'],
-                            "description": product['description'],
-                            "unit_price": product['unit_price'],
-                            "quantity": product['quantity'],
-                            "similarity_score": round(product['similarity_score'], 3)
-                        }
-                        formatted_products.append(formatted_product)
-                    
-                    return {
-                        "products": formatted_products,
-                        "response": response,
-                        "predicted_class": predicted_class,
-                        "confidence": round(confidence, 3)
-                    }
-                else:
-                    return {
-                        "products": [],
-                        "response": response + " However, I couldn't find similar products in our database.",
-                        "predicted_class": predicted_class,
-                        "confidence": round(confidence, 3)
-                    }
+                return self.image_pipeline.run(temp_path)
                     
             finally:
                 # Clean up temporary file
@@ -202,9 +75,4 @@ class AppService:
                     os.unlink(temp_path)
                     
         except Exception as e:
-            return {
-                "products": [],
-                "response": f"An error occurred while processing the product image: {str(e)}",
-                "predicted_class": "Unknown",
-                "confidence": 0.0
-            }
+            return {"products": [], "response": f"error: {str(e)}", "predicted_class": "Unknown", "confidence": 0.0}

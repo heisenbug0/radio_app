@@ -1,13 +1,15 @@
 import tensorflow as tf
-from tensorflow.keras import layers, models
+from tensorflow.keras import models
 import numpy as np
 import pandas as pd
 import os
-from PIL import Image
 import cv2
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 import matplotlib.pyplot as plt
+from ml.modeling.cnn_arch import build_cnn
+from ml.data.image_loader import load_labeled_images, load_image_rgb_resized
+from ml.training.loops import compile_model, train
 
 class CNNModelService:
     def __init__(self):
@@ -19,106 +21,28 @@ class CNNModelService:
         self.epochs = 50
         
     def load_and_preprocess_data(self, data_dir, csv_file_path):
-        """Load and preprocess image data for training"""
-        print("Loading and preprocessing data...")
-        
-        # Read the CSV file to get product classes
+        """load image tensors and labels"""
+        print("loading data...")
+        X, labels = load_labeled_images(data_dir, csv_file_path, self.image_size)
         df = pd.read_csv(csv_file_path)
-        self.class_names = df['StockCode'].unique().tolist()
-        
-        # Encode labels
+        self.class_names = df['StockCode'].astype(str).unique().tolist()
         self.label_encoder.fit(self.class_names)
-        
-        # Load images and labels
-        images = []
-        labels = []
-        
-        for stock_code in self.class_names:
-            # Look for images with this stock code
-            for filename in os.listdir(data_dir):
-                if filename.startswith(str(stock_code)) and filename.endswith(('.jpg', '.jpeg', '.png')):
-                    try:
-                        image_path = os.path.join(data_dir, filename)
-                        image = self.load_and_preprocess_image(image_path)
-                        
-                        if image is not None:
-                            images.append(image)
-                            labels.append(stock_code)
-                    except Exception as e:
-                        print(f"Error loading image {filename}: {e}")
-        
-        if not images:
-            raise ValueError("No images found for training")
-        
-        # Convert to numpy arrays
-        X = np.array(images)
         y = self.label_encoder.transform(labels)
-        
-        print(f"Loaded {len(images)} images for {len(self.class_names)} classes")
+        print(f"loaded {len(X)} images for {len(self.class_names)} classes")
         return X, y
     
     def load_and_preprocess_image(self, image_path):
-        """Load and preprocess a single image"""
+        """single image -> tensor"""
         try:
-            # Load image
-            image = cv2.imread(image_path)
-            if image is None:
-                return None
-            
-            # Convert BGR to RGB
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            
-            # Resize image
-            image = cv2.resize(image, self.image_size)
-            
-            # Normalize pixel values
-            image = image.astype(np.float32) / 255.0
-            
-            return image
-            
+            return load_image_rgb_resized(image_path, self.image_size)
         except Exception as e:
-            print(f"Error preprocessing image {image_path}: {e}")
+            print(f"error preprocessing image {image_path}: {e}")
             return None
     
     def create_cnn_model(self, num_classes):
-        """Create a CNN model from scratch"""
-        model = models.Sequential([
-            # First Convolutional Block
-            layers.Conv2D(32, (3, 3), activation='relu', input_shape=(*self.image_size, 3)),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            layers.Dropout(0.25),
-            
-            # Second Convolutional Block
-            layers.Conv2D(64, (3, 3), activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            layers.Dropout(0.25),
-            
-            # Third Convolutional Block
-            layers.Conv2D(128, (3, 3), activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            layers.Dropout(0.25),
-            
-            # Fourth Convolutional Block
-            layers.Conv2D(256, (3, 3), activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            layers.Dropout(0.25),
-            
-            # Flatten and Dense Layers
-            layers.Flatten(),
-            layers.Dense(512, activation='relu'),
-            layers.BatchNormalization(),
-            layers.Dropout(0.5),
-            layers.Dense(256, activation='relu'),
-            layers.BatchNormalization(),
-            layers.Dropout(0.5),
-            layers.Dense(num_classes, activation='softmax')
-        ])
-        
-        return model
+        """create model"""
+        input_shape = (*self.image_size, 3)
+        return build_cnn(input_shape, num_classes)
     
     def train_model(self, data_dir, csv_file_path):
         """Train the CNN model"""
@@ -134,40 +58,14 @@ class CNNModelService:
         
         # Create and compile model
         self.model = self.create_cnn_model(len(self.class_names))
-        
-        self.model.compile(
-            optimizer='adam',
-            loss='sparse_categorical_crossentropy',
-            metrics=['accuracy']
-        )
+        compile_model(self.model)
         
         # Print model summary
         self.model.summary()
         
         # Define callbacks
-        callbacks = [
-            tf.keras.callbacks.EarlyStopping(
-                monitor='val_loss',
-                patience=10,
-                restore_best_weights=True
-            ),
-            tf.keras.callbacks.ReduceLROnPlateau(
-                monitor='val_loss',
-                factor=0.5,
-                patience=5,
-                min_lr=1e-7
-            )
-        ]
-        
         # Train the model
-        history = self.model.fit(
-            X_train, y_train,
-            validation_data=(X_val, y_val),
-            epochs=self.epochs,
-            batch_size=self.batch_size,
-            callbacks=callbacks,
-            verbose=1
-        )
+        history = train(self.model, X_train, y_train, X_val, y_val, self.epochs, self.batch_size)
         
         # Save the model
         self.save_model()
