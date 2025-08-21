@@ -1,13 +1,16 @@
-from .data_preparation import DataPreparationService
-from .ocr_service import OCRService
-from .cnn_model import CNNModelService
-from .image_caption_service import ImageCaptionService
-from pipelines.text_pipeline import TextQueryPipeline
-from pipelines.ocr_pipeline import OCRPipeline
-from utils.types import TextQueryResult
 import os
-import tempfile
 import re
+import tempfile
+
+from pipelines.ocr_pipeline import OCRPipeline
+from pipelines.text_pipeline import TextQueryPipeline
+from utils.types import TextQueryResult
+
+from .cnn_model import CNNModelService
+from .data_preparation import DataPreparationService
+from .image_caption_service import ImageCaptionService
+from .ocr_service import OCRService
+
 
 class AppService:
     def __init__(self):
@@ -159,7 +162,6 @@ class AppService:
                 # fallback
                 prediction_result = self.cnn_service.predict_product(temp_path)
                 predicted_class = prediction_result.get('predicted_class', "Unknown")
-                confidence = prediction_result.get('confidence', 0.0)
                 predicted_label = None
                 top3 = prediction_result.get('top_3_predictions') or []
                 if top3 and isinstance(top3[0], dict):

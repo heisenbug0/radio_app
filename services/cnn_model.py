@@ -1,33 +1,31 @@
 # services/cnn_model.py
-import os
 import math
-import random
+import os
 import pickle
+import random
+
+import cv2
 import numpy as np
 import pandas as pd
-import cv2
 
 try:
     import tensorflow as tf
-    from tensorflow.keras import layers, models, applications
-    from tensorflow.keras import mixed_precision
+    from tensorflow.keras import applications, layers, mixed_precision, models
     from tensorflow.keras.metrics import TopKCategoricalAccuracy
     TENSORFLOW_AVAILABLE = True
 except Exception:
     tf = None
-    layers = models = applications = mixed_precision = TopKCategoricalAccuracy = None
-    class TopKCategoricalAccuracy:
-        def __init__(self, *args, **kwargs):
-            pass
+    layers = models = applications = mixed_precision = None
+    TopKCategoricalAccuracy = None
     TENSORFLOW_AVAILABLE = False
 
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
-
 from dotenv import load_dotenv
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+
 load_dotenv()
 
 # Ensure reproducibility helper
@@ -295,7 +293,7 @@ class CNNModelService:
                 print(f"  {cls}: {len(file_index.get(cls, []))}")
 
         X = np.array(images, dtype=np.float32)
-        y = self.label_encoder.transform([str(l) for l in labels]).astype(np.int32)
+        y = self.label_encoder.transform([str(lbl) for lbl in labels]).astype(np.int32)
         return X, y
 
     def load_and_preprocess_image(self, image_path):
@@ -571,7 +569,7 @@ class CNNModelService:
         self.model, _ = self.create_cnn_model(num_classes)
         optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
         self.model.compile(optimizer=optimizer, loss=tf.keras.losses.CategoricalCrossentropy(), metrics=["accuracy"])
-        history = self.model.fit(ds, epochs=epochs, verbose=1)
+        _ = self.model.fit(ds, epochs=epochs, verbose=1)
         print("overfit test complete")
 
     def evaluate_model(self, X_val, y_val):
@@ -655,7 +653,6 @@ class CNNModelService:
             pass
         try:
 
-            import tensorflow as _tf
             self.model.save(os.path.join(model_dir, "product_cnn_model.h5"))
 
         except Exception:
@@ -812,6 +809,7 @@ class CNNModelService:
 
     def _predict_zero_shot(self, image_path):
         import base64
+
         import requests
 
         if not self._descriptions:

@@ -1,6 +1,6 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
+
 from services.app_service import AppService
-import os
 
 app = Flask(__name__)
 app_service = AppService()

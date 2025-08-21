@@ -1,8 +1,9 @@
-import random
 import hashlib
 import logging
+import random
 from io import BytesIO
-from typing import Optional, Dict
+from typing import Dict, Optional
+
 import requests
 from PIL import Image
 

@@ -1,4 +1,5 @@
 from typing import BinaryIO, Dict
+
 from PIL import Image
 
 

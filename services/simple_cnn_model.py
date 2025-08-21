@@ -1,14 +1,15 @@
 import os
 import pickle
+from typing import Dict, List, Tuple
+
+import cv2
 import numpy as np
 import pandas as pd
-import cv2
-from typing import List, Tuple, Dict
-
 import tensorflow as tf
-from tensorflow.keras import layers, models
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+from tensorflow.keras import layers, models
+
 
 class CNNModelService:
     def __init__(self, image_size: Tuple[int, int] = (128, 128), batch_size: int = 16, epochs: int = 20):

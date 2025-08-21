@@ -1,12 +1,13 @@
-# services/web_scraping.py
-import os
-import time
-import random
-import math
+# services/web_scraping/service.py
 import logging
-import pandas as pd
+import math
+import os
+import random
+import time
 
+import pandas as pd
 from dotenv import load_dotenv
+
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
@@ -189,3 +190,4 @@ class WebScrapingService:
 
     def cleanup(self):
         pass
+

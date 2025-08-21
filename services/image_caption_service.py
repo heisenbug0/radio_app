@@ -1,7 +1,9 @@
-import os
 import base64
+import os
+from typing import Dict
+
 import requests
-from typing import List, Dict
+
 
 class ImageCaptionService:
     def __init__(self):

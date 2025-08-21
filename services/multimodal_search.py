@@ -1,11 +1,13 @@
-import os
-import json
-import time
 import base64
+import json
+import os
+import time
+from typing import List, Tuple
+
 import numpy as np
 import pandas as pd
 import requests
-from typing import List, Tuple
+
 
 class MultimodalSearchService:
     def __init__(self, products_df: pd.DataFrame, cache_dir: str = "models"):
@@ -15,8 +17,8 @@ class MultimodalSearchService:
         self.hf_token = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_API_TOKEN")
         # default clip model
         self.clip_model = os.getenv("HF_CLIP_MODEL", os.getenv("HF_ZERO_SHOT_MODEL", "laion/CLIP-ViT-B-32-laion2B-s34B-b79K"))
-        self.text_emb_path = os.path.join(self.cache_dir, f"clip_text_embeddings.npy")
-        self.text_ids_path = os.path.join(self.cache_dir, f"clip_text_ids.json")
+        self.text_emb_path = os.path.join(self.cache_dir, "clip_text_embeddings.npy")
+        self.text_ids_path = os.path.join(self.cache_dir, "clip_text_ids.json")
         self.text_embeddings = None
         self.text_ids = None
         self.products_df_clip = None

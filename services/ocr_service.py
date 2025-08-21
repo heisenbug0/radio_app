@@ -1,5 +1,5 @@
-from services.ocr.google_vision_backend import GoogleVisionBackend
 from services.ocr.easyocr_backend import EasyOCRBackend
+from services.ocr.google_vision_backend import GoogleVisionBackend
 from services.ocr.text_utils import clean_extracted_text, validate_query
 
 
