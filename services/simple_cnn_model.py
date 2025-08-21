@@ -12,6 +12,7 @@ from tensorflow.keras import layers, models
 
 
 class CNNModelService:
+    """very small cnn for quick baselines"""
     def __init__(self, image_size: Tuple[int, int] = (128, 128), batch_size: int = 16, epochs: int = 20):
         self.model = None
         self.encoder = LabelEncoder()
@@ -30,6 +31,7 @@ class CNNModelService:
         return img
 
     def load_and_preprocess_data(self, data_dir: str, csv_path: str) -> Tuple[np.ndarray, np.ndarray]:
+        """collect images and labels using stockcode prefix"""
         if not os.path.exists(csv_path):
             raise ValueError(f"csv not found: {csv_path}")
         df = pd.read_csv(csv_path)
@@ -74,6 +76,7 @@ class CNNModelService:
         return model
 
     def train_model(self, data_dir: str, csv_path: str):
+        """simple train split + fit"""
         x, y = self.load_and_preprocess_data(data_dir, csv_path)
         x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.2, random_state=42, stratify=y if len(np.unique(y))>1 else None)
         self.model = self._build_model(num_classes=len(self.class_names))
@@ -81,6 +84,7 @@ class CNNModelService:
         self.save_model()
 
     def save_model(self):
+        """save keras model and label artifacts"""
         os.makedirs('models', exist_ok=True)
         self.model.save('models/product_cnn_model.h5')
         with open('models/label_encoder.pkl', 'wb') as f:
@@ -90,6 +94,7 @@ class CNNModelService:
                 f.write(f"{name}\n")
 
     def load_model(self):
+        """load model and label artifacts"""
         self.model = tf.keras.models.load_model('models/product_cnn_model.h5')
         with open('models/label_encoder.pkl', 'rb') as f:
             self.encoder = pickle.load(f)
@@ -97,6 +102,7 @@ class CNNModelService:
             self.class_names = [line.strip() for line in f if line.strip()]
 
     def predict_product(self, image_path: str) -> Dict:
+        """predict class + top3 for an image path"""
         if self.model is None:
             self.load_model()
         img = self._load_image(image_path)

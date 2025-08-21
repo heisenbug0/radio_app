@@ -10,7 +10,8 @@ import requests
 
 
 class MultimodalSearchService:
-    def __init__(self, products_df: pd.DataFrame, cache_dir: str = "models"):
+    """hf inference api based clip search (text+image)"""
+    def __init__(self, products_df: pd.DataFrame, cache_dir: str = "models") -> None:
         self.products_df_full = products_df.reset_index(drop=True)
         self.cache_dir = cache_dir
         os.makedirs(self.cache_dir, exist_ok=True)
@@ -119,7 +120,7 @@ class MultimodalSearchService:
         return df.reset_index(drop=True)
 
     def build_or_load_text_embeddings(self) -> Tuple[np.ndarray, List[int]]:
-        # load cache if present
+        """build or load text embeddings via hf api (cache to disk)"""
         if os.path.exists(self.text_emb_path) and os.path.exists(self.text_ids_path):
             try:
                 emb = np.load(self.text_emb_path)
@@ -162,6 +163,7 @@ class MultimodalSearchService:
         return emb, ids
 
     def search_by_image(self, image_path: str, top_k: int = 5):
+        """encode image via hf api and return top k text matches"""
         try:
             if self.text_embeddings is None:
                 self.build_or_load_text_embeddings()

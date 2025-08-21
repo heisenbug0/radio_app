@@ -2,6 +2,7 @@ from typing import BinaryIO, Dict
 
 
 class GoogleVisionBackend:
+	"""google cloud vision based ocr backend"""
 	def __init__(self):
 		try:
 			from google.cloud import vision  # noqa: F401
@@ -14,6 +15,7 @@ class GoogleVisionBackend:
 			self.client = None
 
 	def extract(self, image_path: str | None = None, image_data: BinaryIO | None = None) -> Dict:
+		"""extract text with google vision"""
 		if not self.available:
 			return {"success": False, "error": "google vision unavailable", "extracted_text": "", "raw_text": ""}
 		try:

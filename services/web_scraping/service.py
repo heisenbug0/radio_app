@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class WebScrapingService:
+    """search + download product images via serpapi/pixabay"""
     def __init__(self, serpapi_key=None, download_dir="data/scraped_images", min_width=200, min_height=200, per_request_min=3):
         self.serpapi_key = serpapi_key or os.getenv("SERPAPI_API_KEY")
         self.pixabay_key = os.getenv("PIXABAY_API_KEY")
@@ -27,7 +28,7 @@ class WebScrapingService:
         self.per_request_min = max(3, int(per_request_min))
         os.makedirs(self.download_dir, exist_ok=True)
 
-    def search_images_serpapi(self, query, count=10):
+    def search_images_serpapi(self, query: str, count: int = 10) -> list:
         from services.web_search.serpapi_client import SerpApiClient
         safe_query = (query or "").strip()[:200]
         client = SerpApiClient(self.serpapi_key)
@@ -35,7 +36,7 @@ class WebScrapingService:
         logger.info("SerpAPI returned %d image candidates", len(images))
         return images
 
-    def search_images_pixabay(self, query, count=10):
+    def search_images_pixabay(self, query: str, count: int = 10) -> list:
         from services.web_search.pixabay_client import PixabayClient
         safe_query = (query or "").strip()[:200]
         client = PixabayClient(self.pixabay_key)
@@ -130,7 +131,7 @@ class WebScrapingService:
             time.sleep(random.uniform(0.2, 0.6))
         return downloaded
 
-    def scrape_product_images(self, csv_file_path, images_per_product=5):
+    def scrape_product_images(self, csv_file_path: str, images_per_product: int = 5) -> pd.DataFrame:
         if not (self.serpapi_key or self.pixabay_key):
             logger.error("No image API key set. Set SERPAPI_API_KEY or PIXABAY_API_KEY in environment.")
             return pd.DataFrame()

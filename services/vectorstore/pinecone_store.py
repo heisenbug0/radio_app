@@ -1,8 +1,9 @@
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 
 def init_pinecone() -> Any:
+	"""init pinecone index if api key present; else return None"""
 	try:
 		api_key = os.getenv('PINECONE_API_KEY')
 		if not api_key:
@@ -41,7 +42,8 @@ def init_pinecone() -> Any:
 		return None
 
 
-def upsert_vectors(index, ids_vectors_metadata: List[tuple]) -> None:
+def upsert_vectors(index: Any, ids_vectors_metadata: List[Tuple[str, List[float], Dict]]) -> None:
+	"""upsert small batches of vectors"""
 	if not index:
 		return
 	batch_size = 100
@@ -49,7 +51,8 @@ def upsert_vectors(index, ids_vectors_metadata: List[tuple]) -> None:
 		index.upsert(vectors=ids_vectors_metadata[i:i+batch_size])
 
 
-def query_vectors(index, vector: list, top_k: int = 5) -> List[Dict]:
+def query_vectors(index: Any, vector: List[float], top_k: int = 5) -> List[Dict]:
+	"""simple pinecone query -> normalized products payload"""
 	if not index:
 		return []
 	res = index.query(vector=vector, top_k=top_k, include_metadata=True)

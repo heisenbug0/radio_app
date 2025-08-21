@@ -4,6 +4,7 @@ from PIL import Image
 
 
 class EasyOCRBackend:
+	"""easyocr based ocr backend"""
 	def __init__(self):
 		try:
 			import easyocr  # noqa: F401
@@ -15,6 +16,7 @@ class EasyOCRBackend:
 			self.available = False
 
 	def extract(self, image_path: str | None = None, image_data: BinaryIO | None = None) -> Dict:
+		"""extract text with easyocr"""
 		if not self.available:
 			return {"success": False, "error": "easyocr unavailable", "extracted_text": "", "raw_text": ""}
 		try:

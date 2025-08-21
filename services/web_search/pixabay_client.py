@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Dict, List
 
 import requests
 
@@ -7,10 +8,12 @@ logger = logging.getLogger(__name__)
 
 
 class PixabayClient:
+	"""tiny pixabay client for image search"""
 	def __init__(self, api_key: str | None = None):
 		self.api_key = api_key or os.getenv("PIXABAY_API_KEY")
 
-	def search_images(self, query: str, per_page: int):
+	def search_images(self, query: str, per_page: int) -> List[Dict]:
+		"""return list of image dicts"""
 		if not self.api_key:
 			logger.warning("Pixabay key missing.")
 			return []
