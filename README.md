@@ -1,17 +1,17 @@
-## what this is
+## Project
 
 small product search app. text, ocr text, product image -> simple recs. flask api + tiny ui.
 
-## structure
+## Structure
 
 - `app.py` entry
 - `services/` core services (data, ocr, cnn, optional multimodal)
 - `pipelines/` thin orchestration for text + ocr
 - `utils/` typed dicts
-- `templates/` simple pages
+- `templates/` simple, minimal pages
 - `data/` csv and assets
 
-## run
+## Steps
 
 1) create venv, install requirements
 2) put dataset in `data/dataset.csv`
@@ -23,15 +23,15 @@ pip install -r requirements.txt
 python app.py
 ```
 
-open `http://localhost:5000`
+open on `http://localhost:5000`
 
-## endpoints
+## Endpoints
 
 - POST `/product-recommendation` with form `query` -> text search
 - POST `/ocr-query` with file `image_data` -> ocr then search
 - POST `/image-product-search` with file `product_image` -> cnn class or multimodal flow then search
 
-## how the pieces talk
+## How the pieces talk
 
 - `services/data_preparation.py` cleans csv, builds tf‑idf, searches. pinecone if creds exist. cosine metric.
 - `services/ocr_service.py` preprocess + pytesseract + validation.
@@ -47,15 +47,6 @@ in `notebooks/`:
 - `03_cnn_training.ipynb` small train run, curves, confusion matrix
 - `04_inference_demos.ipynb` text, ocr, image flows end‑to‑end
 
-what is this? experimental notebooks are scratch pads to try ideas, visualize, and record results. they’re not prod code; they help you test assumptions fast.
-
-## dev notes
-
-- small files, short funcs, clear names
-- typed dicts in `utils/types.py`
-- lowercase tone, minimal docstrings
-- errors handled, api stays up
-
 ## pinecone (optional)
 
 add `.env`:
@@ -67,19 +58,12 @@ PINECONE_ENVIRONMENT=gcp-starter
 
 if missing, local tf‑idf search is used.
 
-## train the cnn (optional)
-
-images in `data/scraped_images/` named like `STOCKCODE_1.jpg`. products list by `StockCode` in csv.
 
 ```python
 from services.cnn_model import CNNModelService
 svc = CNNModelService()
 svc.train_model('data/scraped_images', 'data/CNN_Model_Train_Data.csv')
 ```
-
-## license
-
-mit
 
 ### Zero-shot fallback (no training required)
 
