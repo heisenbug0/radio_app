@@ -1,0 +1,37 @@
+from typing import BinaryIO, Dict
+
+
+class GoogleVisionBackend:
+	def __init__(self):
+		try:
+			from google.cloud import vision  # noqa: F401
+			self.client = vision.ImageAnnotatorClient()
+			self.available = True
+		except Exception as e:
+			print(f"warning: google vision not available: {e}")
+			print("set GOOGLE_APPLICATION_CREDENTIALS if you want to use it")
+			self.available = False
+			self.client = None
+
+	def extract(self, image_path: str | None = None, image_data: BinaryIO | None = None) -> Dict:
+		if not self.available:
+			return {"success": False, "error": "google vision unavailable", "extracted_text": "", "raw_text": ""}
+		try:
+			from google.cloud import vision
+			if image_path:
+				with open(image_path, 'rb') as f:
+					content = f.read()
+			elif image_data:
+				content = image_data.read()
+			else:
+				raise ValueError("provide image_path or image_data")
+			image = vision.Image(content=content)
+			response = self.client.text_detection(image=image)
+			if response.error and response.error.message:
+				return {"success": False, "error": response.error.message, "extracted_text": "", "raw_text": ""}
+			texts = response.text_annotations
+			full_text = texts[0].description if texts else ""
+			return {"success": True, "extracted_text": full_text, "raw_text": full_text}
+		except Exception as e:
+			return {"success": False, "error": str(e), "extracted_text": "", "raw_text": ""}
+

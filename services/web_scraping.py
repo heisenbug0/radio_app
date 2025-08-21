@@ -3,12 +3,8 @@ import os
 import time
 import random
 import math
-import hashlib
 import logging
-import requests
 import pandas as pd
-from io import BytesIO
-from PIL import Image
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -31,136 +27,33 @@ class WebScrapingService:
         os.makedirs(self.download_dir, exist_ok=True)
 
     def search_images_serpapi(self, query, count=10):
-        if not self.serpapi_key:
-            logger.warning("SerpAPI key missing.")
-            return []
+        from services.web_search.serpapi_client import SerpApiClient
         safe_query = (query or "").strip()[:200]
-        params = {
-            "engine": "google",
-            "q": safe_query,
-            "tbm": "isch",
-            "num": max(self.per_request_min, min(int(count), 100)),
-            "api_key": self.serpapi_key,
-        }
-        try:
-            logger.info("SerpAPI search: q=%s num=%d", safe_query, params["num"])
-            r = requests.get("https://serpapi.com/search.json", params=params, timeout=15)
-            if r.status_code != 200:
-                logger.warning("SerpAPI returned %s: %s", r.status_code, r.text[:300])
-                return []
-            data = r.json()
-            hits = data.get("images_results") or data.get("image_results") or data.get("inline_images") or []
-            images = []
-            for h in hits:
-                # SerpAPI image result fields vary: 'original', 'thumbnail', 'link', 'title'
-                url = h.get("original") or h.get("origin") or h.get("link") or h.get("thumbnail")
-                title = h.get("title") or h.get("alt") or h.get("snippet") or ""
-                width = h.get("width") or 0
-                height = h.get("height") or 0
-                if url:
-                    images.append({"url": url, "title": title, "width": width, "height": height})
-            logger.info("SerpAPI returned %d image candidates", len(images))
-            return images
-        except Exception as e:
-            logger.exception("SerpAPI search error: %s", e)
-            return []
+        client = SerpApiClient(self.serpapi_key)
+        images = client.search_images(safe_query, max(self.per_request_min, min(int(count), 100)))
+        logger.info("SerpAPI returned %d image candidates", len(images))
+        return images
 
     def search_images_pixabay(self, query, count=10):
-        if not self.pixabay_key:
-            logger.warning("Pixabay key missing.")
-            return []
+        from services.web_search.pixabay_client import PixabayClient
         safe_query = (query or "").strip()[:200]
-        params = {
-            "key": self.pixabay_key,
-            "q": safe_query,
-            "image_type": "photo",
-            "per_page": max(self.per_request_min, min(int(count), 200)),
-            "safesearch": "true",
-            "order": "popular",
-        }
-        try:
-            logger.info("Pixabay search: q=%s per_page=%d", safe_query, params["per_page"])
-            r = requests.get("https://pixabay.com/api/", params=params, timeout=15)
-            if r.status_code != 200:
-                logger.warning("Pixabay returned %s: %s", r.status_code, r.text[:300])
-                return []
-            data = r.json()
-            hits = data.get("hits", [])
-            images = []
-            for h in hits:
-                url = h.get("largeImageURL") or h.get("webformatURL") or h.get("previewURL")
-                width = h.get("imageWidth") or h.get("webformatWidth") or 0
-                height = h.get("imageHeight") or h.get("webformatHeight") or 0
-                if url:
-                    images.append({"url": url, "title": h.get("tags", ""), "width": width, "height": height})
-            logger.info("Pixabay returned %d image candidates", len(images))
-            return images
-        except Exception as e:
-            logger.exception("Pixabay search error: %s", e)
-            return []
+        client = PixabayClient(self.pixabay_key)
+        images = client.search_images(safe_query, max(self.per_request_min, min(int(count), 200)))
+        logger.info("Pixabay returned %d image candidates", len(images))
+        return images
 
     def _clean_product_name(self, product_name):
-        if not product_name or pd.isna(product_name):
-            return None
-        name = str(product_name).strip()
-        prefixes = ["SET OF ", "SET ", "PACK OF ", "PACK ", "BOX OF ", "BOX ", "LARGE ", "SMALL ", "MINI ", "$", "£", "€", "¥"]
-        for p in prefixes:
-            if name.upper().startswith(p):
-                name = name[len(p):].strip()
-        import re
-        name = re.sub(r"[^\w\s]", " ", name)
-        name = re.sub(r"\s+", " ", name).strip()
-        words = [w for w in name.split() if len(w) > 2 and not w.isdigit()]
-        if not words:
-            return name[:50]
-        return " ".join(words[:4])
+        from services.web_scraping.queries import clean_product_name
+        return clean_product_name(product_name)
 
     def _download_and_validate(self, url):
-        try:
-            headers = {"User-Agent": random.choice([
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-                "Mozilla/5.0 (X11; Linux x86_64)"
-            ])}
-            r = requests.get(url, headers=headers, timeout=18, stream=True)
-            r.raise_for_status()
-            content_type = r.headers.get("content-type", "")
-            if not content_type or not content_type.startswith("image/"):
-                logger.debug("Non-image content-type %s for url %s", content_type, url)
-                return None
-            data = r.content
-            h = hashlib.sha256(data).hexdigest()
-            if h in self._seen_hashes:
-                logger.debug("Duplicate image by hash %s", h[:12])
-                return None
-            img = Image.open(BytesIO(data)).convert("RGB")
-            w, hgt = img.size
-            if w < self.min_width or hgt < self.min_height:
-                logger.debug("Image too small %dx%d (min %dx%d) %s", w, hgt, self.min_width, self.min_height, url)
-                return None
-            fmt = (img.format or "").lower()
-            ext = "jpg"
-            if "png" in fmt:
-                ext = "png"
-            elif "webp" in fmt:
-                ext = "webp"
-            return {"bytes": data, "hash": hashlib.sha256(data).hexdigest(), "width": w, "height": hgt, "ext": ext}
-        except Exception as e:
-            logger.debug("Download/validate error for %s: %s", url, e)
-            return None
+        from services.web_scraping.downloader import download_and_validate
+        result = download_and_validate(url, self.min_width, self.min_height)
+        return result
 
     def _unique_filename(self, stock_code, index, ext, content_hash):
-        short = content_hash[:10]
-        safe_code = "".join(c for c in str(stock_code) if c.isalnum() or c in ("-", "_")).strip() or "prod"
-        base = f"{safe_code}_{index}_{short}"
-        filename = f"{base}.{ext}"
-        path = os.path.join(self.download_dir, filename)
-        i = 1
-        while os.path.exists(path):
-            filename = f"{base}_{i}.{ext}"
-            path = os.path.join(self.download_dir, filename)
-            i += 1
-        return filename, path
+        from services.web_scraping.naming import unique_filename
+        return unique_filename(self.download_dir, stock_code, index, ext, content_hash)
 
     def _search_product_images_robust(self, product_name, max_images=10):
         optimized = self._clean_product_name(product_name)
