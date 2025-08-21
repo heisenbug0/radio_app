@@ -11,6 +11,7 @@ keras==2.15.0
 matplotlib
 seaborn
 requests
+ruff
 beautifulsoup4
 selenium
 webdriver-manager
