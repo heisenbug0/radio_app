@@ -5,6 +5,7 @@
 *.pkl
 venv_311
 venv
+.venv
 data_preparation.*
 models
 data/scraped_images
