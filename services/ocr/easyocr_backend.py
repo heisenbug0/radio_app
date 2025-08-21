@@ -1,6 +1,7 @@
 from typing import BinaryIO, Dict
 
 from PIL import Image
+from services.ocr.text_utils import preprocess_handwriting_image
 
 
 class EasyOCRBackend:
@@ -28,6 +29,8 @@ class EasyOCRBackend:
 				raise ValueError("provide image_path or image_data")
 			if image.mode != 'RGB':
 				image = image.convert('RGB')
+			# handwriting-friendly preprocessing
+			image = preprocess_handwriting_image(image)
 			results = self.reader.readtext(image)
 			texts = [text for (_bbox, text, conf) in results if conf > 0.5]
 			full_text = ' '.join(texts)

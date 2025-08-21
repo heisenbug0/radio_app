@@ -1,4 +1,5 @@
 from typing import BinaryIO, Dict
+from services.ocr.text_utils import preprocess_handwriting_image
 
 
 class GoogleVisionBackend:
@@ -21,14 +22,21 @@ class GoogleVisionBackend:
 		try:
 			from google.cloud import vision
 			if image_path:
-				with open(image_path, 'rb') as f:
-					content = f.read()
+				from PIL import Image
+				image = Image.open(image_path)
 			elif image_data:
-				content = image_data.read()
+				from PIL import Image
+				image = Image.open(image_data)
 			else:
 				raise ValueError("provide image_path or image_data")
-			image = vision.Image(content=content)
-			response = self.client.text_detection(image=image)
+			# handwriting-friendly preprocessing
+			image = preprocess_handwriting_image(image)
+			import io
+			buf = io.BytesIO()
+			image.save(buf, format='PNG')
+			content = buf.getvalue()
+			vision_image = vision.Image(content=content)
+			response = self.client.text_detection(image=vision_image)
 			if response.error and response.error.message:
 				return {"success": False, "error": response.error.message, "extracted_text": "", "raw_text": ""}
 			texts = response.text_annotations
