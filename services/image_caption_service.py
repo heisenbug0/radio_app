@@ -1,9 +1,12 @@
-import os
 import base64
+import os
+from typing import Dict
+
 import requests
-from typing import List, Dict
+
 
 class ImageCaptionService:
+    """minimal hf image caption helper"""
     def __init__(self):
         self.hf_token = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_API_TOKEN")
         # default caption model
@@ -11,12 +14,14 @@ class ImageCaptionService:
         self.timeout = float(os.getenv("HF_TIMEOUT", "60"))
 
     def _headers(self) -> Dict[str, str]:
+        """auth headers if token present"""
         headers = {"Accept": "application/json"}
         if self.hf_token:
             headers["Authorization"] = f"Bearer {self.hf_token}"
         return headers
 
     def caption(self, image_path: str) -> Dict[str, str]:
+        """return a short caption for the image"""
         try:
             with open(image_path, "rb") as f:
                 b64 = base64.b64encode(f.read()).decode("utf-8")

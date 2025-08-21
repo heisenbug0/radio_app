@@ -1,7 +1,9 @@
+import logging
 import os
 import shutil
-import logging
+
 import pandas as pd
+
 from services.web_scraping import WebScrapingService
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")

@@ -1,33 +1,31 @@
 # services/cnn_model.py
-import os
 import math
-import random
+import os
 import pickle
+import random
+
+import cv2
 import numpy as np
 import pandas as pd
-import cv2
 
 try:
     import tensorflow as tf
-    from tensorflow.keras import layers, models, applications
-    from tensorflow.keras import mixed_precision
+    from tensorflow.keras import applications, layers, mixed_precision, models
     from tensorflow.keras.metrics import TopKCategoricalAccuracy
     TENSORFLOW_AVAILABLE = True
 except Exception:
     tf = None
-    layers = models = applications = mixed_precision = TopKCategoricalAccuracy = None
-    class TopKCategoricalAccuracy:
-        def __init__(self, *args, **kwargs):
-            pass
+    layers = models = applications = mixed_precision = None
+    TopKCategoricalAccuracy = None
     TENSORFLOW_AVAILABLE = False
 
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
-
 from dotenv import load_dotenv
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+
 load_dotenv()
 
 # Ensure reproducibility helper
@@ -195,16 +193,15 @@ else:
 
 
 class CNNModelService:
-    """
-    """
+    """train/predict cnn for product images; small head over efficientnet"""
     def __init__(self,
-                 image_size=(299, 299),
-                 batch_size=16,
-                 epochs=200,
-                 debug=False,
-                 use_mixup=False,
-                 use_cutmix=False,
-                 enable_ema=False):
+                 image_size: tuple[int, int] = (299, 299),
+                 batch_size: int = 16,
+                 epochs: int = 200,
+                 debug: bool = False,
+                 use_mixup: bool = False,
+                 use_cutmix: bool = False,
+                 enable_ema: bool = False) -> None:
         self.model = None
         self.label_encoder = LabelEncoder()
         self.class_names = []
@@ -255,7 +252,8 @@ class CNNModelService:
         self.dropout_small = 0.2
         self.stochastic_depth_rate = 0.0
 
-    def load_and_preprocess_data(self, data_dir, csv_file_path):
+    def load_and_preprocess_data(self, data_dir: str, csv_file_path: str) -> tuple[np.ndarray, np.ndarray]:
+        """collect images and labels from dir + csv"""
         if self.use_zero_shot:
             self._prepare_label_set(csv_file_path)
             return np.empty((0,)), np.empty((0,))
@@ -295,10 +293,11 @@ class CNNModelService:
                 print(f"  {cls}: {len(file_index.get(cls, []))}")
 
         X = np.array(images, dtype=np.float32)
-        y = self.label_encoder.transform([str(l) for l in labels]).astype(np.int32)
+        y = self.label_encoder.transform([str(lbl) for lbl in labels]).astype(np.int32)
         return X, y
 
-    def load_and_preprocess_image(self, image_path):
+    def load_and_preprocess_image(self, image_path: str):
+        """read, denoise, resize, normalize"""
         try:
             image = cv2.imread(image_path)
             if image is None:
@@ -313,7 +312,8 @@ class CNNModelService:
                 print(f"Failed to load image: {image_path}")
             return None
 
-    def advanced_preprocessing(self, image):
+    def advanced_preprocessing(self, image: np.ndarray) -> np.ndarray:
+        """mild denoise + clahe + sharpen"""
         try:
             image = cv2.fastNlMeansDenoisingColored(image, None, 10, 10, 7, 21)
         except Exception:
@@ -360,7 +360,8 @@ class CNNModelService:
             self.dropout_top = min(0.7, self.dropout_top + 0.05)
             self.stochastic_depth_rate = min(0.3, self.stochastic_depth_rate + 0.05)
 
-    def create_cnn_model(self, num_classes):
+    def create_cnn_model(self, num_classes: int):
+        """build efficientnet backbone + small head"""
         base_model = applications.EfficientNetB3(weights="imagenet", include_top=False, input_shape=(*self.image_size, 3))
         base_model.trainable = False
 
@@ -418,7 +419,8 @@ class CNNModelService:
             return self._mixup(images, labels)
         return images, labels
 
-    def train_model(self, data_dir, csv_file_path, warmup_epochs=10, ema_decay=0.9999):
+    def train_model(self, data_dir: str, csv_file_path: str, warmup_epochs: int = 10, ema_decay: float = 0.9999):
+        """full train loop with warmup + fine-tune"""
         if self.use_zero_shot:
             print("zero-shot mode enabled. skipping local training.")
             self._prepare_label_set(csv_file_path)
@@ -522,9 +524,8 @@ class CNNModelService:
         self.plot_training_history(history1, history2)
         return history2
 
-    def overfit_test(self, data_dir, csv_file_path, per_class=5, epochs=200):
-        """
-        """
+    def overfit_test(self, data_dir: str, csv_file_path: str, per_class: int = 5, epochs: int = 200):
+        """tiny overfit sanity check"""
         print("running overfit test (debug mode).")
         self.debug = True
 
@@ -571,11 +572,11 @@ class CNNModelService:
         self.model, _ = self.create_cnn_model(num_classes)
         optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
         self.model.compile(optimizer=optimizer, loss=tf.keras.losses.CategoricalCrossentropy(), metrics=["accuracy"])
-        history = self.model.fit(ds, epochs=epochs, verbose=1)
+        _ = self.model.fit(ds, epochs=epochs, verbose=1)
         print("overfit test complete")
 
-    def evaluate_model(self, X_val, y_val):
-
+    def evaluate_model(self, X_val: np.ndarray, y_val: np.ndarray):
+        """basic metrics + confusion matrix"""
         print("\n=== Model Evaluation ===")
         y_pred = self.model.predict(X_val, batch_size=self.batch_size)
         y_pred_classes = np.argmax(y_pred, axis=1)
@@ -589,8 +590,8 @@ class CNNModelService:
 
         return accuracy
 
-    def top_k_accuracy(self, y_pred, y_true, k=3):
-
+    def top_k_accuracy(self, y_pred: np.ndarray, y_true: np.ndarray, k: int = 3):
+        """compute top-k acc"""
         top_k_indices = np.argsort(y_pred, axis=1)[:, -k:]
         correct = 0
         for i, true_label in enumerate(y_true):
@@ -600,8 +601,8 @@ class CNNModelService:
 
         return correct / len(y_true) if len(y_true) > 0 else 0.0
 
-    def plot_confusion_matrix(self, y_true, y_pred):
-
+    def plot_confusion_matrix(self, y_true: np.ndarray, y_pred: np.ndarray):
+        """plot confusion matrix"""
         cm = confusion_matrix(y_true, y_pred)
         plt.figure(figsize=(12, 10))
         sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=self.class_names, yticklabels=self.class_names)
@@ -616,7 +617,7 @@ class CNNModelService:
         plt.show()
 
     def plot_training_history(self, history1, history2):
-
+        """plot training curves"""
         fig, axes = plt.subplots(2, 2, figsize=(15, 10))
         axes[0, 0].plot(history1.history.get("accuracy", []), label="Train")
         axes[0, 0].plot(history1.history.get("val_accuracy", []), label="Validation")
@@ -640,7 +641,7 @@ class CNNModelService:
         plt.show()
 
     def save_model(self):
-
+        """save keras model + label encoder"""
         if self.use_zero_shot:
             self._write_label_artifacts()
             self._ensure_placeholder_model_files()
@@ -655,7 +656,6 @@ class CNNModelService:
             pass
         try:
 
-            import tensorflow as _tf
             self.model.save(os.path.join(model_dir, "product_cnn_model.h5"))
 
         except Exception:
@@ -671,6 +671,7 @@ class CNNModelService:
         print(f"model saved to {model_dir}/")
 
     def load_model(self):
+        """load keras model + label encoder if present"""
         if self.use_zero_shot:
             csv_path = self._csv_default if os.path.exists(self._csv_default) else None
             self._prepare_label_set(csv_path)
@@ -704,9 +705,8 @@ class CNNModelService:
 
             pass
 
-    def predict_product(self, image_path):
-        """
-        """
+    def predict_product(self, image_path: str):
+        """predict class + top3 for an image path"""
         if self.use_zero_shot:
             return self._predict_zero_shot(image_path)
         if self.model is None:
@@ -723,9 +723,8 @@ class CNNModelService:
         
         return {"predicted_class": top3[0]["class"], "confidence": float(preds[top_idx[0]]), "top_3_predictions": top3}
 
-    def _prepare_label_set(self, csv_file_path=None):
-        """
-        """
+    def _prepare_label_set(self, csv_file_path: str | None = None):
+        """read label set from csv if provided or defaults"""
         self._descriptions = []
         if csv_file_path and os.path.exists(csv_file_path):
             df = pd.read_csv(csv_file_path, dtype=str)
@@ -771,7 +770,7 @@ class CNNModelService:
             pass
 
     def _write_label_artifacts(self):
-
+        """persist label maps for zero-shot path"""
         os.makedirs("models", exist_ok=True)
 
         if self.class_names:
@@ -785,6 +784,7 @@ class CNNModelService:
             pass
 
     def _read_label_artifacts(self):
+        """load label maps if present"""
         try:
             with open(os.path.join("models", "class_names.txt"), "r") as f:
                 self.class_names = [line.strip() for line in f.readlines() if line.strip()]
@@ -810,8 +810,9 @@ class CNNModelService:
             except Exception:
                 pass
 
-    def _predict_zero_shot(self, image_path):
+    def _predict_zero_shot(self, image_path: str):
         import base64
+
         import requests
 
         if not self._descriptions:

@@ -1,8 +1,11 @@
 from typing import BinaryIO, Dict
+
 from PIL import Image
+from services.ocr.text_utils import preprocess_handwriting_image
 
 
 class EasyOCRBackend:
+	"""easyocr based ocr backend"""
 	def __init__(self):
 		try:
 			import easyocr  # noqa: F401
@@ -14,6 +17,7 @@ class EasyOCRBackend:
 			self.available = False
 
 	def extract(self, image_path: str | None = None, image_data: BinaryIO | None = None) -> Dict:
+		"""extract text with easyocr"""
 		if not self.available:
 			return {"success": False, "error": "easyocr unavailable", "extracted_text": "", "raw_text": ""}
 		try:
@@ -25,6 +29,8 @@ class EasyOCRBackend:
 				raise ValueError("provide image_path or image_data")
 			if image.mode != 'RGB':
 				image = image.convert('RGB')
+			# handwriting-friendly preprocessing
+			image = preprocess_handwriting_image(image)
 			results = self.reader.readtext(image)
 			texts = [text for (_bbox, text, conf) in results if conf > 0.5]
 			full_text = ' '.join(texts)

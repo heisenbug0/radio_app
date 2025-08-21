@@ -1,8 +1,9 @@
-import random
 import hashlib
 import logging
+import random
 from io import BytesIO
-from typing import Optional, Dict
+from typing import Dict, Optional
+
 import requests
 from PIL import Image
 
@@ -10,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def download_and_validate(url: str, min_width: int, min_height: int) -> Optional[Dict]:
+	"""download image and validate basic constraints"""
 	try:
 		headers = {"User-Agent": random.choice([
 			"Mozilla/5.0 (Windows NT 10.0; Win64; x64)",

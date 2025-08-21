@@ -3,10 +3,12 @@
 training script for the cnn model (from scratch).
 """
 
-import os
 import argparse
+import os
 import traceback
+
 import pandas as pd
+
 from services.simple_cnn_model import CNNModelService
 
 

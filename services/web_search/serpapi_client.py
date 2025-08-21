@@ -1,15 +1,19 @@
-import os
-import requests
 import logging
+import os
+from typing import Dict, List
+
+import requests
 
 logger = logging.getLogger(__name__)
 
 
 class SerpApiClient:
+	"""tiny google images client via serpapi"""
 	def __init__(self, api_key: str | None = None):
 		self.api_key = api_key or os.getenv("SERPAPI_API_KEY")
 
-	def search_images(self, query: str, num: int):
+	def search_images(self, query: str, num: int) -> List[Dict]:
+		"""return list of image dicts"""
 		if not self.api_key:
 			logger.warning("SerpAPI key missing.")
 			return []
