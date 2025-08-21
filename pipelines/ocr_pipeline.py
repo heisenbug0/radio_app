@@ -6,11 +6,13 @@ from utils.types import TextQueryResult
 
 
 class OCRPipeline:
-	def __init__(self, ocr_service: OCRService, data_service: DataPreparationService):
+	"""ocr -> text -> product search (thin flow)"""
+	def __init__(self, ocr_service: OCRService, data_service: DataPreparationService) -> None:
 		self.ocr_service = ocr_service
 		self.data_service = data_service
 
 	def run(self, image_path: Optional[str] = None, image_data: Optional[bytes] = None) -> TextQueryResult:
+		"""extract text then search products"""
 		res = self.ocr_service.extract_text(image_path=image_path, image_data=image_data)
 		if not res.get("success"):
 			return {"products": [], "response": f"ocr failed: {res.get('error','')}", "extracted_text": ""}

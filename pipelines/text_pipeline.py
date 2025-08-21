@@ -6,7 +6,8 @@ from utils.types import ScoredProduct, TextQueryResult
 
 
 class TextQueryPipeline:
-    def __init__(self, data_service: DataPreparationService):
+    """text -> product search (thin flow)"""
+    def __init__(self, data_service: DataPreparationService) -> None:
         self.data_service = data_service
 
     def _is_sensitive(self, text: str) -> bool:
@@ -32,6 +33,7 @@ class TextQueryPipeline:
         return " ".join(words) if words else text
 
     def run(self, query: str, top_k: int = 5) -> TextQueryResult:
+        """sanitize, search, return top k"""
         if not query or len(query.strip()) < 2:
             return {"products": [], "response": "please add a short query (>= 2 chars)"}
 
