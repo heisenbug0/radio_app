@@ -14,11 +14,12 @@ def init_pinecone() -> Any:
 		# create if needed
 		try:
 			listed = pc.list_indexes()
-		names = set()
+			names = set()
 			if isinstance(listed, list):
 				for it in listed:
 					name = getattr(it, 'name', it) if not isinstance(it, dict) else it.get('name')
-					if name: names.add(name)
+					if name:
+						names.add(name)
 			elif isinstance(listed, dict):
 				for it in listed.get('indexes', []):
 					if isinstance(it, dict) and 'name' in it:
@@ -26,7 +27,14 @@ def init_pinecone() -> Any:
 			if index_name not in names:
 				cloud = os.getenv('PINECONE_CLOUD', 'aws')
 				region = os.getenv('PINECONE_REGION', 'us-east-1')
-				pc.create_index(name=index_name, dimension=768, metric="cosine", spec=ServerlessSpec(cloud=cloud, region=region))
+				pc.create_index(
+					name=index_name,
+					dimension=768,
+					metric="cosine",
+					spec=ServerlessSpec(cloud=cloud, region=region)
+				)
+		except Exception as e:
+			print(f"warning: failed to ensure index exists: {e}")
 		return pc.Index(index_name)
 	except Exception as e:
 		print(f"warning: pinecone init failed: {e}; using local search")
