@@ -4,21 +4,35 @@ import os
 from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
 from services.data_prep.cleaning import clean_dataframe
-from services.embeddings.text_embedder import TextEmbedder
-from services.vectorstore.pinecone_store import init_pinecone, upsert_vectors, query_vectors
+# Lazy/optional imports to avoid heavy deps at app startup
+try:
+	from services.embeddings.text_embedder import TextEmbedder  # requires sentence_transformers/torch
+except Exception:
+	TextEmbedder = None
+
+try:
+	from services.vectorstore.pinecone_store import init_pinecone, upsert_vectors, query_vectors
+except Exception:
+	init_pinecone = upsert_vectors = query_vectors = None
 
 load_dotenv()
 
 class DataPreparationService:
     def __init__(self):
-        self.embedder = TextEmbedder()
+        self.embedder = None
         self.products_df = None
         self.product_vectors = None
         self.pinecone_index = None
         self.initialize_pinecone()
     
     def initialize_pinecone(self):
-        self.pinecone_index = init_pinecone()
+        try:
+            if init_pinecone is not None:
+                self.pinecone_index = init_pinecone()
+            else:
+                self.pinecone_index = None
+        except Exception:
+            self.pinecone_index = None
     
     def _normalize_ascii(self, text: str) -> str:
         # if not isinstance(text, str):
@@ -43,6 +57,10 @@ class DataPreparationService:
     
     def create_product_vectors(self):
         print("creating product embeddings (all-mpnet-base-v2)...")
+        if self.embedder is None:
+            if TextEmbedder is None:
+                raise RuntimeError("Text embedding backend unavailable; install sentence-transformers & torch")
+            self.embedder = TextEmbedder()
         product_texts = self.products_df['Description'].tolist()
         self.product_vectors = self.embedder.encode(product_texts)
         print(f"embeddings shape: {self.product_vectors.shape}")
@@ -75,6 +93,10 @@ class DataPreparationService:
         }
     
     def search_products(self, query, top_k=5):
+        if self.embedder is None:
+            if TextEmbedder is None:
+                raise RuntimeError("Text embedding backend unavailable; install sentence-transformers & torch")
+            self.embedder = TextEmbedder()
         query_vector = self.embedder.encode([query])[0]
 
         if self.pinecone_index:
