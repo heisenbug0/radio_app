@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 from typing import Any, Dict, List, Optional
+from functools import lru_cache
 from dotenv import load_dotenv
 from sklearn.metrics.pairwise import cosine_similarity
 from services.data_prep.cleaning import clean_dataframe
@@ -71,6 +72,42 @@ class DataPreparationService:
         print(f"embeddings shape: {self.product_vectors.shape}")
         return self.product_vectors
     
+    @lru_cache(maxsize=1024)
+    def _embed_query_cached(self, text: str) -> np.ndarray:
+        if self.embedder is None:
+            if TextEmbedder is None:
+                raise RuntimeError("Text embedding backend unavailable; install sentence-transformers & torch")
+            self.embedder = TextEmbedder()
+        return self.embedder.encode([text])[0]
+    
+    def search_products(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+        """embed query and return top k products"""
+        query_vector = self._embed_query_cached(query.strip().lower())
+
+        if self.pinecone_index:
+            try:
+                return query_vectors(self.pinecone_index, query_vector.tolist(), top_k)
+            except Exception as e:
+                print(f"pinecone search failed: {e}; using local search")
+                return self._local_search(query_vector, top_k)
+        else:
+            return self._local_search(query_vector, top_k)
+    
+    def _local_search(self, query_vector: np.ndarray, top_k: int = 5) -> List[Dict[str, Any]]:
+        similarities = cosine_similarity([query_vector], self.product_vectors)[0]
+        top_indices = np.argsort(similarities)[-top_k:][::-1]
+        products = []
+        for idx in top_indices:
+            row = self.products_df.iloc[idx]
+            products.append({
+                'stock_code': row['StockCode'],
+                'description': row['Description'],
+                'unit_price': float(row['UnitPrice']),
+                'quantity': int(row['Quantity']),
+                'similarity_score': float(similarities[idx])
+            })
+        return products
+    
     def upload_to_pinecone(self) -> None:
         """push vectors if pinecone is configured"""
         if not self.pinecone_index:
@@ -96,35 +133,3 @@ class DataPreparationService:
             "vectorization": "sentence-transformers (all-mpnet-base-v2)",
             "dimensions": self.product_vectors.shape[1] if self.product_vectors is not None else 0
         }
-    
-    def search_products(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
-        """embed query and return top k products"""
-        if self.embedder is None:
-            if TextEmbedder is None:
-                raise RuntimeError("Text embedding backend unavailable; install sentence-transformers & torch")
-            self.embedder = TextEmbedder()
-        query_vector = self.embedder.encode([query])[0]
-
-        if self.pinecone_index:
-            try:
-                return query_vectors(self.pinecone_index, query_vector.tolist(), top_k)
-            except Exception as e:
-                print(f"pinecone search failed: {e}; using local search")
-                return self._local_search(query_vector, top_k)
-        else:
-            return self._local_search(query_vector, top_k)
-    
-    def _local_search(self, query_vector: np.ndarray, top_k: int = 5) -> List[Dict[str, Any]]:
-        similarities = cosine_similarity([query_vector], self.product_vectors)[0]
-        top_indices = np.argsort(similarities)[-top_k:][::-1]
-        products = []
-        for idx in top_indices:
-            row = self.products_df.iloc[idx]
-            products.append({
-                'stock_code': row['StockCode'],
-                'description': row['Description'],
-                'unit_price': float(row['UnitPrice']),
-                'quantity': int(row['Quantity']),
-                'similarity_score': float(similarities[idx])
-            })
-        return products

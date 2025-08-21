@@ -2,6 +2,7 @@ import re
 from typing import List
 
 from services.data_preparation import DataPreparationService
+from services.text_processor import TextProcessor
 from utils.types import ScoredProduct, TextQueryResult
 
 
@@ -9,28 +10,13 @@ class TextQueryPipeline:
     """text -> product search (thin flow)"""
     def __init__(self, data_service: DataPreparationService) -> None:
         self.data_service = data_service
+        self.text = TextProcessor()
 
     def _is_sensitive(self, text: str) -> bool:
-        patterns = [
-            r"\b(password|secret|private|confidential)\b",
-            r"\b(admin|root|sudo)\b",
-            r"\b(credit\s*card|ssn|social\s*security)\b",
-        ]
-        for p in patterns:
-            if re.search(p, text, re.IGNORECASE):
-                return True
-        return False
+        return self.text.is_sensitive(text)
 
     def _simplify(self, text: str) -> str:
-        stop = {
-            "the","a","an","and","or","but","in","on","at","to","for","of","with","by",
-            "is","are","was","were","be","been","have","has","had","do","does","did","will",
-            "would","could","should","may","might","can","this","that","these","those","i","you",
-            "he","she","it","we","they","me","him","her","us","them","my","your","his","its",
-            "our","their",
-        }
-        words = [w for w in text.lower().split() if w not in stop and len(w) > 2]
-        return " ".join(words) if words else text
+        return self.text.simplify(text)
 
     def run(self, query: str, top_k: int = 5) -> TextQueryResult:
         """sanitize, search, return top k"""
